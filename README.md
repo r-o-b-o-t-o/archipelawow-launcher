@@ -53,6 +53,7 @@ the database updater when AzerothCore renames an update.
 | `mysql` | MySQL Community Server; `mysql\data` holds the databases |
 | `launcher` | The launcher's settings and logs, including the MySQL and tasks consoles |
 | `players` | Archipelago player options (YAML) |
+| `licenses` | The licenses of the bundled software, besides MySQL's, which are in `mysql` |
 
 MySQL listens on `127.0.0.1:3310` only (the port can be changed in the settings), with the user `acore`
 and the password `acore`, for tools such as HeidiSQL or Keira3.

@@ -7,6 +7,7 @@
 
       ArchipelaWoW Launcher\
         ArchipelaWoW.Launcher.exe    the launcher
+        licenses\                    the licenses of the bundled software, besides MySQL's in mysql\
         server\bin\                  authserver, worldserver, dbimport, the extractors, their DLLs and configs\
         server\source\               the SQL files of the core and its modules, read by the database updater
         mysql\                       MySQL Community Server, trimmed down to what running it takes
@@ -23,7 +24,7 @@ param(
     [Parameter(Mandatory)] [string] $MySqlDir,
     # The OpenSSL installation the core was built against
     [Parameter(Mandatory)] [string] $OpenSslDir,
-    # dotnet publish output of the launcher
+    # dotnet publish output of the launcher, with its licenses\
     [Parameter(Mandatory)] [string] $LauncherDir,
     # Where to create the ArchipelaWoW Launcher folder
     [Parameter(Mandatory)] [string] $OutputDir
@@ -97,7 +98,6 @@ $legacy = @('bin\legacy.dll', 'lib\ossl-modules\legacy.dll') | ForEach-Object { 
 if (-not $legacy) { throw "legacy.dll, which the core loads at startup, is missing from $OpenSslDir." }
 Copy-Item (Join-Path $OpenSslDir 'bin\libssl-3-x64.dll'), (Join-Path $OpenSslDir 'bin\libcrypto-3-x64.dll'), $legacy $serverBin
 $vcRuntime | Copy-Item -Destination $serverBin
-Copy-Item (Join-Path $CoreSourceDir 'LICENSE') (Join-Path $root 'server\LICENSE-AzerothCore.txt')
 
 Write-Host '== SQL files'
 # The updater reads data\sql\{base,updates,custom} and needs archive\ too: the base schemas list the
@@ -107,10 +107,7 @@ foreach ($dir in 'base', 'archive', 'updates', 'custom') {
 }
 foreach ($module in Get-ChildItem (Join-Path $CoreSourceDir 'modules') -Directory) {
     $sql = Join-Path $module.FullName 'data\sql'
-    if (Test-Path $sql) {
-        Copy-Tree $sql (Join-Path $source "modules\$($module.Name)\data\sql")
-        Get-ChildItem $module.FullName -Filter 'LICENSE*' -File | Copy-Item -Destination (Join-Path $source "modules\$($module.Name)")
-    }
+    if (Test-Path $sql) { Copy-Tree $sql (Join-Path $source "modules\$($module.Name)\data\sql") }
 }
 
 Write-Host '== MySQL'
@@ -126,6 +123,28 @@ $vcRuntime | Copy-Item -Destination (Join-Path $mysql 'bin')
 
 Write-Host '== Launcher'
 Get-ChildItem $LauncherDir -File | Where-Object Extension -in '.exe', '.dll' | Copy-Item -Destination $root
+
+Write-Host '== Licenses'
+$licenses = New-Item -ItemType Directory (Join-Path $root 'licenses')
+Copy-Item (Join-Path $LauncherDir 'licenses\*') $licenses
+Copy-Item (Join-Path $CoreSourceDir 'LICENSE') (Join-Path $licenses 'AzerothCore.txt')
+$openSslLicense = Get-ChildItem $OpenSslDir -Filter 'license*' -File | Select-Object -First 1
+if (-not $openSslLicense) { throw "OpenSSL's license is missing from $OpenSslDir." }
+Copy-Item $openSslLicense.FullName (Join-Path $licenses 'OpenSSL.txt')
+# Every module is built into the servers, whether it has SQL files or not
+foreach ($module in Get-ChildItem (Join-Path $CoreSourceDir 'modules') -Directory) {
+    $license = Get-ChildItem $module.FullName -Filter 'LICENSE*' -File | Select-Object -First 1
+    if ($license) { Copy-Item $license.FullName (Join-Path $licenses "$($module.Name).txt") }
+}
+# AzerothCore's deps\, parts of which are built into the servers and tools: its list of them, the license
+# files that came with them (G3D's is license.cpp), and fkYAML's, which only names its license in its headers
+$coreDeps = New-Item -ItemType Directory (Join-Path $licenses 'AzerothCore dependencies')
+Copy-Item (Join-Path $CoreSourceDir 'deps\PackageList.txt') $coreDeps
+foreach ($dep in Get-ChildItem (Join-Path $CoreSourceDir 'deps') -Directory) {
+    $license = Get-ChildItem $dep.FullName -Recurse -Depth 1 -File -Include 'LICENSE*', 'COPYING*' | Select-Object -First 1
+    if ($license) { Copy-Item $license.FullName (Join-Path $coreDeps "$($dep.Name).txt") }
+}
+Copy-Item (Join-Path $PSScriptRoot 'licenses\fkYAML.txt') $coreDeps
 
 Write-Host '== Checking dependencies'
 $missing = @(Get-MissingDependencies $serverBin $visualStudio) + @(Get-MissingDependencies (Join-Path $mysql 'bin') $visualStudio)

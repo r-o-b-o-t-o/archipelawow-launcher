@@ -12,5 +12,7 @@ export default defineConfig({
 		// The UI only ever runs in the WebView2 runtime, an evergreen Chromium
 		target: "esnext",
 		chunkSizeWarningLimit: 1024,
+		// dist/.vite/license.md, published with the launcher's notices
+		license: true,
 	},
 });

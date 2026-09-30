@@ -26,7 +26,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4258.31" />
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4258.31" GeneratePathProperty="true" />
   </ItemGroup>
 
   <ItemGroup>
@@ -49,6 +49,19 @@
       <EmbeddedResource Include="@(UiFile)" LogicalName="ui/%(RecursiveDir)%(Filename)%(Extension)" />
     </ItemGroup>
     <Warning Condition="'@(UiFile)' == ''" Text="No UI found in $(UiDir)\dist: run 'npm run build' there, or start the launcher with --dev-server." />
+  </Target>
+
+  <!-- The notices of what the launcher bundles, published to licenses\ next to it -->
+  <Target Name="PublishLicenses" AfterTargets="Publish">
+    <ItemGroup>
+      <_NetCoreRuntimePack Include="@(ResolvedRuntimePack)" Condition="'%(FrameworkName)' == 'Microsoft.NETCore.App'" />
+      <LicenseFile Include="@(_NetCoreRuntimePack->'%(PackageDirectory)\LICENSE.TXT')" Name="Microsoft .NET.txt" />
+      <LicenseFile Include="@(_NetCoreRuntimePack->'%(PackageDirectory)\THIRD-PARTY-NOTICES.TXT')" Name="Microsoft .NET third-party notices.txt" />
+      <LicenseFile Include="$(PkgMicrosoft_Web_WebView2)\LICENSE.txt" Name="WebView2 SDK.txt" />
+      <LicenseFile Include="$(PkgMicrosoft_Web_WebView2)\NOTICE.txt" Name="WebView2 SDK notices.txt" />
+      <LicenseFile Include="$(UiDir)\dist\.vite\license.md" Name="Launcher interface.md" />
+    </ItemGroup>
+    <Copy SourceFiles="@(LicenseFile)" DestinationFiles="@(LicenseFile->'$(PublishDir)licenses\%(Name)')" />
   </Target>
 
 </Project>
