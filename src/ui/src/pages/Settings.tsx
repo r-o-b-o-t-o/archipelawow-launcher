@@ -79,12 +79,11 @@ function General() {
 					</Field>
 					<Button
 						disabled={anyActive() || port() === String(settings()?.mySqlPort)}
-						onClick={() =>
-							update(
-								{ mySqlPort: Number(port()) },
-								"Port changed, the server configuration was updated to match.",
-							)
-						}
+						onClick={() => {
+							const mySqlPort = Number(port());
+							if (!Number.isInteger(mySqlPort)) toast("Enter the port as a number.", "error");
+							else update({ mySqlPort }, "Port changed, the server configuration was updated to match.");
+						}}
 					>
 						Apply
 					</Button>
