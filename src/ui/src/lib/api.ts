@@ -91,6 +91,7 @@ export const api = {
 		getInfo: () => call<AppInfo>("app.getInfo"),
 		openPath: (target: FolderTarget) => call("app.openPath", { target }),
 		openUrl: (url: string) => call("app.openUrl", { url }),
+		setUnsavedChanges: (unsaved: boolean) => call("app.setUnsavedChanges", { unsaved }),
 	},
 	settings: {
 		get: () => call<Settings>("settings.get"),

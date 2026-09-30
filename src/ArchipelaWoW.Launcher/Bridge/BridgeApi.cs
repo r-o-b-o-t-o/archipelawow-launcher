@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using System.Reflection;
 using System.Text.RegularExpressions;
-using System.Windows;
 using ArchipelaWoW.Launcher.Services;
 using ArchipelaWoW.Launcher.Terminal;
 using Microsoft.Win32;
@@ -14,7 +13,7 @@ public static partial class BridgeApi
     const string ArchipelagoConfig = "modules/archipelawow.conf";
     const string YamlFilter = "Archipelago player options (*.yaml;*.yml)|*.yaml;*.yml";
 
-    public static void Register(BridgeHost bridge, AppServices services, Window owner)
+    public static void Register(BridgeHost bridge, AppServices services, MainWindow owner)
     {
         var paths = services.Paths;
         var servers = services.Servers;
@@ -63,6 +62,11 @@ public static partial class BridgeApi
             if (!Uri.TryCreate(p.Url, UriKind.Absolute, out var uri) || uri.Scheme is not ("http" or "https"))
                 throw new ArgumentException($"Not a web link: {p.Url}");
             Process.Start(new ProcessStartInfo(uri.AbsoluteUri) { UseShellExecute = true });
+            return null;
+        });
+        bridge.Handle<UnsavedChangesParams>("app.setUnsavedChanges", p =>
+        {
+            owner.HasUnsavedChanges = p.Unsaved;
             return null;
         });
 
@@ -316,6 +320,7 @@ public static partial class BridgeApi
     sealed record NameParams(string Name);
     sealed record TargetParams(string Target);
     sealed record UrlParams(string Url);
+    sealed record UnsavedChangesParams(bool Unsaved);
     sealed record SettingsPatch(int? MySqlPort, bool? AutoStartServers);
     sealed record CreateConfigsParams(bool Overwrite);
     sealed record ExtractParams(string ClientPath, bool GenerateMmaps);

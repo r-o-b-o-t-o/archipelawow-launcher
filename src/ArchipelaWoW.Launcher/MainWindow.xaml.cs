@@ -19,6 +19,9 @@ public partial class MainWindow : Window
     bool _shuttingDown;
     bool _readyToClose;
 
+    /// <summary>Set by the page while it holds edits that closing the window would lose.</summary>
+    public bool HasUnsavedChanges { get; set; }
+
     public MainWindow(AppServices services, string? devServer)
     {
         _services = services;
@@ -54,7 +57,11 @@ public partial class MainWindow : Window
             webView.NavigationStarting += (_, args) =>
             {
                 if (args.Uri.StartsWith(origin + "/", StringComparison.OrdinalIgnoreCase))
+                {
+                    // Reloading loses the page's edits anyway
+                    HasUnsavedChanges = false;
                     return;
+                }
                 args.Cancel = true;
                 OpenExternal(args.Uri);
             };
@@ -98,17 +105,29 @@ public partial class MainWindow : Window
 
     async void OnClosing(object? sender, CancelEventArgs e)
     {
-        if (_readyToClose || (!_services.Servers.AnyActive && _services.Tasks.Current == null))
+        if (_readyToClose)
             return;
+        if (_shuttingDown)
+        {
+            e.Cancel = true;
+            return;
+        }
+
+        var task = _services.Tasks.Current;
+        if (!_services.Servers.AnyActive && task == null)
+        {
+            if (HasUnsavedChanges && !Confirm("Discard the unsaved changes and quit?"))
+                e.Cancel = true;
+            return;
+        }
 
         e.Cancel = true;
-        if (_shuttingDown)
-            return;
-
-        var message = _services.Tasks.Current is { } task
+        var message = task != null
             ? $"\"{task.Title}\" is still running. Cancel it, stop the servers and quit?"
             : "The servers are still running. Stop them and quit?";
-        if (MessageBox.Show(this, message, App.ProductName, MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK)
+        if (HasUnsavedChanges)
+            message += "\n\nThe unsaved changes will be lost.";
+        if (!Confirm(message))
             return;
 
         _shuttingDown = true;
@@ -125,6 +144,9 @@ public partial class MainWindow : Window
         _readyToClose = true;
         Close();
     }
+
+    bool Confirm(string message) =>
+        MessageBox.Show(this, message, App.ProductName, MessageBoxButton.OKCancel, MessageBoxImage.Question) == MessageBoxResult.OK;
 
     void OnContextMenuRequested(object? sender, CoreWebView2ContextMenuRequestedEventArgs e)
     {

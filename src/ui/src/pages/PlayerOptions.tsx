@@ -1,4 +1,3 @@
-import { useBeforeLeave } from "@solidjs/router";
 import { createMemo, createResource, createSignal, For, Show } from "solid-js";
 import Icon from "../components/Icon";
 import OptionField from "../components/OptionField";
@@ -17,6 +16,7 @@ import {
 	type PlayerDoc,
 } from "../lib/playerOptions";
 import { attempt, errorMessage, toast } from "../lib/toast";
+import { guardUnsaved } from "../lib/unsaved";
 
 const fileNameFor = (slotName: string) => `${slotName.replace(/[<>:"/\\|?*{}]/g, "").trim() || "Player"}.yaml`;
 
@@ -41,10 +41,7 @@ export default function PlayerOptions() {
 	const setValue = (key: string, value: OptionValue) =>
 		edit((d) => ({ ...d, values: { ...d.values, [key]: value } }));
 	const confirmDiscard = () => !dirty() || confirm("Discard the unsaved changes?");
-
-	useBeforeLeave((event) => {
-		if (!event.defaultPrevented && !confirmDiscard()) event.preventDefault();
-	});
+	guardUnsaved(dirty);
 
 	const open = async (name: string) => {
 		if (name === fileName() || !confirmDiscard()) return;

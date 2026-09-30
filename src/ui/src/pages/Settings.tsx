@@ -5,6 +5,7 @@ import { api, type FolderTarget } from "../lib/api";
 import { formatDate } from "../lib/format";
 import { appInfo, servers, isActive } from "../lib/store";
 import { attempt, toast } from "../lib/toast";
+import { guardUnsaved } from "../lib/unsaved";
 
 const folders: { target: FolderTarget; label: string }[] = [
 	{ target: "root", label: "Installation" },
@@ -116,6 +117,7 @@ function ConfigEditor() {
 	);
 
 	const dirty = () => text() !== original();
+	guardUnsaved(dirty);
 
 	const save = async () => {
 		const name = file();
