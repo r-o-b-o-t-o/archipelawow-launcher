@@ -1,0 +1,54 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <AssemblyName>ArchipelaWoW.Launcher</AssemblyName>
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Product>ArchipelaWoW Launcher</Product>
+    <Version>0.0.0</Version>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <UiDir>$(MSBuildProjectDirectory)\..\ui</UiDir>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <SelfContained>true</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <DebugType>none</DebugType>
+    <PublishReferencesDocumentationFiles>false</PublishReferencesDocumentationFiles>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4258.31" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\app.ico" />
+    <EmbeddedResource Include="Resources\config-defaults.json" LogicalName="config-defaults.json" />
+  </ItemGroup>
+
+  <!-- Release builds bundle the UI; skip with -p:SkipUiBuild=true when dist/ is already built. -->
+  <Target Name="BuildUi" BeforeTargets="BeforeBuild" Condition="'$(Configuration)' == 'Release' And '$(SkipUiBuild)' != 'true'">
+    <Error Condition="!Exists('$(UiDir)\src\data\options-schema.json')"
+           Text="The player options schema is missing: generate src\ui\src\data\options-schema.json from the apworld first, see the README." />
+    <Exec Command="npm ci" WorkingDirectory="$(UiDir)" />
+    <Exec Command="npm run build" WorkingDirectory="$(UiDir)" />
+  </Target>
+
+  <!-- Items are added at execution time so that a dist/ produced by BuildUi is picked up in the same build. -->
+  <Target Name="EmbedUi" AfterTargets="BuildUi" BeforeTargets="BeforeBuild">
+    <ItemGroup>
+      <UiFile Include="$(UiDir)\dist\**\*" />
+      <EmbeddedResource Include="@(UiFile)" LogicalName="ui/%(RecursiveDir)%(Filename)%(Extension)" />
+    </ItemGroup>
+    <Warning Condition="'@(UiFile)' == ''" Text="No UI found in $(UiDir)\dist: run 'npm run build' there, or start the launcher with --dev-server." />
+  </Target>
+
+</Project>

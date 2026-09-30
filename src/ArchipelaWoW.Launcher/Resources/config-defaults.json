@@ -1,0 +1,35 @@
+// Values applied when the launcher creates the .conf files from their .conf.dist, keyed by file
+// (relative to server/bin/configs). Strings are written quoted, numbers and booleans bare
+// (true = 1), and {"raw": "..."} exactly as given. {mysqlPort} is replaced by the launcher's port.
+// Keys missing from a file are appended to it.
+//
+// Paths are relative to server/bin, the servers' working directory, which keeps the installation portable.
+{
+  "authserver.conf": {
+    "LogsDir": "../logs",
+    "SourceDirectory": "../source",
+    "MySQLExecutable": "../../mysql/bin/mysql.exe",
+    "LoginDatabaseInfo": "127.0.0.1;{mysqlPort};acore;acore;acore_auth"
+  },
+  "worldserver.conf": {
+    "DataDir": "../data",
+    "LogsDir": "../logs",
+    "SourceDirectory": "../source",
+    "MySQLExecutable": "../../mysql/bin/mysql.exe",
+    "LoginDatabaseInfo": "127.0.0.1;{mysqlPort};acore;acore;acore_auth",
+    "WorldDatabaseInfo": "127.0.0.1;{mysqlPort};acore;acore;acore_world",
+    "CharacterDatabaseInfo": "127.0.0.1;{mysqlPort};acore;acore;acore_characters",
+    // Recommended by mod-i-found-your-sword: rewards arrive by mail, often several in a row
+    "Mail.PushInboxOnDelivery": 1
+  },
+  "dbimport.conf": {
+    "LogsDir": "../logs",
+    "SourceDirectory": "../source",
+    "MySQLExecutable": "../../mysql/bin/mysql.exe",
+    "LoginDatabaseInfo": "127.0.0.1;{mysqlPort};acore;acore;acore_auth",
+    "WorldDatabaseInfo": "127.0.0.1;{mysqlPort};acore;acore;acore_world",
+    "CharacterDatabaseInfo": "127.0.0.1;{mysqlPort};acore;acore;acore_characters"
+  },
+  "modules/archipelawow.conf": {
+  }
+}

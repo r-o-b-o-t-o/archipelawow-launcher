@@ -1,0 +1,254 @@
+name: Repack
+
+# Builds AzerothCore with the modules below, bundles it with MySQL and the launcher into the portable
+# ArchipelaWoW Launcher archive, and publishes that as a release.
+
+on:
+  schedule:
+    # Saturdays at 06:45 Paris time. Off the hour on purpose: scheduled runs get delayed when GitHub
+    # Actions is busy, which it is at the start of every hour.
+    - cron: '45 6 * * 6'
+      timezone: Europe/Paris
+  workflow_dispatch:
+
+env:
+  # Modules built into the repack, one per line: a git repository, optionally followed by the branch
+  # or tag to build instead of its default branch. Each is cloned into modules/<repository name>.
+  MODULES: |
+    https://github.com/r-o-b-o-t-o/mod-i-found-your-sword
+    https://github.com/azerothcore/mod-autobalance
+    https://github.com/r-o-b-o-t-o/mod-dungeon-respawn
+    https://github.com/azerothcore/mod-solo-lfg
+
+  AZEROTHCORE_REPOSITORY: https://github.com/azerothcore/azerothcore-wotlk
+  AZEROTHCORE_BRANCH: master
+  # MySQL Community Server shipped in the repack, whose client library the core also links. Stay on
+  # the 8.4 LTS line: AzerothCore doesn't support the releases after it.
+  MYSQL_VERSION: 8.4.9
+  BOOST_VERSION: 1.87.0
+  # The apworld whose player options the launcher's YAML editor offers, taken from its latest release
+  APWORLD_REPOSITORY: r-o-b-o-t-o/archipelawow
+  # Older releases made by this workflow are deleted once a new one is published
+  RELEASES_TO_KEEP: 3
+
+concurrency:
+  group: repack
+
+permissions:
+  contents: write
+
+jobs:
+  repack:
+    name: Build and release
+    runs-on: windows-latest
+    timeout-minutes: 240
+    env:
+      BOOST_ROOT: C:\local\boost
+      MYSQL_DIR: C:\tools\mysql
+      GH_TOKEN: ${{ github.token }}
+      # Optional: a Discord webhook that is told when the workflow fails
+      DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+    defaults:
+      run:
+        shell: pwsh
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Pick the version
+        id: version
+        run: |
+          # Doubles as the launcher's assembly version, hence no leading zeros. The run number keeps a
+          # manual run on the same day from reusing the tag.
+          "version=$(Get-Date -AsUTC -Format 'yyyy.M.d').$env:GITHUB_RUN_NUMBER" >> $env:GITHUB_OUTPUT
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+
+      # Before the long build, so that a failure here doesn't take an hour to show up
+      - name: Generate the player options schema
+        id: apworld
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          $archipelago = gh release view --repo ArchipelagoMW/Archipelago --json tagName --jq .tagName
+          git clone --depth 1 --branch $archipelago https://github.com/ArchipelagoMW/Archipelago.git archipelago
+          # Newest release, pre-releases included
+          $tag = gh release list --repo $env:APWORLD_REPOSITORY --limit 1 --json tagName --jq '.[0].tagName'
+          gh release download $tag --repo $env:APWORLD_REPOSITORY --pattern '*.apworld' --dir apworld
+          # An .apworld is a zip holding the world's folder
+          Get-ChildItem apworld\*.apworld | Rename-Item -NewName { "$($_.BaseName).zip" }
+          Expand-Archive apworld\*.zip -DestinationPath apworld
+          python -m pip install --quiet PyYAML schema typing_extensions pathspec
+          $world = Get-ChildItem apworld -Directory | Select-Object -First 1
+          python scripts/dump-options-schema.py --archipelago archipelago --world $world.FullName --output src/ui/src/data/options-schema.json
+          "tag=$tag" >> $env:GITHUB_OUTPUT
+
+      - name: Cache Boost and MySQL
+        uses: actions/cache@v6
+        with:
+          path: |
+            ${{ env.BOOST_ROOT }}
+            ${{ env.MYSQL_DIR }}
+          key: repack-deps-boost-${{ env.BOOST_VERSION }}-mysql-${{ env.MYSQL_VERSION }}
+
+      - name: Install Boost and MySQL
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+
+          # Prebuilt Boost for MSVC, as AzerothCore's own Windows CI uses. SourceForge sends browser
+          # user agents an HTML page instead of the file, and its mirrors fail often enough to retry.
+          if (-not (Test-Path "$env:BOOST_ROOT\boost\version.hpp")) {
+            $installer = Join-Path $env:RUNNER_TEMP 'boost.exe'
+            $name = "boost_$($env:BOOST_VERSION -replace '\.', '_')-msvc-14.3-64.exe"
+            $url = "https://downloads.sourceforge.net/project/boost/boost-binaries/$env:BOOST_VERSION/$name"
+            for ($attempt = 1; ; $attempt++) {
+              try {
+                Invoke-WebRequest $url -OutFile $installer -UserAgent 'archipelawow-launcher' -ConnectionTimeoutSeconds 60 -OperationTimeoutSeconds 60
+                if ((Get-Item $installer).Length -lt 50MB) { throw 'Got a web page instead of the installer.' }
+                break
+              }
+              catch {
+                if ($attempt -ge 3) { throw }
+                Write-Host "Boost download attempt $attempt failed: $_"
+                Start-Sleep -Seconds 15
+              }
+            }
+            $process = Start-Process $installer -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', "/DIR=$env:BOOST_ROOT" -Wait -PassThru
+            if ($process.ExitCode -ne 0) { throw "The Boost installer failed with code $($process.ExitCode)." }
+          }
+
+          # Oracle's archive CDN keeps every version, and wants a browser user agent
+          if (-not (Test-Path "$env:MYSQL_DIR\bin\mysqld.exe")) {
+            $zip = Join-Path $env:RUNNER_TEMP 'mysql.zip'
+            $series = ($env:MYSQL_VERSION -split '\.')[0..1] -join '.'
+            Invoke-WebRequest "https://cdn.mysql.com/archives/mysql-$series/mysql-$env:MYSQL_VERSION-winx64.zip" -OutFile $zip -UserAgent 'Mozilla/5.0'
+            7z x $zip "-o$env:RUNNER_TEMP" -y | Out-Null
+            Move-Item (Join-Path $env:RUNNER_TEMP "mysql-$env:MYSQL_VERSION-winx64") $env:MYSQL_DIR
+          }
+
+          # OpenSSL comes with the runner image
+          $openssl = @($env:OPENSSL_ROOT_DIR, 'C:\Program Files\OpenSSL', 'C:\Program Files\OpenSSL-Win64') |
+            Where-Object { $_ -and (Test-Path "$_\include\openssl\opensslv.h") } | Select-Object -First 1
+          if (-not $openssl) { throw 'The runner image has no OpenSSL development install.' }
+          "OPENSSL_ROOT_DIR=$openssl" >> $env:GITHUB_ENV
+
+      - name: Check out AzerothCore and the modules
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          git clone --depth 1 --branch $env:AZEROTHCORE_BRANCH $env:AZEROTHCORE_REPOSITORY azerothcore
+          foreach ($line in $env:MODULES -split "`n" | ForEach-Object Trim | Where-Object { $_ }) {
+            $url, $ref = $line -split '\s+'
+            $name = ($url.TrimEnd('/') -split '/')[-1] -replace '\.git$'
+            $branch = if ($ref) { @('--branch', $ref) } else { @() }
+            git clone --depth 1 @branch $url "azerothcore/modules/$name"
+          }
+
+      - name: Configure
+        run: >
+          cmake -S azerothcore -B build -A x64
+          -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}\install"
+          -DAPPS_BUILD=all -DTOOLS_BUILD=all -DSCRIPTS=static -DMODULES=static
+          -DBUILD_TESTING=OFF -DWITH_WARNINGS=OFF
+          -DMYSQL_INCLUDE_DIR="$env:MYSQL_DIR\include"
+          -DMYSQL_LIBRARY="$env:MYSQL_DIR\lib\libmysql.lib"
+          -DMYSQL_EXECUTABLE="$env:MYSQL_DIR\bin\mysql.exe"
+
+      - name: Build
+        run: cmake --build build --config Release --parallel
+
+      - name: Install
+        run: cmake --install build --config Release
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: src/ui/package-lock.json
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Publish the launcher
+        # Builds the UI too, see BuildUi in the project
+        run: >
+          dotnet publish src/ArchipelaWoW.Launcher/ArchipelaWoW.Launcher.csproj -c Release -o publish
+          -p:Version=${{ steps.version.outputs.version }}
+
+      - name: Package
+        run: >
+          ./scripts/package.ps1 -CoreInstallDir install -CoreSourceDir azerothcore -MySqlDir $env:MYSQL_DIR
+          -OpenSslDir $env:OPENSSL_ROOT_DIR -LauncherDir publish -OutputDir package
+
+      - name: Write the manifest and the release notes
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $version = '${{ steps.version.outputs.version }}'
+          $apworld = '${{ steps.apworld.outputs.tag }}'
+          $core = [ordered]@{ repository = $env:AZEROTHCORE_REPOSITORY; commit = git -C azerothcore rev-parse HEAD }
+          $modules = @(Get-ChildItem azerothcore/modules -Directory | ForEach-Object {
+            [ordered]@{
+              name = $_.Name
+              repository = (git -C $_.FullName remote get-url origin) -replace '\.git$'
+              commit = git -C $_.FullName rev-parse HEAD
+            }
+          })
+
+          # Read by the launcher, for its About section
+          [ordered]@{
+            version = $version
+            builtAt = (Get-Date -AsUTC).ToString('o')
+            repository = "$env:GITHUB_SERVER_URL/$env:GITHUB_REPOSITORY"
+            azerothcore = $core
+            modules = $modules
+            mysql = $env:MYSQL_VERSION
+            apworld = $apworld
+          } | ConvertTo-Json -Depth 4 | Set-Content 'package/ArchipelaWoW Launcher/release.json'
+
+          $link = { param($component) "[``$($component.commit.Substring(0, 10))``]($($component.repository)/commit/$($component.commit))" }
+          $notes = @(
+            "AzerothCore with the ArchipelaWoW modules, ready to run on Windows: extract ``ArchipelaWoW-Launcher-$version.zip`` close to the root of a drive (e.g. ``C:\Games``) and start ``ArchipelaWoW.Launcher.exe``."
+            ''
+            '| Component | Version |'
+            '| --- | --- |'
+            "| AzerothCore | $(& $link $core) |"
+            $modules | ForEach-Object { "| $($_.name) | $(& $link $_) |" }
+            "| MySQL Community Server | $env:MYSQL_VERSION |"
+            "| Player options | apworld [$apworld](https://github.com/$env:APWORLD_REPOSITORY/releases/tag/$apworld) |"
+          )
+          $notes | Set-Content release-notes.md
+
+      - name: Archive
+        run: |
+          $PSNativeCommandUseErrorActionPreference = $true
+          Push-Location package
+          7z a -tzip -mx=7 "../ArchipelaWoW-Launcher-${{ steps.version.outputs.version }}.zip" 'ArchipelaWoW Launcher'
+          Pop-Location
+
+      - name: Publish the release
+        run: |
+          $PSNativeCommandUseErrorActionPreference = $true
+          $version = '${{ steps.version.outputs.version }}'
+          gh release create "v$version" "ArchipelaWoW-Launcher-$version.zip" --title "ArchipelaWoW Launcher $version" --notes-file release-notes.md --target $env:GITHUB_SHA
+
+      - name: Delete old releases
+        run: |
+          $PSNativeCommandUseErrorActionPreference = $true
+          $releases = gh release list --limit 100 --json tagName,createdAt | ConvertFrom-Json
+          # Only the ones this workflow made, going by their tag
+          $releases | Where-Object tagName -Match '^v\d{4}\.\d{1,2}\.\d{1,2}\.\d+$' | Sort-Object createdAt -Descending |
+            Select-Object -Skip ([int]$env:RELEASES_TO_KEEP) | ForEach-Object {
+              Write-Host "Deleting $($_.tagName)"
+              gh release delete $_.tagName --yes --cleanup-tag
+            }
+
+      - name: Report the failure
+        if: failure() && env.DISCORD_WEBHOOK_URL != ''
+        run: |
+          $run = "$env:GITHUB_SERVER_URL/$env:GITHUB_REPOSITORY/actions/runs/$env:GITHUB_RUN_ID"
+          $message = @{ content = "The ArchipelaWoW Launcher release failed: $run" } | ConvertTo-Json
+          Invoke-RestMethod $env:DISCORD_WEBHOOK_URL -Method Post -ContentType 'application/json' -Body $message

@@ -1,0 +1,76 @@
+@import "tailwindcss";
+@import "@xterm/xterm/css/xterm.css";
+
+@theme {
+	--font-sans: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+	--font-mono: "Cascadia Mono", "Cascadia Code", Consolas, monospace;
+
+	--color-surface-0: #0c0e12;
+	--color-surface-1: #12151c;
+	--color-surface-2: #181c25;
+	--color-surface-3: #212633;
+	--color-surface-4: #2a3040;
+	--color-gold: #f5b301;
+	--color-gold-soft: #ffd66b;
+}
+
+html,
+body,
+#root {
+	height: 100%;
+}
+
+body {
+	margin: 0;
+	background: var(--color-surface-0);
+	color: #e4e4e7;
+	font-family: var(--font-sans);
+	font-size: 14px;
+	-webkit-font-smoothing: antialiased;
+	user-select: none;
+}
+
+input,
+textarea,
+select,
+pre,
+.xterm {
+	user-select: text;
+}
+
+::-webkit-scrollbar {
+	width: 10px;
+	height: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+	background: #2a3040;
+	border-radius: 8px;
+	border: 2px solid transparent;
+	background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+	background-color: #3a4256;
+}
+
+::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+.xterm .xterm-viewport {
+	background-color: transparent !important;
+}
+
+input[type="range"] {
+	accent-color: var(--color-gold);
+}
+
+@keyframes indeterminate {
+	from {
+		transform: translateX(-100%);
+	}
+	to {
+		transform: translateX(300%);
+	}
+}

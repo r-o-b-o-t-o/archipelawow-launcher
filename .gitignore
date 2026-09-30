@@ -1,0 +1,16 @@
+# .NET
+bin/
+obj/
+.vs/
+*.user
+
+# UI
+node_modules/
+src/ui/dist/
+# Generated from the apworld, see the README
+src/ui/src/data/options-schema.json
+
+# Editors
+.idea/
+.vscode/*
+!.vscode/extensions.json
