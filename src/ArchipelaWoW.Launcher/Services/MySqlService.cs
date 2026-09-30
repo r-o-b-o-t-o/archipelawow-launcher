@@ -29,7 +29,7 @@ public sealed class MySqlService(AppPaths paths, SettingsStore settings)
 
     /// <summary>
     /// Shuts the server down with mysqladmin: on Ctrl+C mysqld starts shutting down but gets
-    /// terminated before it's done. Fails if root was given a password.
+    /// terminated before it's done.
     /// </summary>
     public async Task<bool> RequestShutdownAsync()
     {
@@ -40,7 +40,7 @@ public sealed class MySqlService(AppPaths paths, SettingsStore settings)
             RedirectStandardOutput = true,
             RedirectStandardError = true,
         };
-        foreach (var argument in (string[])["--no-defaults", "--host=127.0.0.1", $"--port={settings.Current.MySqlPort}", "--user=root", "shutdown"])
+        foreach (var argument in ClientArguments("shutdown"))
             info.ArgumentList.Add(argument);
         try
         {
@@ -95,15 +95,18 @@ public sealed class MySqlService(AppPaths paths, SettingsStore settings)
             $"CREATE USER IF NOT EXISTS '{User}'@'localhost' IDENTIFIED BY '{Password}';",
             $"CREATE USER IF NOT EXISTS '{User}'@'127.0.0.1' IDENTIFIED BY '{Password}';",
             $"GRANT ALL ON *.* TO {users};");
-        // --no-defaults keeps a [client] section of some other installation's my.ini out of this
-        var result = await task.RunToolAsync(paths.MySqlExe("mysql"),
-            ["--no-defaults", "--host=127.0.0.1", $"--port={settings.Current.MySqlPort}", "--user=root", $"--execute={sql}"],
-            paths.MySqlDir, token);
+        var result = await task.RunToolAsync(paths.MySqlExe("mysql"), ClientArguments($"--execute={sql}"), paths.MySqlDir, token);
         if (result != 0)
             throw new InvalidOperationException($"Creating the AzerothCore user failed with code {result}.");
 
         settings.Update(s => s.DatabaseInitialized = true);
     }
+
+    // As root, which fails if it was given a password. --no-defaults and --no-login-paths keep out the
+    // settings of some other installation: a [client] section in its my.ini, a login saved with
+    // mysql_config_editor.
+    string[] ClientArguments(params string[] arguments) =>
+        ["--no-defaults", "--no-login-paths", "--host=127.0.0.1", $"--port={settings.Current.MySqlPort}", "--user=root", .. arguments];
 
     // --defaults-file has to come first
     string[] ServerArguments() =>
