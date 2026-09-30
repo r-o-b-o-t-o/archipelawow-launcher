@@ -85,13 +85,22 @@ public sealed class ManagedProcess(
     public async Task StopAsync()
     {
         PtyProcess pty;
+        bool alreadyStopping;
         lock (_lock)
         {
             if (!IsActive || _pty == null)
                 return;
             pty = _pty;
+            alreadyStopping = State == ServerState.Stopping;
             _stopRequested = true;
             State = ServerState.Stopping;
+        }
+        // Asking again would only get in the way: mysqladmin can't connect to a server that's shutting
+        // down, and falling back to Ctrl+C then cuts MySQL's shutdown short
+        if (alreadyStopping)
+        {
+            await pty.Exited;
+            return;
         }
         StateChanged?.Invoke();
 
