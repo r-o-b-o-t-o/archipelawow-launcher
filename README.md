@@ -23,7 +23,7 @@ options.
 
 1. Download `ArchipelaWoW-Launcher-<version>.zip` from the [latest release](../../releases/latest).
 2. Extract it close to the root of a drive, e.g. into `C:\Games`. Deep folders don't work: the server
-   can't open files whose path is longer than 260 characters, and the launcher warns about it.
+   can't open files whose path is longer than 259 characters, and the launcher warns about it.
 3. Start `ArchipelaWoW.Launcher.exe` and follow the setup: database, configuration, then the client
    data, which you can download or extract from your own World of Warcraft 3.3.5a client.
 4. Start the servers from the dashboard, create a game account there, and set `set realmlist 127.0.0.1`

@@ -18,8 +18,8 @@ public sealed class AppServices : IDisposable
     public JsonNode? Manifest { get; }
 
     /// <summary>
-    /// Longest SQL update path as worldserver opens it, relative to its working directory
-    /// (server\bin\..\source\...). The core isn't long path aware, so past MAX_PATH the updates fail.
+    /// Length of the longest SQL update path as worldserver opens it: the full path, through its working
+    /// directory (...\server\bin\..\source\...). The core isn't long path aware, so past MAX_PATH the updates fail.
     /// </summary>
     public int LongestSourcePath => _longestSourcePath.Value;
 
