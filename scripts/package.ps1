@@ -90,7 +90,8 @@ $visualStudio = Find-VisualStudio
 $vcRuntime = Get-VcRuntime $visualStudio
 
 Write-Host '== Server binaries'
-Copy-Tree $CoreInstallDir $serverBin -ExcludeFiles '*.pdb', '*.lib', '*.exp', '*.ilk'
+# The .conf files only exist in an installation that was already used, the launcher creates its own
+Copy-Tree $CoreInstallDir $serverBin -ExcludeFiles '*.pdb', '*.lib', '*.exp', '*.ilk', '*.conf'
 Copy-Item (Join-Path $MySqlDir 'lib\libmysql.dll') $serverBin
 $legacy = @('bin\legacy.dll', 'lib\ossl-modules\legacy.dll') | ForEach-Object { Join-Path $OpenSslDir $_ } | Where-Object { Test-Path $_ } | Select-Object -First 1
 if (-not $legacy) { throw "legacy.dll, which the core loads at startup, is missing from $OpenSslDir." }
