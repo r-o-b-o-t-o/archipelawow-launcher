@@ -51,6 +51,19 @@ public sealed class MySqlService(AppPaths paths, SettingsStore settings)
     public async Task<bool> AccountExistsAsync(string loginDatabase, string username) =>
         (await QueryAsync($"SELECT COUNT(*) FROM `{loginDatabase}`.account WHERE username = '{username}'")).Trim() != "0";
 
+    /// <summary>
+    /// Clears the version mismatch flag that a worldserver sets on its realm while it starts, and leaves
+    /// behind if it dies on the way. Along with the offline flag the authserver sets on every realm when
+    /// it starts, it hides the realm, and the authserver exits for lack of one.
+    /// </summary>
+    public async Task ClearRealmVersionMismatchAsync(string loginDatabase)
+    {
+        var (exitCode, _, errors) = await RunClientAsync("mysql", $"--execute=UPDATE `{loginDatabase}`.realmlist SET flag = flag & ~1");
+        // Before the first start, the authserver has yet to create its database
+        if (exitCode != 0)
+            Log.Info($"Could not clear the realms' version mismatch flag: {errors.Trim()}");
+    }
+
     /// <summary>Creates the data directory, starts the server and creates the AzerothCore user.</summary>
     public async Task InitializeAsync(TaskRunner task, ServerManager servers, CancellationToken token)
     {

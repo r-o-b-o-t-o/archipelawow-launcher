@@ -20,7 +20,10 @@
     "WorldDatabaseInfo": "127.0.0.1;{mysqlPort};acore;acore;acore_world",
     "CharacterDatabaseInfo": "127.0.0.1;{mysqlPort};acore;acore;acore_characters",
     // Recommended by mod-i-found-your-sword: rewards arrive by mail, often several in a row
-    "Mail.PushInboxOnDelivery": 1
+    "Mail.PushInboxOnDelivery": 1,
+    // The authserver flags every realm offline when it starts, and a running worldserver clears it on
+    // this interval (10 minutes by default): an authserver restart would list the realm offline that long
+    "UpdateUptimeInterval": 1
   },
   "dbimport.conf": {
     "LogsDir": "../logs",

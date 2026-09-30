@@ -9,6 +9,7 @@ public sealed class ServerManager
     const int RestartExitCode = 2;
 
     readonly AppPaths _paths;
+    readonly MySqlService _mySql;
     readonly ConfigService _configs;
 
     public ManagedProcess MySql { get; }
@@ -21,6 +22,7 @@ public sealed class ServerManager
     public ServerManager(AppPaths paths, SettingsStore settings, MySqlService mySql, ConfigService configs)
     {
         _paths = paths;
+        _mySql = mySql;
         _configs = configs;
 
         // The servers inherit it: they create the databases they miss instead of asking about it on
@@ -60,6 +62,9 @@ public sealed class ServerManager
                 throw new InvalidOperationException("The server configuration files are missing, run the setup first.");
             MySql.Start();
             await MySql.WaitUntilRunningAsync();
+            if (process == AuthServer && !AuthServer.IsActive &&
+                _configs.GetDatabaseName("authserver.conf", "LoginDatabaseInfo") is { } loginDatabase)
+                await _mySql.ClearRealmVersionMismatchAsync(loginDatabase);
         }
         process.Start();
     }
