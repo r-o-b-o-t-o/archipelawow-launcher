@@ -1,6 +1,6 @@
 import { FitAddon } from "@xterm/addon-fit";
 import { Terminal as XTerm } from "@xterm/xterm";
-import { onCleanup, onMount } from "solid-js";
+import { createEffect, onCleanup, onMount } from "solid-js";
 import { api, type TerminalName } from "../lib/api";
 import { on } from "../lib/bridge";
 import { appInfo } from "../lib/store";
@@ -28,7 +28,6 @@ export default function Terminal(props: { name: TerminalName; class?: string }) 
 			scrollback: 20000,
 			// ConPTY clears the screen when a process starts: keep what was there in the scrollback
 			scrollOnEraseInDisplay: true,
-			windowsPty: { backend: "conpty", buildNumber: appInfo()?.windowsBuild },
 			theme: {
 				background: "#0b0d12",
 				foreground: "#d4d4d8",
@@ -56,6 +55,11 @@ export default function Terminal(props: { name: TerminalName; class?: string }) 
 		const fit = new FitAddon();
 		terminal.loadAddon(fit);
 		terminal.open(container);
+
+		// The Windows build comes with the app info, which terminals shown on startup don't have yet
+		createEffect(() => {
+			terminal.options.windowsPty = { backend: "conpty", buildNumber: appInfo()?.windowsBuild };
+		});
 
 		// Ctrl+C copies when text is selected rather than interrupting the process; Ctrl+V is left to
 		// the browser's paste event, which the terminal turns into input
