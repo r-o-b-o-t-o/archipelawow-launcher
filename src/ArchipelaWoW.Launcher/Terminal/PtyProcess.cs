@@ -147,6 +147,9 @@ public sealed class PtyProcess : IDisposable
 
     public void Kill()
     {
+        // Closed by Dispose, after which the PID may belong to another process
+        if (_process.IsClosed)
+            return;
         try
         {
             using var process = Process.GetProcessById(Pid);
@@ -192,11 +195,12 @@ public sealed class PtyProcess : IDisposable
 
     public void Dispose()
     {
-        if (!HasExited)
-        {
-            _exitWait.Unregister(null);
+        _exitWait.Unregister(null);
+        // Only once the exit wait on the handle is over
+        if (HasExited)
+            _process.Dispose();
+        else
             Kill();
-        }
         // ClosePseudoConsole can block until the output is drained, so keep it off the caller's thread
         Task.Run(ClosePseudoConsole);
         _input.Dispose();
