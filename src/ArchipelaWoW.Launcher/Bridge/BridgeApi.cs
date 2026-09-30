@@ -186,13 +186,27 @@ public static partial class BridgeApi
             SendWorldCommand(servers, p.Command);
             return null;
         });
-        bridge.Handle<AccountParams>("accounts.create", p =>
+        bridge.HandleAsync<AccountParams>("accounts.create", async p =>
         {
             if (!AccountNameRegex().IsMatch(p.Username))
                 throw new ArgumentException("Account names are 1 to 20 letters and digits.");
             if (!PasswordRegex().IsMatch(p.Password))
                 throw new ArgumentException("Passwords are 1 to 16 characters, without spaces.");
+            EnsureWorldServerRunning(servers);
+            var loginDatabase = services.Configs.GetDatabaseName("worldserver.conf", "LoginDatabaseInfo")
+                ?? throw new InvalidOperationException("worldserver.conf has no LoginDatabaseInfo.");
+            if (await services.MySql.AccountExistsAsync(loginDatabase, p.Username))
+                throw new ArgumentException($"There is already an account named {p.Username}.");
+
             SendWorldCommand(servers, $"account create {p.Username} {p.Password}");
+            // The worldserver adds the account in the background, and set gmlevel doesn't check that it
+            // exists: it would give the access level to account 0
+            for (var attempt = 1; !await services.MySql.AccountExistsAsync(loginDatabase, p.Username); attempt++)
+            {
+                if (attempt == 20)
+                    throw new InvalidOperationException($"The worldserver didn't create {p.Username}, see its output.");
+                await Task.Delay(250);
+            }
             if (p.GmLevel is > 0 and <= 3)
                 SendWorldCommand(servers, $"account set gmlevel {p.Username} {p.GmLevel} -1");
             return null;
@@ -274,10 +288,15 @@ public static partial class BridgeApi
     static object ServerStatuses(ServerManager servers) =>
         servers.All.Select(p => new { p.Name, p.DisplayName, p.State, p.Pid, p.StartedAt, p.ExitCode }).ToList();
 
-    static void SendWorldCommand(ServerManager servers, string command)
+    static void EnsureWorldServerRunning(ServerManager servers)
     {
         if (servers.WorldServer.State != ServerState.Running)
             throw new InvalidOperationException("Start the worldserver first.");
+    }
+
+    static void SendWorldCommand(ServerManager servers, string command)
+    {
+        EnsureWorldServerRunning(servers);
         // Enter, as a console key press
         servers.WorldServer.Input(command + "\r");
     }

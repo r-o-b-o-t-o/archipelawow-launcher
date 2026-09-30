@@ -176,7 +176,7 @@ export default function Dashboard() {
 
 				<aside class="flex w-72 shrink-0 flex-col gap-5 overflow-y-auto">
 					<ArchipelagoRoom />
-					<CreateAccount onSent={() => setTab("worldserver")} />
+					<CreateAccount onCreated={() => setTab("worldserver")} />
 					<ConnectClient />
 				</aside>
 			</div>
@@ -237,19 +237,22 @@ function ArchipelagoRoom() {
 	);
 }
 
-function CreateAccount(props: { onSent: () => void }) {
+function CreateAccount(props: { onCreated: () => void }) {
 	const [username, setUsername] = createSignal("");
 	const [password, setPassword] = createSignal("");
 	const [gmLevel, setGmLevel] = createSignal(0);
+	const [creating, setCreating] = createSignal(false);
 	const running = () => server("worldserver")?.state === "running";
 
 	const create = async (event: SubmitEvent) => {
 		event.preventDefault();
-		const sent = await attempt(() => api.accounts.create(username(), password(), gmLevel()));
-		if (sent === undefined) return;
-		toast(`Sent to the worldserver, its terminal shows whether ${username()} was created.`, "success");
+		setCreating(true);
+		const created = await attempt(() => api.accounts.create(username(), password(), gmLevel()));
+		setCreating(false);
+		if (created === undefined) return;
+		toast(`Created the account ${username()}.`, "success");
 		setPassword("");
-		props.onSent();
+		props.onCreated();
 	};
 
 	return (
@@ -284,6 +287,7 @@ function CreateAccount(props: { onSent: () => void }) {
 					type="submit"
 					variant="primary"
 					icon="userPlus"
+					busy={creating()}
 					disabled={!running() || !username() || !password()}
 					class="self-start"
 				>

@@ -52,6 +52,10 @@ public sealed class ConfigService(AppPaths paths, SettingsStore settings)
 
     public int? GetInt(string file, string key) => int.TryParse(GetValue(file, key), out var value) ? value : null;
 
+    /// <summary>The database of a *DatabaseInfo entry ("host;port;user;password;database").</summary>
+    public string? GetDatabaseName(string file, string key) =>
+        GetValue(file, key)?.Split(';') is { Length: >= 5 } parts ? parts[4] : null;
+
     /// <summary>Sets keys to raw values (quotes included for strings), appending the ones the file doesn't have.</summary>
     public void SetValues(string file, IReadOnlyDictionary<string, string> values)
     {

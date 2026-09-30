@@ -33,24 +33,12 @@ public sealed class MySqlService(AppPaths paths, SettingsStore settings)
     /// </summary>
     public async Task<bool> RequestShutdownAsync()
     {
-        var info = new ProcessStartInfo(paths.MySqlExe("mysqladmin"))
-        {
-            WorkingDirectory = paths.MySqlDir,
-            CreateNoWindow = true,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-        };
-        foreach (var argument in ClientArguments("shutdown"))
-            info.ArgumentList.Add(argument);
         try
         {
-            using var process = Process.Start(info)!;
-            var errors = process.StandardError.ReadToEndAsync();
-            await process.StandardOutput.ReadToEndAsync();
-            await process.WaitForExitAsync();
-            if (process.ExitCode != 0)
-                Log.Info($"mysqladmin shutdown failed: {(await errors).Trim()}");
-            return process.ExitCode == 0;
+            var (exitCode, _, errors) = await RunClientAsync("mysqladmin", "shutdown");
+            if (exitCode != 0)
+                Log.Info($"mysqladmin shutdown failed: {errors.Trim()}");
+            return exitCode == 0;
         }
         catch (Win32Exception ex)
         {
@@ -58,6 +46,10 @@ public sealed class MySqlService(AppPaths paths, SettingsStore settings)
             return false;
         }
     }
+
+    /// <summary>Whether the login database has an account of that name, which must be safe to put in a query.</summary>
+    public async Task<bool> AccountExistsAsync(string loginDatabase, string username) =>
+        (await QueryAsync($"SELECT COUNT(*) FROM `{loginDatabase}`.account WHERE username = '{username}'")).Trim() != "0";
 
     /// <summary>Creates the data directory, starts the server and creates the AzerothCore user.</summary>
     public async Task InitializeAsync(TaskRunner task, ServerManager servers, CancellationToken token)
@@ -100,6 +92,32 @@ public sealed class MySqlService(AppPaths paths, SettingsStore settings)
             throw new InvalidOperationException($"Creating the AzerothCore user failed with code {result}.");
 
         settings.Update(s => s.DatabaseInitialized = true);
+    }
+
+    async Task<string> QueryAsync(string sql)
+    {
+        var (exitCode, output, errors) = await RunClientAsync("mysql", "--batch", "--skip-column-names", $"--execute={sql}");
+        if (exitCode != 0)
+            throw new InvalidOperationException($"The database query failed: {errors.Trim()}");
+        return output;
+    }
+
+    async Task<(int ExitCode, string Output, string Errors)> RunClientAsync(string tool, params string[] arguments)
+    {
+        var info = new ProcessStartInfo(paths.MySqlExe(tool))
+        {
+            WorkingDirectory = paths.MySqlDir,
+            CreateNoWindow = true,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+        };
+        foreach (var argument in ClientArguments(arguments))
+            info.ArgumentList.Add(argument);
+        using var process = Process.Start(info)!;
+        var errors = process.StandardError.ReadToEndAsync();
+        var output = await process.StandardOutput.ReadToEndAsync();
+        await process.WaitForExitAsync();
+        return (process.ExitCode, output, await errors);
     }
 
     // As root, which fails if it was given a password. --no-defaults and --no-login-paths keep out the
