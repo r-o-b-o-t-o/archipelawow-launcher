@@ -1,6 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+    <!-- In user space so outlines painted with it blend into the background -->
+    <linearGradient id="bg" x1="0" y1="2" x2="0" y2="62" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#262d3d"/>
       <stop offset="1" stop-color="#11141b"/>
     </linearGradient>
@@ -15,15 +16,24 @@
       <stop offset="0.5" stop-color="#9ca3af"/>
       <stop offset="1" stop-color="#d1d5db"/>
     </linearGradient>
+    <g id="sword">
+      <path d="M32 14.87 L35.2 19.67 L35.2 38.87 L28.8 38.87 L28.8 19.67 Z" fill="url(#blade)"/>
+      <rect x="22.4" y="38.87" width="19.2" height="3.6" rx="1.8" fill="url(#gold)"/>
+      <rect x="30.4" y="42.47" width="3.2" height="6.8" rx="0.8" fill="#7c4a1e"/>
+      <circle cx="32" cy="51.27" r="2.56" fill="url(#gold)"/>
+    </g>
   </defs>
-  <rect x="2" y="2" width="60" height="60" rx="14" fill="url(#bg)" stroke="url(#gold)" stroke-width="2.5"/>
-  <circle cx="32" cy="30" r="18" fill="none" stroke="url(#gold)" stroke-width="2.2" opacity="0.6"/>
-  <circle cx="14" cy="30" r="3" fill="#f97316"/>
-  <circle cx="50" cy="30" r="3" fill="#22c55e"/>
-  <circle cx="19.3" cy="17.3" r="3" fill="#3b82f6"/>
-  <circle cx="44.7" cy="17.3" r="3" fill="#a855f7"/>
-  <path d="M32 10 L36 16 L36 40 L28 40 L28 16 Z" fill="url(#blade)"/>
-  <rect x="20" y="40" width="24" height="4.5" rx="2.25" fill="url(#gold)"/>
-  <rect x="30" y="44.5" width="4" height="8.5" rx="1" fill="#7c4a1e"/>
-  <circle cx="32" cy="55.5" r="3.2" fill="url(#gold)"/>
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="url(#bg)"/>
+  <!-- The Archipelago logo -->
+  <g stroke="url(#bg)" stroke-width="5.6" paint-order="stroke">
+    <circle cx="32" cy="16.5" r="10" fill="#c97682"/>
+    <circle cx="16.8" cy="25" r="10" fill="#eee391"/>
+    <circle cx="47.2" cy="25" r="10" fill="#75c275"/>
+    <circle cx="16.8" cy="39" r="10" fill="#767ebd"/>
+    <circle cx="47.2" cy="39" r="10" fill="#ca94c2"/>
+    <circle cx="32" cy="47.5" r="10" fill="#d9a07d"/>
+  </g>
+  <use href="#sword" stroke="url(#bg)" stroke-width="5.6" stroke-linejoin="round"/>
+  <use href="#sword"/>
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="none" stroke="url(#gold)" stroke-width="2.5"/>
 </svg>
