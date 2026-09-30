@@ -23,6 +23,10 @@ public sealed class ServerManager
         _paths = paths;
         _configs = configs;
 
+        // The servers inherit it: they create the databases they miss instead of asking about it on
+        // their console and waiting for an answer
+        Environment.SetEnvironmentVariable("AC_DISABLE_INTERACTIVE", "1");
+
         MySql = new ManagedProcess("mysql", "MySQL", new TerminalBuffer("mysql", paths.LauncherLogsDir),
             mySql.ServerSpec, () => settings.Current.MySqlPort, TimeSpan.FromSeconds(60))
         {
@@ -78,6 +82,15 @@ public sealed class ServerManager
     public async Task StartAllAsync()
     {
         await StartAsync(AuthServer.Name);
+        // Both servers create the login database when it's missing, and would get in each other's way
+        try
+        {
+            await AuthServer.WaitUntilRunningAsync();
+        }
+        catch (InvalidOperationException)
+        {
+            // Its output tells why, and the worldserver can run without it
+        }
         await StartAsync(WorldServer.Name);
     }
 

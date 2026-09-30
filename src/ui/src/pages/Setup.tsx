@@ -68,8 +68,9 @@ export default function Setup() {
 
 					<Step number={1} title="Database" done={status()?.databaseInitialized}>
 						<p class="text-[13px] text-zinc-400">
-							Creates the MySQL data files, the AzerothCore databases and the <Code>acore</Code> user the
-							servers log in with. The database is only reachable from this computer.
+							Creates the MySQL data files and the <Code>acore</Code> user the servers log in with. They
+							create their databases the first time they start. MySQL is only reachable from this
+							computer.
 						</p>
 						<Show when={!status()?.databaseInitialized}>
 							<Button

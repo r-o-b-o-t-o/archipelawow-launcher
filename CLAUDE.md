@@ -41,8 +41,9 @@ bundle it with a prebuilt AzerothCore, the ArchipelaWoW modules and MySQL as a p
   and module names short.
 - Ship `data/sql/archive`: the base schemas list its updates as applied, and missing files are reported
   on every start.
-- worldserver asks on its console before creating a missing database and waits:
-  `MySqlService.Databases` pre-creates every database the servers use, modules' included.
+- The servers create the databases they miss: `ServerManager` sets `AC_DISABLE_INTERACTIVE=1`, without
+  which they ask on their console first and wait. Start all waits for the authserver: both would create
+  the login database.
 - The servers run under ConPTY: on a pipe the CRT block-buffers their output.
 - ConPTY rewrites the last character of a wrapped line after moving the cursor, doubling it in the
   escape-stripped logs of `launcher/logs`: known, cosmetic.

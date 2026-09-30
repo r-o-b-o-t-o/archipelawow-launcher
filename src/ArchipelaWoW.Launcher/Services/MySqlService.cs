@@ -9,10 +9,6 @@ public sealed class MySqlService(AppPaths paths, SettingsStore settings)
     public const string User = "acore";
     public const string Password = "acore";
 
-    // The core databases plus mod-i-found-your-sword's. worldserver would populate missing ones, but
-    // first asks for confirmation on its console, which would leave it waiting for an answer
-    static readonly string[] Databases = ["acore_auth", "acore_world", "acore_characters", "acore_archipelawow"];
-
     const string DefaultIni = """
         # MySQL settings of the ArchipelaWoW Launcher. It passes basedir, datadir and port on the
         # command line, so that they follow the folder when it moves and the port set in the launcher.
@@ -92,15 +88,13 @@ public sealed class MySqlService(AppPaths paths, SettingsStore settings)
         await servers.StartAsync(servers.MySql.Name);
         await servers.MySql.WaitUntilRunningAsync(token);
 
-        task.Stage("Creating the AzerothCore databases and user");
+        task.Stage("Creating the AzerothCore user");
+        // The servers create their databases themselves (see ServerManager), whatever their names
         var users = $"'{User}'@'localhost', '{User}'@'127.0.0.1'";
         var sql = string.Join(' ',
-        [
             $"CREATE USER IF NOT EXISTS '{User}'@'localhost' IDENTIFIED BY '{Password}';",
             $"CREATE USER IF NOT EXISTS '{User}'@'127.0.0.1' IDENTIFIED BY '{Password}';",
-            .. Databases.Select(db => $"CREATE DATABASE IF NOT EXISTS `{db}` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"),
-            .. Databases.Select(db => $"GRANT ALL PRIVILEGES ON `{db}`.* TO {users};"),
-        ]);
+            $"GRANT ALL ON *.* TO {users};");
         // --no-defaults keeps a [client] section of some other installation's my.ini out of this
         var result = await task.RunToolAsync(paths.MySqlExe("mysql"),
             ["--no-defaults", "--host=127.0.0.1", $"--port={settings.Current.MySqlPort}", "--user=root", $"--execute={sql}"],
