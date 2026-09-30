@@ -12,7 +12,7 @@ bundle it with a prebuilt AzerothCore, the ArchipelaWoW modules and MySQL as a p
   change on the other side.
 - `archipelawow` — the apworld. `scripts/dump-options-schema.py` turns its latest release's options
   into the schema the YAML editor renders; a new option type needs support there and in
-  `OptionField.tsx`.
+  `OptionField.tsx`. It loads `options.py` alone, so that file can't import the rest of the world.
 
 ## Code
 

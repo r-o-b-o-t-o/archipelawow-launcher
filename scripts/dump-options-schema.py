@@ -1,7 +1,7 @@
 """Dumps an apworld's player options to a JSON schema that the launcher's YAML editor renders.
 
 Only the world's options module is loaded, on top of an Archipelago checkout, so the rest of the
-world and its dependencies are not needed.
+world and its dependencies are not needed, and options.py must not import any of it.
 
 Usage: python dump-options-schema.py --archipelago <checkout> --world <world dir> --output <json>
 """
