@@ -58,8 +58,8 @@ jobs:
       - name: Pick the version
         id: version
         run: |
-          # Doubles as the launcher's assembly version, hence no leading zeros. The run number keeps a
-          # manual run on the same day from reusing the tag.
+          # Also the launcher's version, without leading zeros so that it reads like its assembly version,
+          # which drops them. The run number keeps a manual run on the same day from reusing the tag.
           "version=$(Get-Date -AsUTC -Format 'yyyy.M.d').$env:GITHUB_RUN_NUMBER" >> $env:GITHUB_OUTPUT
 
       - uses: actions/setup-python@v7
