@@ -315,7 +315,10 @@ function yamlKey(key: string) {
 }
 
 function yamlScalar(value: unknown) {
-	return YAML.stringify(value, { singleQuote: true }).trimEnd();
+	// Kept on one line, as a continuation wouldn't be indented under its key: long values aren't folded,
+	// and line breaks are written the JSON way, which YAML reads
+	const text = YAML.stringify(value, { singleQuote: true, lineWidth: 0 }).trimEnd();
+	return text.includes("\n") ? JSON.stringify(value) : text;
 }
 
 export function toYamlValue(value: unknown): string {
