@@ -11,8 +11,8 @@ public sealed class ServerManager
     readonly AppPaths _paths;
     readonly MySqlService _mySql;
     readonly ConfigService _configs;
-    // Cancelled by every stop: a start still waiting for MySQL or the authserver would otherwise start its
-    // server once the stop is done, which closing the window then leaves running
+    // Cancelled by every stop, restart and kill: a start still waiting for MySQL or the authserver would
+    // otherwise start its server once the stop is done, which closing the window then leaves running
     CancellationTokenSource _startCancellation = new();
 
     public ManagedProcess MySql { get; }
@@ -79,18 +79,29 @@ public sealed class ServerManager
     public async Task StopAsync(string name)
     {
         var process = Get(name);
-        var starts = _startCancellation;
-        _startCancellation = new CancellationTokenSource();
-        starts.Cancel();
+        CancelStarts();
         if (process == MySql)
             await Task.WhenAll(AuthServer.StopAsync(), WorldServer.StopAsync());
         await process.StopAsync();
     }
 
+    /// <summary>Restarts a server. Cancels the starts in progress.</summary>
     public async Task RestartAsync(string name)
     {
-        await Get(name).StopAsync();
-        await StartAsync(name);
+        var process = Get(name);
+        CancelStarts();
+        // Taken before stopping, so that a stop meanwhile also cancels this start
+        var token = _startCancellation.Token;
+        await process.StopAsync();
+        await StartAsync(process, token);
+    }
+
+    /// <summary>Ends a server's process right away. Cancels the starts in progress.</summary>
+    public void Kill(string name)
+    {
+        var process = Get(name);
+        CancelStarts();
+        process.Kill();
     }
 
     public async Task StartAllAsync()
@@ -110,6 +121,13 @@ public sealed class ServerManager
     }
 
     public Task StopAllAsync() => StopAsync(MySql.Name);
+
+    void CancelStarts()
+    {
+        var starts = _startCancellation;
+        _startCancellation = new CancellationTokenSource();
+        starts.Cancel();
+    }
 
     ProcessSpec ServerSpec(string name) => new(_paths.ServerExe(name), [], _paths.ServerBin);
 }

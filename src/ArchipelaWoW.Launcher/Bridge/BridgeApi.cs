@@ -148,7 +148,7 @@ public static partial class BridgeApi
         });
         bridge.Handle<NameParams>("servers.kill", p =>
         {
-            servers.Get(p.Name).Kill();
+            servers.Kill(p.Name);
             return null;
         });
         bridge.HandleAsync("servers.startAll", async () =>
