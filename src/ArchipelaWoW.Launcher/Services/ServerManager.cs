@@ -55,7 +55,7 @@ public sealed class ServerManager
         All.FirstOrDefault(p => p.Name == name) ?? throw new ArgumentException($"Unknown server {name}.");
 
     /// <summary>Starts a server, and MySQL first when the server needs it.</summary>
-    public Task StartAsync(string name) => StartAsync(Get(name), _startCancellation.Token);
+    public Task StartAsync(string name) => IgnoreCancellation(StartAsync(Get(name), _startCancellation.Token));
 
     async Task StartAsync(ManagedProcess process, CancellationToken token)
     {
@@ -95,7 +95,7 @@ public sealed class ServerManager
         // Taken before stopping, so that a stop meanwhile also cancels this start
         var token = _startCancellation.Token;
         await process.StopAsync();
-        await StartAsync(process, token);
+        await IgnoreCancellation(StartAsync(process, token));
     }
 
     /// <summary>Ends a server's process right away. Cancels the starts in progress.</summary>
@@ -106,9 +106,10 @@ public sealed class ServerManager
         process.Kill();
     }
 
-    public async Task StartAllAsync()
+    public Task StartAllAsync() => IgnoreCancellation(StartAllAsync(_startCancellation.Token));
+
+    async Task StartAllAsync(CancellationToken token)
     {
-        var token = _startCancellation.Token;
         await StartAsync(AuthServer, token);
         // Both servers create the login database when it's missing, and would get in each other's way
         try
@@ -139,6 +140,18 @@ public sealed class ServerManager
         if (!_shuttingDown)
             _startCancellation = new CancellationTokenSource();
         starts.Cancel();
+    }
+
+    static async Task IgnoreCancellation(Task start)
+    {
+        try
+        {
+            await start;
+        }
+        catch (OperationCanceledException)
+        {
+            // What a stop asks for, not an error to report
+        }
     }
 
     ProcessSpec ServerSpec(string name) => new(_paths.ServerExe(name), [], _paths.ServerBin);
