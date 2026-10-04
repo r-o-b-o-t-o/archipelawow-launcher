@@ -11,6 +11,9 @@ public sealed class ServerManager
     readonly AppPaths _paths;
     readonly MySqlService _mySql;
     readonly ConfigService _configs;
+    // Cancelled by every stop: a start still waiting for MySQL or the authserver would otherwise start its
+    // server once the stop is done, which closing the window then leaves running
+    CancellationTokenSource _startCancellation = new();
 
     public ManagedProcess MySql { get; }
     public ManagedProcess AuthServer { get; }
@@ -50,9 +53,11 @@ public sealed class ServerManager
         All.FirstOrDefault(p => p.Name == name) ?? throw new ArgumentException($"Unknown server {name}.");
 
     /// <summary>Starts a server, and MySQL first when the server needs it.</summary>
-    public async Task StartAsync(string name)
+    public Task StartAsync(string name) => StartAsync(Get(name), _startCancellation.Token);
+
+    async Task StartAsync(ManagedProcess process, CancellationToken token)
     {
-        var process = Get(name);
+        token.ThrowIfCancellationRequested();
         if (!Directory.Exists(_paths.MySqlDataDir))
             throw new InvalidOperationException("The database isn't set up yet, run the setup first.");
 
@@ -61,18 +66,22 @@ public sealed class ServerManager
             if (!_configs.ConfigsExist)
                 throw new InvalidOperationException("The server configuration files are missing, run the setup first.");
             MySql.Start();
-            await MySql.WaitUntilRunningAsync();
+            await MySql.WaitUntilRunningAsync(token);
             if (process == AuthServer && !AuthServer.IsActive &&
                 _configs.GetDatabaseName("authserver.conf", "LoginDatabaseInfo") is { } loginDatabase)
                 await _mySql.ClearRealmVersionMismatchAsync(loginDatabase);
+            token.ThrowIfCancellationRequested();
         }
         process.Start();
     }
 
-    /// <summary>Stops a server, and first the servers that depend on it.</summary>
+    /// <summary>Stops a server, and first the servers that depend on it. Cancels the starts in progress.</summary>
     public async Task StopAsync(string name)
     {
         var process = Get(name);
+        var starts = _startCancellation;
+        _startCancellation = new CancellationTokenSource();
+        starts.Cancel();
         if (process == MySql)
             await Task.WhenAll(AuthServer.StopAsync(), WorldServer.StopAsync());
         await process.StopAsync();
@@ -86,17 +95,18 @@ public sealed class ServerManager
 
     public async Task StartAllAsync()
     {
-        await StartAsync(AuthServer.Name);
+        var token = _startCancellation.Token;
+        await StartAsync(AuthServer, token);
         // Both servers create the login database when it's missing, and would get in each other's way
         try
         {
-            await AuthServer.WaitUntilRunningAsync();
+            await AuthServer.WaitUntilRunningAsync(token);
         }
         catch (InvalidOperationException)
         {
             // Its output tells why, and the worldserver can run without it
         }
-        await StartAsync(WorldServer.Name);
+        await StartAsync(WorldServer, token);
     }
 
     public Task StopAllAsync() => StopAsync(MySql.Name);
