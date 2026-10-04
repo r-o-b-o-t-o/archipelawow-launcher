@@ -19,6 +19,7 @@ env:
     https://github.com/azerothcore/mod-autobalance
     https://github.com/r-o-b-o-t-o/mod-dungeon-respawn
     https://github.com/azerothcore/mod-solo-lfg
+    https://github.com/azerothcore/mod-transmog
 
   AZEROTHCORE_REPOSITORY: https://github.com/azerothcore/azerothcore-wotlk
   AZEROTHCORE_BRANCH: master
