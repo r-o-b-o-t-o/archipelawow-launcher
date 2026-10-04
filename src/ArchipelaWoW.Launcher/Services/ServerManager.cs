@@ -12,8 +12,10 @@ public sealed class ServerManager
     readonly MySqlService _mySql;
     readonly ConfigService _configs;
     // Cancelled by every stop, restart and kill: a start still waiting for MySQL or the authserver would
-    // otherwise start its server once the stop is done, which closing the window then leaves running
+    // otherwise start its server once the stop is done, which closing the window then leaves running.
+    // Once shutting down, it stays cancelled.
     CancellationTokenSource _startCancellation = new();
+    bool _shuttingDown;
 
     public ManagedProcess MySql { get; }
     public ManagedProcess AuthServer { get; }
@@ -122,10 +124,20 @@ public sealed class ServerManager
 
     public Task StopAllAsync() => StopAsync(MySql.Name);
 
+    /// <summary>
+    /// Stops every server for good, as the launcher quits: cancels the starts in progress and any later one.
+    /// </summary>
+    public Task ShutDownAsync()
+    {
+        _shuttingDown = true;
+        return StopAllAsync();
+    }
+
     void CancelStarts()
     {
         var starts = _startCancellation;
-        _startCancellation = new CancellationTokenSource();
+        if (!_shuttingDown)
+            _startCancellation = new CancellationTokenSource();
         starts.Cancel();
     }
 
