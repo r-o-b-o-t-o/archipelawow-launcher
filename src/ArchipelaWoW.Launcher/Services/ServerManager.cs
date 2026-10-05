@@ -16,7 +16,7 @@ public sealed class ServerManager
     // down, MySQL's stays cancelled, and with it every start, as they all need it.
     readonly Dictionary<ManagedProcess, CancellationTokenSource> _startCancellations;
     bool _shuttingDown;
-    // Authserver starts that have yet to launch it, which a worldserver start waits for
+    // Authserver starts and restarts that have yet to launch it, which a worldserver start waits for
     int _pendingAuthServerStarts;
 
     public ManagedProcess MySql { get; }
@@ -124,8 +124,18 @@ public sealed class ServerManager
         var process = Get(name);
         // Made before stopping, so that stopping this server or MySQL meanwhile cancels the start too
         using var cancellation = StartCancellation(process);
-        await process.StopAsync();
-        await IgnoreCancellation(StartAsync(process, cancellation.Token));
+        if (process == AuthServer)
+            _pendingAuthServerStarts++;
+        try
+        {
+            await process.StopAsync();
+            await IgnoreCancellation(StartAsync(process, cancellation.Token));
+        }
+        finally
+        {
+            if (process == AuthServer)
+                _pendingAuthServerStarts--;
+        }
     }
 
     public async Task StartAllAsync()
