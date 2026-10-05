@@ -88,10 +88,15 @@ public sealed class ServerManager
                     // one exits for lack of a realm; both would also create a missing login database. Clearing the
                     // flag doesn't make up for it, as the worldserver may set it after. The worldserver goes on
                     // whether the authserver then runs or not: it can run without it.
-                    while (process == AuthServer
-                               ? WorldServer.State == ServerState.Starting
-                               : _pendingAuthServerStarts > 0 || AuthServer.State == ServerState.Starting)
-                        await Task.Delay(250, token);
+                    var other = process == AuthServer ? WorldServer : AuthServer;
+                    bool OtherStarting() =>
+                        other.State == ServerState.Starting || (other == AuthServer && _pendingAuthServerStarts > 0);
+                    if (OtherStarting())
+                    {
+                        process.Terminal.WriteNotice($"Waiting for {other.DisplayName} to start...");
+                        while (OtherStarting())
+                            await Task.Delay(250, token);
+                    }
                     // The worldserver launches right after its last check, as an authserver start could begin
                     // unseen during an await; an authserver start counts from its beginning instead
                     if (process == AuthServer &&
