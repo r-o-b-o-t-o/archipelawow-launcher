@@ -78,6 +78,10 @@ public sealed class ServerManager
             if (process == AuthServer && !AuthServer.IsActive &&
                 _configs.GetDatabaseName("authserver.conf", "LoginDatabaseInfo") is { } loginDatabase)
                 await _mySql.ClearRealmVersionMismatchAsync(loginDatabase);
+            // Both servers create the login database when it's missing, and would get in each other's way.
+            // Whether the authserver then runs doesn't matter: the worldserver can run without it.
+            while (process == WorldServer && AuthServer.State == ServerState.Starting)
+                await Task.Delay(250, token);
             token.ThrowIfCancellationRequested();
         }
         process.Start();
@@ -114,23 +118,11 @@ public sealed class ServerManager
 
     public async Task StartAllAsync()
     {
-        using var cancellation = StartCancellation(AuthServer, WorldServer);
-        await IgnoreCancellation(StartAllAsync(cancellation.Token));
-    }
-
-    async Task StartAllAsync(CancellationToken token)
-    {
-        await StartAsync(AuthServer, token);
-        // Both servers create the login database when it's missing, and would get in each other's way
-        try
-        {
-            await AuthServer.WaitUntilRunningAsync(token);
-        }
-        catch (InvalidOperationException)
-        {
-            // Its output tells why, and the worldserver can run without it
-        }
-        await StartAsync(WorldServer, token);
+        // Both made first, so that stopping MySQL meanwhile cancels the worldserver's start too
+        using var authCancellation = StartCancellation(AuthServer);
+        using var worldCancellation = StartCancellation(WorldServer);
+        await IgnoreCancellation(StartAsync(AuthServer, authCancellation.Token));
+        await IgnoreCancellation(StartAsync(WorldServer, worldCancellation.Token));
     }
 
     public Task StopAllAsync() => StopAsync(MySql.Name);
@@ -144,10 +136,10 @@ public sealed class ServerManager
         return StopAllAsync();
     }
 
-    // Cancelled by a stop, restart or kill of one of these servers, or of MySQL, which they all need
-    CancellationTokenSource StartCancellation(params ManagedProcess[] servers) =>
+    // Cancelled by a stop, restart or kill of the server, or of MySQL, which every server needs
+    CancellationTokenSource StartCancellation(ManagedProcess process) =>
         CancellationTokenSource.CreateLinkedTokenSource(
-            servers.Append(MySql).Select(p => _startCancellations[p].Token).ToArray());
+            _startCancellations[process].Token, _startCancellations[MySql].Token);
 
     void CancelStarts(ManagedProcess process)
     {
