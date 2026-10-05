@@ -16,6 +16,10 @@ public sealed class ServerManager
     // down, MySQL's stays cancelled, and with it every start, as they all need it.
     readonly Dictionary<ManagedProcess, CancellationTokenSource> _startCancellations;
     bool _shuttingDown;
+    // Authserver starts that have yet to launch it, which a worldserver start waits for
+    int _pendingAuthServerStarts;
+    // Whether the worldserver's latest start found the login database missing, which it then creates
+    bool _worldServerCreatesLoginDatabase;
 
     public ManagedProcess MySql { get; }
     public ManagedProcess AuthServer { get; }
@@ -69,22 +73,54 @@ public sealed class ServerManager
         if (!Directory.Exists(_paths.MySqlDataDir))
             throw new InvalidOperationException("The database isn't set up yet, run the setup first.");
 
-        if (process != MySql)
+        if (process == AuthServer)
+            _pendingAuthServerStarts++;
+        try
         {
-            if (!_configs.ConfigsExist)
-                throw new InvalidOperationException("The server configuration files are missing, run the setup first.");
-            MySql.Start();
-            await MySql.WaitUntilRunningAsync(token);
-            if (process == AuthServer && !AuthServer.IsActive &&
-                _configs.GetDatabaseName("authserver.conf", "LoginDatabaseInfo") is { } loginDatabase)
-                await _mySql.ClearRealmVersionMismatchAsync(loginDatabase);
-            // Both servers create the login database when it's missing, and would get in each other's way.
-            // Whether the authserver then runs doesn't matter: the worldserver can run without it.
-            while (process == WorldServer && AuthServer.State == ServerState.Starting)
-                await Task.Delay(250, token);
-            token.ThrowIfCancellationRequested();
+            if (process != MySql)
+            {
+                if (!_configs.ConfigsExist)
+                    throw new InvalidOperationException("The server configuration files are missing, run the setup first.");
+                MySql.Start();
+                await MySql.WaitUntilRunningAsync(token);
+                if (process == AuthServer)
+                    await BeforeAuthServerStartAsync(token);
+                else
+                    await BeforeWorldServerStartAsync(token);
+                token.ThrowIfCancellationRequested();
+            }
+            process.Start();
         }
-        process.Start();
+        finally
+        {
+            if (process == AuthServer)
+                _pendingAuthServerStarts--;
+        }
+    }
+
+    async Task BeforeAuthServerStartAsync(CancellationToken token)
+    {
+        if (AuthServer.IsActive ||
+            _configs.GetDatabaseName("authserver.conf", "LoginDatabaseInfo") is not { } loginDatabase)
+            return;
+        // Both servers create the login database when it's missing, and would get in each other's way
+        while (WorldServer.State == ServerState.Starting && _worldServerCreatesLoginDatabase)
+            await Task.Delay(250, token);
+        await _mySql.ClearRealmVersionMismatchAsync(loginDatabase);
+    }
+
+    async Task BeforeWorldServerStartAsync(CancellationToken token)
+    {
+        var loginDatabase = _configs.GetDatabaseName("worldserver.conf", "LoginDatabaseInfo");
+        // Queried before waiting rather than after, so that no authserver start launches between the wait and
+        // the worldserver's launch
+        var createsLoginDatabase = loginDatabase != null && !await _mySql.DatabaseExistsAsync(loginDatabase);
+        // Until it's started, a worldserver flags its realm "version mismatch", which hides it from an authserver
+        // loading the realms meanwhile, and that one exits for lack of a realm; both would also create a missing
+        // login database. Whether the authserver then runs doesn't matter: the worldserver can run without it.
+        while (_pendingAuthServerStarts > 0 || AuthServer.State == ServerState.Starting)
+            await Task.Delay(250, token);
+        _worldServerCreatesLoginDatabase = createsLoginDatabase;
     }
 
     /// <summary>Stops a server, and first the servers that depend on it. Cancels the starts that need it.</summary>
