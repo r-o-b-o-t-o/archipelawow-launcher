@@ -22,6 +22,9 @@ public sealed class ManagedProcess(
     readonly object _lock = new();
     PtyProcess? _pty;
     bool _stopRequested;
+    // From an exit with RestartExitCode until the restart: a stop in between cancels it, which closing the
+    // window would otherwise leave running
+    bool _restartPending;
     short _columns = 120, _rows = 30;
 
     public string Name { get; } = name;
@@ -43,14 +46,17 @@ public sealed class ManagedProcess(
     /// <summary>Raised on any thread.</summary>
     public event Action? StateChanged;
 
-    public void Start()
+    public void Start() => Start(restart: false);
+
+    void Start(bool restart)
     {
         PtyProcess pty;
         bool portTaken;
         lock (_lock)
         {
-            if (IsActive)
+            if (IsActive || restart && !_restartPending)
                 return;
+            _restartPending = false;
 
             var processSpec = spec();
             Terminal.WriteNotice($"Starting {DisplayName}...");
@@ -88,6 +94,7 @@ public sealed class ManagedProcess(
         bool alreadyStopping;
         lock (_lock)
         {
+            _restartPending = false;
             if (!IsActive || _pty == null)
                 return;
             pty = _pty;
@@ -176,6 +183,7 @@ public sealed class ManagedProcess(
             _pty = null;
             ExitCode = exitCode;
             restart = !_stopRequested && exitCode == RestartExitCode;
+            _restartPending = restart;
             State = _stopRequested || exitCode == 0 || restart ? ServerState.Stopped : ServerState.Crashed;
         }
         pty.Dispose();
@@ -186,7 +194,7 @@ public sealed class ManagedProcess(
         {
             try
             {
-                Start();
+                Start(restart: true);
             }
             catch (Exception ex)
             {
