@@ -81,10 +81,23 @@ public sealed class ServerManager
                     throw new InvalidOperationException("The server configuration files are missing, run the setup first.");
                 MySql.Start();
                 await MySql.WaitUntilRunningAsync(token);
-                if (process == AuthServer)
-                    await BeforeAuthServerStartAsync(token);
-                else
-                    await BeforeWorldServerStartAsync(token);
+                if (!process.IsActive)
+                {
+                    // From when it has set up its databases until it's started, a worldserver flags its realm
+                    // "version mismatch", which hides it from an authserver loading the realms meanwhile, and that
+                    // one exits for lack of a realm; both would also create a missing login database. Clearing the
+                    // flag doesn't make up for it, as the worldserver may set it after. The worldserver goes on
+                    // whether the authserver then runs or not: it can run without it.
+                    while (process == AuthServer
+                               ? WorldServer.State == ServerState.Starting
+                               : _pendingAuthServerStarts > 0 || AuthServer.State == ServerState.Starting)
+                        await Task.Delay(250, token);
+                    // The worldserver launches right after its last check, as an authserver start could begin
+                    // unseen during an await; an authserver start counts from its beginning instead
+                    if (process == AuthServer &&
+                        _configs.GetDatabaseName("authserver.conf", "LoginDatabaseInfo") is { } loginDatabase)
+                        await _mySql.ClearRealmVersionMismatchAsync(loginDatabase);
+                }
                 token.ThrowIfCancellationRequested();
             }
             process.Start();
@@ -94,28 +107,6 @@ public sealed class ServerManager
             if (process == AuthServer)
                 _pendingAuthServerStarts--;
         }
-    }
-
-    async Task BeforeAuthServerStartAsync(CancellationToken token)
-    {
-        if (AuthServer.IsActive)
-            return;
-        // See BeforeWorldServerStartAsync. Clearing the flag doesn't make up for it: the worldserver only sets
-        // it once its databases are set up, which can come after.
-        while (WorldServer.State == ServerState.Starting)
-            await Task.Delay(250, token);
-        if (_configs.GetDatabaseName("authserver.conf", "LoginDatabaseInfo") is { } loginDatabase)
-            await _mySql.ClearRealmVersionMismatchAsync(loginDatabase);
-    }
-
-    async Task BeforeWorldServerStartAsync(CancellationToken token)
-    {
-        // From when it has set up its databases until it's started, a worldserver flags its realm "version
-        // mismatch", which hides it from an authserver loading the realms meanwhile, and that one exits for lack
-        // of a realm; both would also create a missing login database. Whether the authserver then runs doesn't
-        // matter: the worldserver can run without it.
-        while (_pendingAuthServerStarts > 0 || AuthServer.State == ServerState.Starting)
-            await Task.Delay(250, token);
     }
 
     /// <summary>Stops a server, and first the servers that depend on it. Cancels the starts that need it.</summary>
