@@ -88,6 +88,8 @@ public sealed class ManagedProcess(
         _ = pty.Exited.ContinueWith(t => OnExited(pty, t.Result), TaskScheduler.Default);
     }
 
+    // Handles the exit itself before returning, as Start's continuation may not have yet: a restart would
+    // otherwise find the process still stopping and not start it
     public async Task StopAsync()
     {
         PtyProcess pty;
@@ -106,7 +108,7 @@ public sealed class ManagedProcess(
         // down, and falling back to Ctrl+C then cuts MySQL's shutdown short
         if (alreadyStopping)
         {
-            await pty.Exited;
+            OnExited(pty, await pty.Exited);
             return;
         }
         StateChanged?.Invoke();
@@ -119,7 +121,7 @@ public sealed class ManagedProcess(
             Terminal.WriteNotice($"{DisplayName} did not stop within {stopTimeout.TotalSeconds:0} seconds, killing it.");
             pty.Kill();
         }
-        await pty.Exited;
+        OnExited(pty, await pty.Exited);
     }
 
     public void Kill()
