@@ -11,9 +11,9 @@ public sealed class ServerManager
     readonly AppPaths _paths;
     readonly MySqlService _mySql;
     readonly ConfigService _configs;
-    // Per server, cancelled and replaced by its stop, restart and kill: a start still waiting for MySQL or
-    // the authserver would otherwise start it once the stop is done, which closing the window then leaves
-    // running. Once shutting down, MySQL's stays cancelled, and with it every start, as they all need it.
+    // Per server, cancelled and replaced by its stop: a start still waiting for MySQL or the authserver would
+    // otherwise start it once the stop is done, which closing the window then leaves running. Once shutting
+    // down, MySQL's stays cancelled, and with it every start, as they all need it.
     readonly Dictionary<ManagedProcess, CancellationTokenSource> _startCancellations;
     bool _shuttingDown;
 
@@ -97,23 +97,13 @@ public sealed class ServerManager
         await process.StopAsync();
     }
 
-    /// <summary>Restarts a server. Cancels the starts that need it.</summary>
     public async Task RestartAsync(string name)
     {
         var process = Get(name);
-        CancelStarts(process);
-        // Made before stopping, so that a stop meanwhile also cancels this start
+        // Made before stopping, so that stopping this server or MySQL meanwhile cancels the start too
         using var cancellation = StartCancellation(process);
         await process.StopAsync();
         await IgnoreCancellation(StartAsync(process, cancellation.Token));
-    }
-
-    /// <summary>Ends a server's process right away. Cancels the starts that need it.</summary>
-    public void Kill(string name)
-    {
-        var process = Get(name);
-        CancelStarts(process);
-        process.Kill();
     }
 
     public async Task StartAllAsync()
@@ -136,7 +126,7 @@ public sealed class ServerManager
         return StopAllAsync();
     }
 
-    // Cancelled by a stop, restart or kill of the server, or of MySQL, which every server needs
+    // Cancelled by a stop of the server, or of MySQL, which every server needs
     CancellationTokenSource StartCancellation(ManagedProcess process) =>
         CancellationTokenSource.CreateLinkedTokenSource(
             _startCancellations[process].Token, _startCancellations[MySql].Token);
