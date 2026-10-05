@@ -47,10 +47,6 @@ public sealed class MySqlService(AppPaths paths, SettingsStore settings)
         }
     }
 
-    /// <summary>Whether the server has a database of that name, which must be safe to put in a query.</summary>
-    public async Task<bool> DatabaseExistsAsync(string database) =>
-        (await QueryAsync($"SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME = '{database}'")).Trim() != "0";
-
     /// <summary>Whether the login database has an account of that name, which must be safe to put in a query.</summary>
     public async Task<bool> AccountExistsAsync(string loginDatabase, string username) =>
         (await QueryAsync($"SELECT COUNT(*) FROM `{loginDatabase}`.account WHERE username = '{username}'")).Trim() != "0";

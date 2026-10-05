@@ -18,8 +18,6 @@ public sealed class ServerManager
     bool _shuttingDown;
     // Authserver starts that have yet to launch it, which a worldserver start waits for
     int _pendingAuthServerStarts;
-    // Whether the worldserver's latest start found the login database missing, which it then creates
-    bool _worldServerCreatesLoginDatabase;
 
     public ManagedProcess MySql { get; }
     public ManagedProcess AuthServer { get; }
@@ -100,27 +98,24 @@ public sealed class ServerManager
 
     async Task BeforeAuthServerStartAsync(CancellationToken token)
     {
-        if (AuthServer.IsActive ||
-            _configs.GetDatabaseName("authserver.conf", "LoginDatabaseInfo") is not { } loginDatabase)
+        if (AuthServer.IsActive)
             return;
-        // Both servers create the login database when it's missing, and would get in each other's way
-        while (WorldServer.State == ServerState.Starting && _worldServerCreatesLoginDatabase)
+        // See BeforeWorldServerStartAsync. Clearing the flag doesn't make up for it: the worldserver only sets
+        // it once its databases are set up, which can come after.
+        while (WorldServer.State == ServerState.Starting)
             await Task.Delay(250, token);
-        await _mySql.ClearRealmVersionMismatchAsync(loginDatabase);
+        if (_configs.GetDatabaseName("authserver.conf", "LoginDatabaseInfo") is { } loginDatabase)
+            await _mySql.ClearRealmVersionMismatchAsync(loginDatabase);
     }
 
     async Task BeforeWorldServerStartAsync(CancellationToken token)
     {
-        var loginDatabase = _configs.GetDatabaseName("worldserver.conf", "LoginDatabaseInfo");
-        // Queried before waiting rather than after, so that no authserver start launches between the wait and
-        // the worldserver's launch
-        var createsLoginDatabase = loginDatabase != null && !await _mySql.DatabaseExistsAsync(loginDatabase);
-        // Until it's started, a worldserver flags its realm "version mismatch", which hides it from an authserver
-        // loading the realms meanwhile, and that one exits for lack of a realm; both would also create a missing
-        // login database. Whether the authserver then runs doesn't matter: the worldserver can run without it.
+        // From when it has set up its databases until it's started, a worldserver flags its realm "version
+        // mismatch", which hides it from an authserver loading the realms meanwhile, and that one exits for lack
+        // of a realm; both would also create a missing login database. Whether the authserver then runs doesn't
+        // matter: the worldserver can run without it.
         while (_pendingAuthServerStarts > 0 || AuthServer.State == ServerState.Starting)
             await Task.Delay(250, token);
-        _worldServerCreatesLoginDatabase = createsLoginDatabase;
     }
 
     /// <summary>Stops a server, and first the servers that depend on it. Cancels the starts that need it.</summary>
