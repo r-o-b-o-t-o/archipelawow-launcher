@@ -67,9 +67,6 @@ bundle it with a prebuilt AzerothCore, the ArchipelaWoW modules and MySQL as a p
   screenshot the UI over the Chrome DevTools Protocol.
 - Check player options changes by generating a seed from a saved YAML with Archipelago's
   `Generate.py`.
-- `scripts/package.ps1` has to stay runnable under Windows PowerShell 5.1 for local runs; against a
-  Debug core build, its dependency check fails on the debug C runtime, as expected.
-- The workflow only runs on GitHub: at least parse its `run:` blocks with PowerShell.
 
 ## Commits
 

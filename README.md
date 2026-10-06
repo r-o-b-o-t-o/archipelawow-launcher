@@ -60,19 +60,7 @@ and the password `acore`, for tools such as HeidiSQL or Keira3.
 
 ## 📦 Releases
 
-[`repack.yml`](.github/workflows/repack.yml) builds a release every Saturday at 06:45 (Paris time), and
-on demand from the Actions tab. It builds the latest AzerothCore with the modules listed at the top of
-the workflow, bundles MySQL and the launcher, publishes the archive, and deletes all but the latest
-three releases it made.
-
-To add a module, add its repository to `MODULES`, optionally followed by a branch or tag.
-
-The player options editor follows the latest release of the apworld, whose options the workflow turns
-into a schema with [`scripts/dump-options-schema.py`](scripts/dump-options-schema.py). When that fails,
-so does the release.
-
-To be told on Discord when a release fails, add a `DISCORD_WEBHOOK_URL` repository secret holding the
-URL of a channel's webhook.
+The server is built by [archipelawow-repack](https://github.com/r-o-b-o-t-o/archipelawow-repack).
 
 ## 🛠️ Development
 
@@ -115,5 +103,3 @@ dotnet publish ArchipelaWoW.Launcher -c Release -o publish
 - The interface is formatted with Prettier: `npm run format` in `ui`.
 - The values written into the server configuration on first launch are in
   [`config-defaults.json`](ArchipelaWoW.Launcher/Resources/config-defaults.json).
-- [`scripts/package.ps1`](scripts/package.ps1) assembles the portable folder from a built core, MySQL
-  and the launcher, as the workflow does.
