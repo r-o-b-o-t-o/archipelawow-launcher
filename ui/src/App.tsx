@@ -5,7 +5,7 @@ import { serverStates } from "./components/ServerCard";
 import { Dot, Spinner } from "./components/ui";
 import { api } from "./lib/api";
 import { inLauncher } from "./lib/bridge";
-import { appInfo, initStore, servers, shuttingDown, task } from "./lib/store";
+import { appInfo, initStore, launcherUpdate, servers, shuttingDown, task } from "./lib/store";
 import { dismissToast, errorMessage, toast, toasts } from "./lib/toast";
 
 export default function App(props: RouteSectionProps) {
@@ -93,7 +93,14 @@ function Sidebar() {
 						</div>
 					)}
 				</Show>
-				<div class="mt-2 text-[11px] text-zinc-600">Version {appInfo()?.version}</div>
+				<div class="mt-2 flex items-center gap-2 text-[11px] text-zinc-600">
+					Version {appInfo()?.version}
+					<Show when={launcherUpdate()?.version}>
+						<A href="/settings" class="text-gold hover:underline">
+							Update available
+						</A>
+					</Show>
+				</div>
 			</div>
 		</nav>
 	);

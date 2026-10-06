@@ -19,7 +19,7 @@ public partial class App : Application
         base.OnStartup(e);
 
         // --root and --dev-server are for development: the installation folder to manage (normally
-        // the executable's), and a Vite dev server to load the UI from instead of the embedded one
+        // LauncherUpdater.DefaultRoot), and a Vite dev server to load the UI from instead of the embedded one
         string? root = null, devServer = null;
         for (var i = 0; i < e.Args.Length - 1; i++)
         {
@@ -28,7 +28,7 @@ public partial class App : Application
             else if (e.Args[i] == "--dev-server")
                 devServer = e.Args[++i];
         }
-        root ??= Environment.GetEnvironmentVariable("ARCHIPELAWOW_ROOT") ?? Path.GetDirectoryName(Environment.ProcessPath)!;
+        root ??= Environment.GetEnvironmentVariable("ARCHIPELAWOW_ROOT") ?? LauncherUpdater.DefaultRoot();
         devServer ??= Environment.GetEnvironmentVariable("ARCHIPELAWOW_DEV_SERVER");
         var paths = new AppPaths(root);
 
@@ -81,6 +81,8 @@ public partial class App : Application
     protected override void OnExit(ExitEventArgs e)
     {
         _services?.Dispose();
+        // Once the servers are stopped, and only by the instance that runs them
+        _services?.LauncherUpdater.ApplyOnExit();
         _instanceMutex?.Dispose();
         base.OnExit(e);
     }

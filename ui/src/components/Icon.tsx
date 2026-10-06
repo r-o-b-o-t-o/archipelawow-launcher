@@ -15,6 +15,7 @@ import Package from "lucide-solid/icons/package";
 import Play from "lucide-solid/icons/play";
 import Plus from "lucide-solid/icons/plus";
 import RefreshCw from "lucide-solid/icons/refresh-cw";
+import Rocket from "lucide-solid/icons/rocket";
 import RotateCw from "lucide-solid/icons/rotate-cw";
 import Save from "lucide-solid/icons/save";
 import Scale from "lucide-solid/icons/scale";
@@ -65,6 +66,7 @@ const icons = {
 	package: Package,
 	eraser: Eraser,
 	server: Server,
+	rocket: Rocket,
 };
 
 export type IconName = keyof typeof icons;

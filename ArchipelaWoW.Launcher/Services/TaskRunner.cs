@@ -6,7 +6,7 @@ public sealed record TaskInfo(string Title, string Stage, double? Progress, stri
 
 /// <summary>
 /// Runs one long operation at a time (installing, updating or deleting the server, database setup, client
-/// data download or extraction). Tools it starts print to the shared "tasks" terminal.
+/// data download or extraction, launcher update download). Tools it starts print to the shared "tasks" terminal.
 /// </summary>
 public sealed class TaskRunner(string logDirectory) : ITerminalHost
 {

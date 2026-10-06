@@ -137,6 +137,24 @@ A Release build embeds the interface, building it first:
 dotnet publish ArchipelaWoW.Launcher -c Release -o publish
 ```
 
+To try an update out, with `vpk` (`dotnet tool install --global vpk --version <the Velopack package's
+version>`):
+
+1. Publish and pack a version with the commands below, then extract its portable archive,
+   `releases\ArchipelaWoW.Launcher-win-Portable.zip`, out of `releases`: packing another version
+   replaces it.
+2. Publish and pack a newer version the same way, into the same `releases`.
+3. Start the extracted launcher with `ARCHIPELAWOW_UPDATE_FEED` set to the full path of `releases`, and
+   update it from the settings.
+
+```bash
+dotnet publish ArchipelaWoW.Launcher -c Release -o publish -p:Version=1.2.3
+```
+
+```bash
+vpk pack --packId ArchipelaWoW.Launcher --packVersion 1.2.3 --packDir publish --mainExe ArchipelaWoW.Launcher.exe --packTitle "ArchipelaWoW Launcher" --runtime win-x64 --outputDir releases
+```
+
 - The interface is formatted with Prettier: `npm run format` in `ui`.
 - The values written into the server configuration on first launch are in
   [`config-defaults.json`](ArchipelaWoW.Launcher/Resources/config-defaults.json).

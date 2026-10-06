@@ -18,6 +18,7 @@ public partial class MainWindow : Window
     BridgeHost? _bridge;
     bool _shuttingDown;
     bool _readyToClose;
+    bool _confirmingClose;
 
     /// <summary>Set by the page while it holds edits that closing the window would lose.</summary>
     public bool HasUnsavedChanges { get; set; }
@@ -113,22 +114,30 @@ public partial class MainWindow : Window
             return;
         }
 
+        var updater = _services.LauncherUpdater;
+        var quit = updater.RestartOnExit ? "restart to update" : "quit";
         var task = _services.Tasks.Current;
         if (!_services.Servers.AnyActive && task == null)
         {
-            if (HasUnsavedChanges && !Confirm("Discard the unsaved changes and quit?"))
+            if (HasUnsavedChanges && !Confirm($"Discard the unsaved changes and {quit}?"))
+            {
                 e.Cancel = true;
+                updater.RestartOnExit = false;
+            }
             return;
         }
 
         e.Cancel = true;
         var message = task != null
-            ? $"\"{task.Title}\" is still running. Cancel it, stop the servers and quit?"
-            : "The servers are still running. Stop them and quit?";
+            ? $"\"{task.Title}\" is still running. Cancel it, stop the servers and {quit}?"
+            : $"The servers are still running. Stop them and {quit}?";
         if (HasUnsavedChanges)
             message += "\n\nThe unsaved changes will be lost.";
         if (!Confirm(message))
+        {
+            updater.RestartOnExit = false;
             return;
+        }
 
         _shuttingDown = true;
         _bridge?.Emit("app.shuttingDown", null);
@@ -147,8 +156,29 @@ public partial class MainWindow : Window
         Close();
     }
 
-    bool Confirm(string message) =>
-        MessageBox.Show(this, message, App.ProductName, MessageBoxButton.OKCancel, MessageBoxImage.Question) == MessageBoxResult.OK;
+    /// <summary>Quits as closing the window does, asking first if need be, then restarts into the downloaded update.</summary>
+    public void RestartToUpdate()
+    {
+        // Not while the window is closing already, on the user's choice: Close() would throw then
+        if (_confirmingClose || _shuttingDown)
+            return;
+        _services.LauncherUpdater.RestartOnExit = true;
+        Close();
+    }
+
+    bool Confirm(string message)
+    {
+        // Within the Closing event, whose dialog lets queued work such as RestartToUpdate run
+        _confirmingClose = true;
+        try
+        {
+            return MessageBox.Show(this, message, App.ProductName, MessageBoxButton.OKCancel, MessageBoxImage.Question) == MessageBoxResult.OK;
+        }
+        finally
+        {
+            _confirmingClose = false;
+        }
+    }
 
     void OnContextMenuRequested(object? sender, CoreWebView2ContextMenuRequestedEventArgs e)
     {

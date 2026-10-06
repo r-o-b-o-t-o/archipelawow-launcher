@@ -6,6 +6,8 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
+    <!-- Program.Main runs Velopack before WPF starts -->
+    <StartupObject>ArchipelaWoW.Launcher.Program</StartupObject>
     <AssemblyName>ArchipelaWoW.Launcher</AssemblyName>
     <ApplicationIcon>Assets\app.ico</ApplicationIcon>
     <ApplicationManifest>app.manifest</ApplicationManifest>
@@ -17,16 +19,17 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <!-- Not a single file: Velopack keeps the launcher out of sight in current\, and its delta packages hold only the files
+         an update changes. A portable launcher downloads one full package first, as its archive has none. -->
     <SelfContained>true</SelfContained>
-    <PublishSingleFile>true</PublishSingleFile>
-    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
-    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
     <DebugType>none</DebugType>
     <PublishReferencesDocumentationFiles>false</PublishReferencesDocumentationFiles>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4258.31" GeneratePathProperty="true" />
+    <!-- The release workflow packs the launcher with the vpk of the same version -->
+    <PackageReference Include="Velopack" Version="1.2.161" />
   </ItemGroup>
 
   <ItemGroup>
@@ -59,6 +62,9 @@
       <LicenseFile Include="@(_NetCoreRuntimePack->'%(PackageDirectory)\THIRD-PARTY-NOTICES.TXT')" Name="Microsoft .NET third-party notices.txt" />
       <LicenseFile Include="$(PkgMicrosoft_Web_WebView2)\LICENSE.txt" Name="WebView2 SDK.txt" />
       <LicenseFile Include="$(PkgMicrosoft_Web_WebView2)\NOTICE.txt" Name="WebView2 SDK notices.txt" />
+      <!-- Its package has no license file. Also Velopack's: the Update.exe and the stub that vpk adds, though not the Rust
+           crates built into them, whose notices Velopack doesn't publish. -->
+      <LicenseFile Include="Licenses\Velopack.txt" Name="Velopack.txt" />
       <LicenseFile Include="$(UiDir)\dist\.vite\license.md" Name="Launcher interface.md" />
     </ItemGroup>
     <Copy SourceFiles="@(LicenseFile)" DestinationFiles="@(LicenseFile->'$(PublishDir)licenses\%(Name)')" />

@@ -11,6 +11,7 @@ public sealed class AppServices : IDisposable
     public RepackService Repack { get; }
     public ClientDataService ClientData { get; }
     public PlayerFilesService Players { get; }
+    public LauncherUpdater LauncherUpdater { get; } = new();
     public HttpClient Http { get; }
 
     public AppServices(AppPaths paths)

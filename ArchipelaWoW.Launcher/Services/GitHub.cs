@@ -10,7 +10,10 @@ public sealed record GitHubRelease(string Tag, DateTimeOffset PublishedAt, IRead
 
 public static class GitHub
 {
-    // GitHub answers 60 lookups an hour without signing in, and each visit to the setup or the settings makes two
+    public const string RateLimitedMessage = "GitHub refuses more lookups for now, try again in an hour.";
+
+    // GitHub answers 60 lookups an hour without signing in, and each visit to the setup makes two, to the settings three
+    // with LauncherUpdater's
     static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(10);
     static readonly ConcurrentDictionary<string, (DateTimeOffset At, GitHubRelease Release)> LatestReleases = new();
 
@@ -26,7 +29,7 @@ public static class GitHub
         if (response.StatusCode == HttpStatusCode.NotFound)
             throw new InvalidOperationException($"{repository} has no release yet.");
         if (response.StatusCode is HttpStatusCode.Forbidden or HttpStatusCode.TooManyRequests)
-            throw new InvalidOperationException("GitHub refuses more lookups for now, try again in an hour.");
+            throw new InvalidOperationException(RateLimitedMessage);
         response.EnsureSuccessStatusCode();
         using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync(timeout.Token));
         var release = document.RootElement;

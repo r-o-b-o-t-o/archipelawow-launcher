@@ -37,7 +37,18 @@ export interface ServerManifest {
 export interface AppInfo {
 	version: string;
 	root: string;
+	/** Whether the setup installed the launcher, which then keeps its data in %LocalAppData%\ArchipelaWoW. */
+	installedBySetup: boolean;
 	windowsBuild: number;
+}
+
+export interface LauncherUpdate {
+	/** False when the launcher wasn't installed from a release, by its setup or portable archive. */
+	supported: boolean;
+	/** The newer release, if any. */
+	version: string | null;
+	/** Whether that release is downloaded, for the launcher to apply when it quits. */
+	downloaded: boolean;
 }
 
 export interface Settings {
@@ -103,6 +114,11 @@ export const api = {
 		openPath: (target: FolderTarget) => call("app.openPath", { target }),
 		openUrl: (url: string) => call("app.openUrl", { url }),
 		setUnsavedChanges: (unsaved: boolean) => call("app.setUnsavedChanges", { unsaved }),
+	},
+	launcher: {
+		checkForUpdate: () => call<LauncherUpdate>("launcher.checkForUpdate"),
+		/** Downloads the update, then quits as closing the window does, asking first if need be, and restarts into it. */
+		update: () => call("launcher.update"),
 	},
 	settings: {
 		get: () => call<Settings>("settings.get"),

@@ -1,4 +1,4 @@
-import { createEffect, createResource, createSignal, For, on, Show } from "solid-js";
+import { createEffect, createResource, createSignal, For, on, onMount, Show } from "solid-js";
 import ClientDataPanel from "../components/ClientDataPanel";
 import ServerPanel from "../components/ServerPanel";
 import TaskPanel from "../components/TaskPanel";
@@ -6,7 +6,16 @@ import { Button, Card, Code, Field, inputBase, PageHeader, Select, Switch, TextI
 import { api, type FolderTarget, type SetupStatus } from "../lib/api";
 import { formatDate } from "../lib/format";
 import { schema } from "../lib/playerOptions";
-import { appInfo, serverRevision, servers, isActive } from "../lib/store";
+import {
+	appInfo,
+	checkLauncherUpdate,
+	isActive,
+	launcherUpdate,
+	launcherUpdateError,
+	serverRevision,
+	servers,
+	task,
+} from "../lib/store";
 import { attempt, toast } from "../lib/toast";
 import { guardUnsaved } from "../lib/unsaved";
 
@@ -30,6 +39,7 @@ export default function Settings() {
 				<div class="mx-auto flex max-w-5xl flex-col gap-5 p-6">
 					<TaskPanel />
 					<General />
+					<Launcher />
 					<Card title="Server" icon="server">
 						<ServerPanel status={setup()} />
 					</Card>
@@ -101,6 +111,59 @@ function General() {
 					The database only accepts connections from this computer, with the user <Code>acore</Code> and
 					password <Code>acore</Code>, e.g. from HeidiSQL or Keira3.
 				</p>
+			</div>
+		</Card>
+	);
+}
+
+function Launcher() {
+	const [busy, setBusy] = createSignal(false);
+	onMount(checkLauncherUpdate);
+
+	const install = async () => {
+		setBusy(true);
+		await attempt(api.launcher.update);
+		setBusy(false);
+		// Still open when quitting was cancelled, with the update downloaded
+		void checkLauncherUpdate();
+	};
+
+	const status = () => {
+		const [current, error] = [launcherUpdate(), launcherUpdateError()];
+		if (error) return `Couldn't look for updates: ${error}`;
+		if (!current) return "Looking for updates...";
+		if (!current.version) return "The launcher is up to date.";
+		return current.downloaded ? `Version ${current.version} is downloaded.` : `Version ${current.version} is out.`;
+	};
+
+	return (
+		<Card title="Launcher" icon="rocket">
+			<div class="flex flex-col gap-3 text-[13px]">
+				<span class="text-zinc-200">Version {appInfo()?.version}</span>
+				<Show
+					when={launcherUpdate()?.supported !== false}
+					fallback={
+						<p class="text-xs text-zinc-500">
+							Only a launcher installed by the setup or the portable archive of a release updates itself.
+						</p>
+					}
+				>
+					<p class="text-xs text-zinc-500">{status()}</p>
+					<Show when={launcherUpdate()?.version}>
+						<div class="flex items-center gap-3">
+							<Button
+								variant="primary"
+								icon="download"
+								busy={busy()}
+								disabled={task() !== null}
+								onClick={install}
+							>
+								{launcherUpdate()?.downloaded ? "Restart to update" : "Update and restart"}
+							</Button>
+							<span class="text-xs text-zinc-500">The servers stop while the launcher restarts.</span>
+						</div>
+					</Show>
+				</Show>
 			</div>
 		</Card>
 	);

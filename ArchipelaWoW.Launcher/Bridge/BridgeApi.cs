@@ -37,6 +37,7 @@ public static partial class BridgeApi
         {
             Version = Version(),
             paths.Root,
+            InstalledBySetup = services.LauncherUpdater.IsInstalledBySetup,
             WindowsBuild = Environment.OSVersion.Version.Build,
         });
         bridge.Handle<TargetParams>("app.openPath", p =>
@@ -66,6 +67,16 @@ public static partial class BridgeApi
         bridge.Handle<UnsavedChangesParams>("app.setUnsavedChanges", p =>
         {
             owner.HasUnsavedChanges = p.Unsaved;
+            return null;
+        });
+
+        // Launcher updates
+        bridge.HandleAsync("launcher.checkForUpdate", async () => await services.LauncherUpdater.CheckAsync());
+        bridge.HandleAsync("launcher.update", async () =>
+        {
+            await tasks.RunAsync("Updating the launcher", (task, token) => services.LauncherUpdater.DownloadAsync(task, token));
+            // Once this call is answered: closing may ask about the servers, and waits for them
+            _ = owner.Dispatcher.InvokeAsync(owner.RestartToUpdate);
             return null;
         });
 

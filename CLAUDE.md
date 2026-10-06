@@ -53,6 +53,16 @@ from `archipelawow-repack` releases; `README.md` covers the layout and developme
 - ConPTY rewrites the last character of a wrapped line after moving the cursor, doubling it in the
   escape-stripped logs of `launcher/logs`: known, cosmetic.
 
+## Updating the launcher
+
+- Velopack replaces `current\` (the launcher), `Update.exe` and the exe that starts the launcher, and
+  leaves the data alone. Applying an update first kills whatever runs from the installation folder, the
+  servers of a portable launcher included: `LauncherUpdater` only applies one when the launcher restarts
+  to update, once it has stopped the servers. Never silently on quit: a launcher started again meanwhile
+  would be killed, with the servers it starts.
+- Velopack's uninstaller, and its setup run over an installation, empty the setup's installation folder:
+  the setup's launcher keeps its data in `%LocalAppData%\ArchipelaWoW` (`LauncherUpdater.DefaultRoot`).
+
 ## Verifying changes
 
 - No test suite: run the launcher on a real installation (`subst` a drive letter onto it if its path
@@ -67,6 +77,9 @@ from `archipelawow-repack` releases; `README.md` covers the layout and developme
   screenshot the UI over the Chrome DevTools Protocol.
 - Check player options changes by generating a seed from a saved YAML with Archipelago's
   `Generate.py`.
+- Check launcher update changes on a portable build updating from a local feed
+  (`ARCHIPELAWOW_UPDATE_FEED`, see the README), not on a setup install: it adds shortcuts and an
+  installed app.
 - The workflows only run on GitHub: at least parse their `run:` blocks with PowerShell.
 
 ## Commits
