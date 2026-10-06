@@ -142,13 +142,23 @@ public sealed partial class RepackService(AppPaths paths, SettingsStore settings
             throw new InvalidOperationException("Stop the servers first, they keep their files open.");
     }
 
+    // Links, such as the junctions of a development installation, go without what they point to. Directory.Delete
+    // alone does that too, but throws on the junctions it finds inside when not elevated.
     static void DeleteDirectory(string directory)
     {
-        if (Directory.Exists(directory))
-            Directory.Delete(directory, recursive: true);
+        var info = new DirectoryInfo(directory);
+        if (!info.Exists)
+            return;
+        if (info.LinkTarget == null)
+        {
+            foreach (var child in info.EnumerateDirectories())
+                DeleteDirectory(child.FullName);
+        }
+        info.Delete(recursive: true);
     }
 
-    // Merges a directory into another, replacing the files they share
+    // Merges a directory into another, replacing the files they share. A link in the way is replaced rather than
+    // written through.
     static void MoveInto(string source, string destination)
     {
         Directory.CreateDirectory(destination);
@@ -157,6 +167,8 @@ public sealed partial class RepackService(AppPaths paths, SettingsStore settings
         foreach (var directory in Directory.EnumerateDirectories(source))
         {
             var target = Path.Combine(destination, Path.GetFileName(directory));
+            if (new DirectoryInfo(target).LinkTarget != null)
+                Directory.Delete(target);
             if (Directory.Exists(target))
                 MoveInto(directory, target);
             else
