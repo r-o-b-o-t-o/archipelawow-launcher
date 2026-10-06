@@ -1,9 +1,20 @@
 import { createResource, createSignal, Show } from "solid-js";
 import { api, type SetupStatus } from "../lib/api";
 import { formatBytes, formatDate } from "../lib/format";
+import { loaded } from "../lib/resource";
 import { isActive, serverChanged, servers, task } from "../lib/store";
 import { attempt, errorMessage } from "../lib/toast";
 import { Badge, Button, Callout, Field, Select } from "./ui";
+
+// Release versions are numbers joined by dots, e.g. 2026.10.6.12
+function compareVersions(a: string, b: string) {
+	const [x, y] = [a.split(".").map(Number), b.split(".").map(Number)];
+	for (let i = 0; i < Math.max(x.length, y.length); i++) {
+		const difference = (x[i] ?? 0) - (y[i] ?? 0);
+		if (difference !== 0) return difference;
+	}
+	return 0;
+}
 
 /** Installs the server from the latest archipelawow-repack release, updates it, or deletes it. */
 export default function ServerPanel(props: { status: SetupStatus | undefined }) {
@@ -11,24 +22,50 @@ export default function ServerPanel(props: { status: SetupStatus | undefined }) 
 	const [chosenBuild, setChosenBuild] = createSignal<string | null>(null);
 	const [busy, setBusy] = createSignal<"install" | "delete" | null>(null);
 
-	// Reading a resource that failed throws
-	const latest = () => (release.error ? undefined : release());
+	const latest = () => loaded(release);
 	const installed = () => props.status?.serverInstalled ?? false;
 	const manifest = () => props.status?.server ?? null;
 	const archives = () => latest()?.archives ?? [];
+	const installedBuild = () => (installed() ? manifest()?.build : undefined);
+	// Gone from the latest release, the installed build is only replaced by one picked on purpose
+	const installedBuildGone = () =>
+		installedBuild() !== undefined &&
+		latest() !== undefined &&
+		!archives().some((a) => a.build === installedBuild());
 	// The installed build unless another is picked, so that updating keeps it
 	const build = () =>
-		chosenBuild() ?? (archives().find((a) => a.build === manifest()?.build) ?? archives()[0])?.build ?? null;
-	const updateAvailable = () => installed() && latest() !== undefined && manifest()?.version !== latest()!.version;
-	const upToDate = () => installed() && latest() !== undefined && !updateAvailable() && manifest()?.build === build();
+		chosenBuild() ??
+		(installedBuildGone()
+			? null
+			: ((archives().find((a) => a.build === installedBuild()) ?? archives()[0])?.build ?? null));
+	// Positive when the latest release is newer, which an unknown installed version counts as
+	const versionOrder = () => {
+		const [installedVersion, latestVersion] = [manifest()?.version, latest()?.version];
+		if (latestVersion === undefined) return 0;
+		return installedVersion === undefined ? 1 : compareVersions(latestVersion, installedVersion);
+	};
+	const updateAvailable = () => installed() && versionOrder() > 0;
+	const action = () => {
+		if (!installed()) return "Download and install";
+		if (installedBuild() !== undefined && build() !== installedBuild()) return "Switch build";
+		return versionOrder() > 0 ? "Update" : versionOrder() < 0 ? "Downgrade" : "Reinstall";
+	};
 	const anyActive = () => servers().some(isActive);
 	const blocked = () => task() !== null || anyActive();
 
 	const install = async () => {
+		if (
+			action() === "Downgrade" &&
+			!confirm(
+				"The latest release is older than the installed server, and may not handle the database updates " +
+					"the installed one applied. Install it anyway?",
+			)
+		)
+			return;
 		setBusy("install");
 		await attempt(
 			() => api.repack.install(build()!),
-			installed() ? "The server is up to date." : "The server is installed.",
+			action() === "Update" ? "The server is up to date." : "The server is installed.",
 		);
 		setBusy(null);
 		// Even a failed update may have replaced some files
@@ -113,13 +150,13 @@ export default function ServerPanel(props: { status: SetupStatus | undefined }) 
 						/>
 					</Field>
 					<Button
-						variant={upToDate() ? "secondary" : "primary"}
+						variant={action() === "Reinstall" || action() === "Downgrade" ? "secondary" : "primary"}
 						icon="download"
 						busy={busy() === "install"}
 						disabled={blocked() || build() === null}
 						onClick={install}
 					>
-						{installed() ? (upToDate() ? "Reinstall" : "Update") : "Download and install"}
+						{action()}
 					</Button>
 					<Show when={installed()}>
 						<Button
@@ -134,6 +171,11 @@ export default function ServerPanel(props: { status: SetupStatus | undefined }) 
 						</Button>
 					</Show>
 				</div>
+				<Show when={installedBuildGone()}>
+					<p class="mt-2 text-xs text-amber-300">
+						The latest release has no {installedBuild()} build anymore: pick another one to switch to it.
+					</p>
+				</Show>
 			</div>
 		</div>
 	);
