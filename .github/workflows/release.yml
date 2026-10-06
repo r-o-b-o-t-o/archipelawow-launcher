@@ -39,7 +39,8 @@ jobs:
   release:
     name: Publish the release
     needs: build
-    runs-on: ubuntu-latest
+    # Where vpk packs for Windows natively, and can sign the setup
+    runs-on: windows-latest
     env:
       GH_TOKEN: ${{ github.token }}
       GH_REPO: ${{ github.repository }}
@@ -47,27 +48,51 @@ jobs:
       run:
         shell: pwsh
     steps:
+      # For the Velopack version and the icon
+      - uses: actions/checkout@v7
+
       - uses: actions/download-artifact@v8
         with:
           name: ArchipelaWoW-Launcher
           path: package
 
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Pack the launcher
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          $version = $env:GITHUB_REF_NAME.Substring(1)
+          $repository = "$env:GITHUB_SERVER_URL/$env:GITHUB_REPOSITORY"
+          # The vpk of the Velopack version the launcher is built with
+          $velopack = (Select-Xml -Path ArchipelaWoW.Launcher/ArchipelaWoW.Launcher.csproj -XPath "//PackageReference[@Include='Velopack']").Node.Version
+          dotnet tool install --global vpk --version $velopack
+          # The latest release's package, which the delta package is made from
+          vpk download github --repoUrl $repository --token $env:GH_TOKEN --outputDir releases
+          # The package ID names the setup's installation folder, its entry in Windows' installed apps and the assets: never
+          # change it. The title names the exe next to current\ and the shortcuts.
+          vpk pack --packId ArchipelaWoW.Launcher --packVersion $version --packDir 'package/ArchipelaWoW Launcher' `
+            --mainExe ArchipelaWoW.Launcher.exe --packTitle 'ArchipelaWoW Launcher' --packAuthors 'Axel Cocat' --runtime win-x64 `
+            --icon ArchipelaWoW.Launcher/Assets/app.ico --outputDir releases
+
       - name: Publish the release
         run: |
+          $ErrorActionPreference = 'Stop'
           $PSNativeCommandUseErrorActionPreference = $true
           $version = $env:GITHUB_REF_NAME.Substring(1)
           $apworld = '${{ needs.build.outputs.apworld }}'
-          $archive = "ArchipelaWoW-Launcher-$version.zip"
-          Push-Location package
-          zip -r -9 "../$archive" 'ArchipelaWoW Launcher'
-          Pop-Location
+          # As a draft: the setup, the portable archive, and the packages and their list that the launcher updates from
+          vpk upload github --repoUrl "$env:GITHUB_SERVER_URL/$env:GITHUB_REPOSITORY" --token $env:GH_TOKEN --outputDir releases `
+            --tag $env:GITHUB_REF_NAME --releaseName "ArchipelaWoW Launcher $version"
 
           $notes = @(
-            "Extract ``$archive`` close to the root of a drive (e.g. ``C:\Games``), start ``ArchipelaWoW.Launcher.exe`` and install the server from its setup."
+            "Run ``ArchipelaWoW.Launcher-win-Setup.exe``, or extract ``ArchipelaWoW.Launcher-win-Portable.zip`` close to the root of a drive (e.g. into ``C:\Games\ArchipelaWoW``) and start ``ArchipelaWoW Launcher.exe``. Then install the server from the launcher's setup."
             ''
             "The player options editor follows apworld [$apworld](https://github.com/r-o-b-o-t-o/archipelawow/releases/tag/$apworld)."
           )
           $notes | Set-Content release-notes.md
           # Marked as the latest explicitly: GitHub may rank the date tags of the releases from before the repack moved
           # out above the version tags
-          gh release create $env:GITHUB_REF_NAME $archive --title "ArchipelaWoW Launcher $version" --notes-file release-notes.md --verify-tag --latest
+          gh release edit $env:GITHUB_REF_NAME --draft=false --latest --notes-file release-notes.md

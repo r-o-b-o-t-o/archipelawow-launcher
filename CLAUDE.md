@@ -1,8 +1,9 @@
 # CLAUDE.md
 
-ArchipelaWoW Launcher: a WPF (.NET 10) window hosting a SolidJS UI (`ui`) in WebView2, released as a
-portable folder. It installs the server (a prebuilt AzerothCore, the ArchipelaWoW modules and MySQL)
-from `archipelawow-repack` releases; `README.md` covers the layout and development commands.
+ArchipelaWoW Launcher: a WPF (.NET 10) window hosting a SolidJS UI (`ui`) in WebView2, released with
+Velopack as a setup and a portable archive, and updating itself. It installs the server (a prebuilt
+AzerothCore, the ArchipelaWoW modules and MySQL) from `archipelawow-repack` releases; `README.md` covers
+the layout and development commands.
 
 ## Related repositories
 
@@ -62,6 +63,9 @@ from `archipelawow-repack` releases; `README.md` covers the layout and developme
   would be killed, with the servers it starts.
 - Velopack's uninstaller, and its setup run over an installation, empty the setup's installation folder:
   the setup's launcher keeps its data in `%LocalAppData%\ArchipelaWoW` (`LauncherUpdater.DefaultRoot`).
+- The release workflow's `--packId` names the setup's installation folder, its entry in Windows'
+  installed apps and the assets: never change it. `--packTitle` names the exe next to `current\` and the
+  shortcuts.
 
 ## Verifying changes
 

@@ -4,10 +4,10 @@ The easiest way to host [ArchipelaWoW](https://github.com/r-o-b-o-t-o/archipelaw
 launcher that installs a ready-to-run build of [AzerothCore](https://www.azerothcore.org/) with the
 ArchipelaWoW modules, and edits Archipelago player options.
 
-No development tools, database server or runtime to install: extract the archive and start
-`ArchipelaWoW.Launcher.exe`. The launcher downloads the server, sets up the database and the
-configuration, gets the client data, runs the servers with their consoles in one window, and keeps the
-server up to date. The player options editor works without the server.
+No development tools, database server or runtime to install: run the setup, or extract the portable
+archive. The launcher downloads the server, sets up the database and the configuration, gets the client
+data, runs the servers with their consoles in one window, and keeps the server and itself up to date.
+The player options editor works without the server.
 
 > [!WARNING]
 > The launcher is a convenient way to run ArchipelaWoW with its default setup, and nothing more: the
@@ -21,13 +21,17 @@ server up to date. The player options editor works without the server.
 
 ## 🚀 Playing
 
-1. Download `ArchipelaWoW-Launcher-<version>.zip` from the [latest release](../../releases/latest).
-2. Extract it close to the root of a drive, e.g. into `C:\Games`. Deep folders don't work: the server
-   can't open files whose path is longer than 259 characters, and the launcher warns about it.
-3. Start `ArchipelaWoW.Launcher.exe` and follow the setup: the server, the database, the configuration,
-   then the client data, which you can download or extract from your own World of Warcraft 3.3.5a
-   client.
-4. Start the servers from the dashboard, create a game account there, and set `set realmlist 127.0.0.1`
+1. Get the launcher from the [latest release](../../releases/latest), either:
+   - `ArchipelaWoW.Launcher-win-Setup.exe`: run it to install the launcher for your Windows account,
+     with shortcuts on the desktop and in the Start menu. It keeps the server and the player options in
+     `%LocalAppData%\ArchipelaWoW`.
+   - `ArchipelaWoW.Launcher-win-Portable.zip`, which keeps everything in its folder: extract it close to
+     the root of a drive, e.g. into `C:\Games\ArchipelaWoW`, and start `ArchipelaWoW Launcher.exe`. Deep
+     folders don't work: the server can't open files whose path is longer than 259 characters, and the
+     launcher warns about it.
+2. Follow the launcher's setup: the server, the database, the configuration, then the client data, which
+   you can download or extract from your own World of Warcraft 3.3.5a client.
+3. Start the servers from the dashboard, create a game account there, and set `set realmlist 127.0.0.1`
    in your client's `Data\<locale>\realmlist.wtf`.
 
 To only make player options, skip the setup and open **Player options**.
@@ -36,7 +40,7 @@ It runs on 64-bit Windows 10 (1809 or later) and 11. The interface uses the Micr
 Runtime, which comes with Windows 11 and up-to-date Windows 10; the launcher links to its installer
 when it's missing.
 
-The whole folder is portable: move it and it keeps working.
+The portable launcher's folder can be moved: it keeps working from its new place.
 
 ### Updating
 
@@ -45,19 +49,30 @@ databases, configuration, client data and player options, and the server applies
 updates when it starts. The same card switches to another build of the server, or deletes the server
 with its databases, configuration, client data and logs.
 
-To update the launcher, close it and extract the new release to the same place, replacing files.
+The sidebar shows when a new launcher release is out. Update from the launcher's card in the
+settings: the launcher downloads the release, stops the servers (asking first) and restarts. If you
+cancel the restart, the downloaded update waits in that card until you restart to update. Updating the
+launcher keeps the server, its settings and the player options.
 
-Coming from a release that had the server in it (the ones numbered by date, like 2026.10.3.2): extract
-the launcher over it the same way, then update the server from the settings. The `release.json` left at
-the root of the folder is no longer used, nor are the server's licenses left in `licenses` (AzerothCore,
-OpenSSL, the modules and `AzerothCore dependencies`): the current ones are in `server\licenses`.
+Launcher 1.0.0 and the releases before it don't update themselves: close the launcher, extract the
+portable archive over its folder, delete the old `ArchipelaWoW.Launcher.exe` and `licenses`, and start
+`ArchipelaWoW Launcher.exe`. Coming from a release that had the server in it (the ones numbered by
+date, like 2026.10.3.2), update the server from the settings next: the `release.json` left at the root
+of the folder is no longer used.
+
+### Uninstalling
+
+The launcher installed by the setup is uninstalled from Windows' installed apps, which leaves
+`%LocalAppData%\ArchipelaWoW`: delete the server from the settings first, or delete that folder after.
+The portable launcher is only its folder.
 
 ### What's in the folder
 
 | Path | Contents |
 | --- | --- |
-| `ArchipelaWoW.Launcher.exe` | The launcher |
-| `licenses` | The licenses of the software the launcher is built with |
+| `ArchipelaWoW Launcher.exe` | Starts the launcher |
+| `current` | The launcher, with in `current\licenses` the licenses of the software it's built with |
+| `Update.exe`, `packages` | The launcher's updater ([Velopack](https://velopack.io)) and the updates it downloaded |
 | `launcher` | The launcher's settings, logs (including the MySQL and tasks consoles) and downloads |
 | `players` | Archipelago player options (YAML) |
 | `server\bin` | authserver, worldserver, dbimport, the client data extractors, and `configs\` |
@@ -69,6 +84,9 @@ OpenSSL, the modules and `AzerothCore dependencies`): the current ones are in `s
 
 `server` and `mysql` come from the [server releases](https://github.com/r-o-b-o-t-o/archipelawow-repack/releases),
 built by [archipelawow-repack](https://github.com/r-o-b-o-t-o/archipelawow-repack).
+
+That's the portable launcher's folder. The setup puts the first three rows in
+`%LocalAppData%\ArchipelaWoW.Launcher`, and the rest in `%LocalAppData%\ArchipelaWoW`.
 
 MySQL listens on `127.0.0.1:3310` only (the port can be changed in the settings), with the user `acore`
 and the password `acore`, for tools such as HeidiSQL or Keira3.
@@ -86,6 +104,11 @@ git tag v1.2.3
 ```bash
 git push origin v1.2.3
 ```
+
+It packs the launcher with [Velopack](https://velopack.io)'s `vpk`, in the version of the project's
+`Velopack` package, and publishes the setup, the portable archive, and what the launchers update from:
+`releases.win.json`, the full package, and the delta package from the previous release. If the release
+job fails once `vpk` has made the draft release, delete the draft before running the job again.
 
 [`build.yml`](.github/workflows/build.yml) builds every push to master and every pull request into it,
 and checks the interface's formatting.
