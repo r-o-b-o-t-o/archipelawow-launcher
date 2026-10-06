@@ -40,6 +40,8 @@ export default function ServerPanel(props: { status: SetupStatus | undefined }) 
 	const updateAvailable = () => installed() && versionOrder() > 0;
 	const action = () => {
 		if (!installed()) return "Download and install";
+		// Nothing to compare with until the latest release is known
+		if (latest() === undefined) return "Update";
 		if (installedBuild() !== undefined && build() !== installedBuild()) return "Switch build";
 		return versionOrder() > 0 ? "Update" : versionOrder() < 0 ? "Downgrade" : "Reinstall";
 	};
