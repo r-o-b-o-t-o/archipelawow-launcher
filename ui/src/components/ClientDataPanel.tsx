@@ -69,7 +69,7 @@ export default function ClientDataPanel(props: {
 				</Callout>
 			</Show>
 
-			<div class="grid grid-cols-2 gap-4">
+			<div class="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] gap-4">
 				<div class="flex flex-col rounded-lg border border-white/10 bg-surface-1 p-4">
 					<div class="flex items-center gap-2 font-semibold text-zinc-100">
 						<Icon name="download" class="size-4 text-gold" />
@@ -84,7 +84,7 @@ export default function ClientDataPanel(props: {
 						>
 							wowgaming/client-data
 						</a>{" "}
-						project, matching recent AzerothCore versions. The quickest way.
+						project, matching recent AzerothCore versions. The quickest and easiest way.
 					</p>
 					<div class="mt-3 text-xs text-zinc-500">
 						<Show
@@ -114,14 +114,24 @@ export default function ClientDataPanel(props: {
 					</Button>
 				</div>
 
+				<div class="flex flex-col items-center gap-2 text-xs font-semibold text-zinc-500">
+					<div class="w-px flex-1 bg-white/10" />
+					OR
+					<div class="w-px flex-1 bg-white/10" />
+				</div>
+
 				<div class="flex flex-col rounded-lg border border-white/10 bg-surface-1 p-4">
 					<div class="flex items-center gap-2 font-semibold text-zinc-100">
 						<Icon name="package" class="size-4 text-gold" />
 						Extract from your client
 					</div>
 					<p class="mt-2 text-[13px] text-zinc-400">
-						Runs AzerothCore's extractors on your own World of Warcraft 3.3.5a (12340) installation.
-						<Show when={!props.serverInstalled}> They come with the server: install it first.</Show>
+						Runs AzerothCore's extractors on your own World of Warcraft 3.3.5a (12340) installation. Only
+						worth it on a slow or metered connection, or if you know what you're doing.
+						<Show when={!props.serverInstalled}>
+							{" "}
+							The extractors come with the server: install it first.
+						</Show>
 					</p>
 					<div class="mt-3 flex items-center gap-2">
 						<Button size="sm" icon="folder" disabled={blocked()} onClick={pickFolder}>
