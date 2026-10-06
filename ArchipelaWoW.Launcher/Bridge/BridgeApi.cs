@@ -98,7 +98,7 @@ public static partial class BridgeApi
         });
         bridge.HandleAsync("repack.delete", async () =>
         {
-            await tasks.RunAsync("Deleting the server", (task, token) => services.Repack.DeleteAsync(task, servers, token));
+            await tasks.RunAsync("Deleting the server", (task, _) => services.Repack.DeleteAsync(task, servers));
             return SetupStatus(services);
         });
         bridge.HandleAsync("setup.initDatabase", async () =>
@@ -292,7 +292,7 @@ public static partial class BridgeApi
     static object SetupStatus(AppServices services) => new
     {
         ServerInstalled = services.Repack.IsInstalled,
-        Server = services.Repack.ReadManifest(),
+        Server = services.Repack.Manifest,
         DatabaseInitialized = services.MySql.IsInitialized,
         ConfigsCreated = services.Configs.ConfigsExist,
         ClientData = services.ClientData.GetStatus(),

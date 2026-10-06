@@ -38,18 +38,12 @@ public sealed class ClientDataService(AppPaths paths, SettingsStore settings, Ht
         var release = await GetLatestReleaseAsync(token);
 
         var downloadDir = Path.Combine(paths.DataDir, ".download");
-        Directory.CreateDirectory(downloadDir);
         var zip = Path.Combine(downloadDir, $"{release.Tag}-{release.AssetName}");
-        if (!File.Exists(zip) || new FileInfo(zip).Length != release.Size)
-        {
-            task.Stage($"Downloading {release.AssetName} {release.Tag}");
-            await Downloads.DownloadFileAsync(http, release.Url, zip + ".part", release.Size, task, token);
-            File.Move(zip + ".part", zip, overwrite: true);
-        }
+        await Downloads.DownloadOnceAsync(http, release.Url, zip, release.Size, task, token);
 
         task.Stage("Extracting the client data");
         await InstallAsync(servers, staging => Task.Run(() => Downloads.ExtractZip(zip, staging, task, token), token));
-        Directory.Delete(downloadDir, recursive: true);
+        Directories.Delete(downloadDir);
         settings.Update(s => s.ClientDataVersion = release.Tag);
     }
 
@@ -97,8 +91,7 @@ public sealed class ClientDataService(AppPaths paths, SettingsStore settings, Ht
     async Task InstallAsync(ServerManager servers, Func<string, Task> produce)
     {
         var staging = Path.Combine(paths.DataDir, ".staging");
-        if (Directory.Exists(staging))
-            Directory.Delete(staging, recursive: true);
+        Directories.Delete(staging);
         Directory.CreateDirectory(staging);
         try
         {
@@ -106,17 +99,18 @@ public sealed class ClientDataService(AppPaths paths, SettingsStore settings, Ht
             // Generating mmaps takes hours: a worldserver started meanwhile would hold the old files open,
             // and deleting them would stop halfway
             EnsureWorldServerStopped(servers);
-            DeleteDataFolders(Folders);
             foreach (var folder in Folders)
             {
+                var target = Path.Combine(paths.DataDir, folder);
+                Directories.Delete(target);
                 var source = Path.Combine(staging, folder);
                 if (Directory.Exists(source))
-                    Directory.Move(source, Path.Combine(paths.DataDir, folder));
+                    Directory.Move(source, target);
             }
         }
         finally
         {
-            Directory.Delete(staging, recursive: true);
+            Directories.Delete(staging);
         }
     }
 
@@ -127,16 +121,6 @@ public sealed class ClientDataService(AppPaths paths, SettingsStore settings, Ht
         var exitCode = await task.RunToolAsync(paths.ServerExe(tool), arguments, workingDirectory, token);
         if (exitCode != 0)
             throw new InvalidOperationException($"{tool} failed with code {exitCode}.");
-    }
-
-    void DeleteDataFolders(IEnumerable<string> folders)
-    {
-        foreach (var folder in folders)
-        {
-            var path = Path.Combine(paths.DataDir, folder);
-            if (Directory.Exists(path))
-                Directory.Delete(path, recursive: true);
-        }
     }
 
     static void EnsureWorldServerStopped(ServerManager servers)

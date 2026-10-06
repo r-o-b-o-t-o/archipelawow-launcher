@@ -136,6 +136,8 @@ public partial class MainWindow : Window
         try
         {
             await _services.Servers.ShutDownAsync();
+            // Installing or deleting the server doesn't stop halfway
+            await _services.Tasks.Idle;
         }
         catch (Exception ex)
         {

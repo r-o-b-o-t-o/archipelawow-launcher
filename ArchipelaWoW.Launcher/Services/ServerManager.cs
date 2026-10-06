@@ -32,6 +32,9 @@ public sealed class ServerManager
 
     public bool AnyActive => All.Any(p => p.IsActive);
 
+    /// <summary>Why the servers can't start, while their files are being installed or deleted.</summary>
+    public string? StartBlockedReason { get; set; }
+
     public ServerManager(AppPaths paths, SettingsStore settings, MySqlService mySql, ConfigService configs)
     {
         _paths = paths;
@@ -78,6 +81,8 @@ public sealed class ServerManager
     async Task StartAsync(ManagedProcess process, CancellationToken token, bool restart = false)
     {
         token.ThrowIfCancellationRequested();
+        if (StartBlockedReason is { } reason)
+            throw new InvalidOperationException(reason);
         if (!Directory.Exists(_paths.MySqlDataDir))
             throw new InvalidOperationException("The database isn't set up yet, run the setup first.");
 

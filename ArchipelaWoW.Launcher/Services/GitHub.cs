@@ -5,7 +5,7 @@ namespace ArchipelaWoW.Launcher.Services;
 
 public sealed record GitHubAsset(string Name, long Size, string Url);
 
-public sealed record GitHubRelease(string Tag, DateTimeOffset PublishedAt, string Url, IReadOnlyList<GitHubAsset> Assets);
+public sealed record GitHubRelease(string Tag, DateTimeOffset PublishedAt, IReadOnlyList<GitHubAsset> Assets);
 
 public static class GitHub
 {
@@ -20,15 +20,15 @@ public static class GitHub
         response.EnsureSuccessStatusCode();
         using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync(timeout.Token));
         var release = document.RootElement;
-        return new GitHubRelease(
+        var latest = new GitHubRelease(
             release.GetProperty("tag_name").GetString()!,
             release.GetProperty("published_at").GetDateTimeOffset(),
-            release.GetProperty("html_url").GetString()!,
             release.GetProperty("assets").EnumerateArray()
                 .Select(a => new GitHubAsset(
                     a.GetProperty("name").GetString()!,
                     a.GetProperty("size").GetInt64(),
                     a.GetProperty("browser_download_url").GetString()!))
                 .ToList());
+        return latest;
     }
 }

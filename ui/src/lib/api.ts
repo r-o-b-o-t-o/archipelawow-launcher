@@ -68,15 +68,12 @@ export interface SetupStatus {
 
 export interface RepackArchive {
 	build: string;
-	name: string;
 	size: number;
-	url: string;
 }
 
 export interface RepackRelease {
 	version: string;
 	publishedAt: string;
-	url: string;
 	archives: RepackArchive[];
 }
 

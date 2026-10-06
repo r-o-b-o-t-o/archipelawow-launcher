@@ -19,18 +19,23 @@ public sealed class TaskRunner(string logDirectory) : ITerminalHost
     public TerminalBuffer Terminal { get; } = new("tasks", logDirectory);
     public TaskInfo? Current { get; private set; }
 
+    /// <summary>Completes once the current task, if any, has finished: some can't stop halfway when cancelled.</summary>
+    public Task Idle { get; private set; } = Task.CompletedTask;
+
     /// <summary>Raised on any thread.</summary>
     public event Action? Changed;
 
     public async Task RunAsync(string title, Func<TaskRunner, CancellationToken, Task> work)
     {
         CancellationTokenSource cancellation;
+        var finished = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         lock (_lock)
         {
             if (Current != null)
                 throw new InvalidOperationException($"Wait for \"{Current.Title}\" to finish first.");
             cancellation = _cancellation = new CancellationTokenSource();
             Current = new TaskInfo(title, "", null, null, DateTimeOffset.Now);
+            Idle = finished.Task;
         }
         Changed?.Invoke();
         Terminal.WriteNotice(title);
@@ -59,6 +64,7 @@ public sealed class TaskRunner(string logDirectory) : ITerminalHost
             }
             cancellation.Dispose();
             Changed?.Invoke();
+            finished.SetResult();
         }
     }
 

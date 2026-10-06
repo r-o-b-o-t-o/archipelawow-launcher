@@ -6,8 +6,21 @@ namespace ArchipelaWoW.Launcher.Services;
 
 public static class Downloads
 {
-    /// <summary>Downloads to a file, reporting progress to the task, and resumes a previous attempt when the server supports it.</summary>
-    public static async Task DownloadFileAsync(HttpClient http, string url, string file, long size, TaskRunner task, CancellationToken token)
+    /// <summary>
+    /// Downloads to a file unless it's already there, complete, reporting progress to the task. A previous attempt
+    /// left in file.part is resumed when the server supports it.
+    /// </summary>
+    public static async Task DownloadOnceAsync(HttpClient http, string url, string file, long size, TaskRunner task, CancellationToken token)
+    {
+        if (File.Exists(file) && new FileInfo(file).Length == size)
+            return;
+        Directory.CreateDirectory(Path.GetDirectoryName(file)!);
+        task.Stage($"Downloading {Path.GetFileName(file)}");
+        await DownloadFileAsync(http, url, file + ".part", size, task, token);
+        File.Move(file + ".part", file, overwrite: true);
+    }
+
+    static async Task DownloadFileAsync(HttpClient http, string url, string file, long size, TaskRunner task, CancellationToken token)
     {
         var existing = File.Exists(file) ? new FileInfo(file).Length : 0;
         using var request = new HttpRequestMessage(HttpMethod.Get, url);
