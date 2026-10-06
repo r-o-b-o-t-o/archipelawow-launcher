@@ -21,6 +21,19 @@ public static class Directories
         info.Delete(recursive: true);
     }
 
+    /// <summary>Deletes a directory like <see cref="Delete"/>, logging a failure: for leftovers that the next run deletes anyway.</summary>
+    public static void DeleteLeftover(string directory)
+    {
+        try
+        {
+            Delete(directory);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Log.Error($"Could not delete {directory}", ex);
+        }
+    }
+
     /// <summary>Merges a directory into another, replacing the files they share and the links in the way.</summary>
     public static void MoveInto(string source, string destination)
     {

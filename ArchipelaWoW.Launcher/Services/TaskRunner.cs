@@ -22,6 +22,9 @@ public sealed class TaskRunner(string logDirectory) : ITerminalHost
     /// <summary>Completes once the current task, if any, has finished: some can't stop halfway when cancelled.</summary>
     public Task Idle { get; private set; } = Task.CompletedTask;
 
+    /// <summary>What to tell about something that has to wait for the current task.</summary>
+    public string BusyMessage => $"Wait for \"{Current?.Title}\" to finish first.";
+
     /// <summary>Raised on any thread.</summary>
     public event Action? Changed;
 
@@ -32,7 +35,7 @@ public sealed class TaskRunner(string logDirectory) : ITerminalHost
         lock (_lock)
         {
             if (Current != null)
-                throw new InvalidOperationException($"Wait for \"{Current.Title}\" to finish first.");
+                throw new InvalidOperationException(BusyMessage);
             cancellation = _cancellation = new CancellationTokenSource();
             Current = new TaskInfo(title, "", null, null, DateTimeOffset.Now);
             Idle = finished.Task;

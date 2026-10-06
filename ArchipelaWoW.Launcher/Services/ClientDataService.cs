@@ -102,29 +102,22 @@ public sealed class ClientDataService(AppPaths paths, SettingsStore settings, Ht
             // Generating mmaps takes hours: a worldserver started meanwhile would hold the old files open,
             // and deleting them would stop halfway
             EnsureWorldServerStopped(servers);
-            servers.StartBlockedReason = $"Wait for \"{task.Current?.Title}\" to finish first.";
-            try
+            using var startBlock = servers.BlockStarts(task);
+            await Task.Run(() =>
             {
-                await Task.Run(() =>
+                foreach (var folder in Folders)
                 {
-                    foreach (var folder in Folders)
-                    {
-                        var target = Path.Combine(paths.DataDir, folder);
-                        Directories.Delete(target);
-                        var source = Path.Combine(staging, folder);
-                        if (Directory.Exists(source))
-                            Directory.Move(source, target);
-                    }
-                });
-            }
-            finally
-            {
-                servers.StartBlockedReason = null;
-            }
+                    var target = Path.Combine(paths.DataDir, folder);
+                    Directories.Delete(target);
+                    var source = Path.Combine(staging, folder);
+                    if (Directory.Exists(source))
+                        Directory.Move(source, target);
+                }
+            });
         }
         finally
         {
-            await Task.Run(() => Directories.Delete(staging));
+            await Task.Run(() => Directories.DeleteLeftover(staging));
         }
     }
 

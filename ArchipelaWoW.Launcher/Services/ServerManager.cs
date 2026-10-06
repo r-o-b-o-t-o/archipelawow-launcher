@@ -32,8 +32,7 @@ public sealed class ServerManager
 
     public bool AnyActive => All.Any(p => p.IsActive);
 
-    /// <summary>Why the servers can't start, while their files are being installed or deleted.</summary>
-    public string? StartBlockedReason { get; set; }
+    string? _startBlockedReason;
 
     public ServerManager(AppPaths paths, SettingsStore settings, MySqlService mySql, ConfigService configs)
     {
@@ -70,6 +69,13 @@ public sealed class ServerManager
     public ManagedProcess Get(string name) =>
         All.FirstOrDefault(p => p.Name == name) ?? throw new ArgumentException($"Unknown server {name}.");
 
+    /// <summary>Keeps the servers from starting until disposed, while the task replaces or deletes their files.</summary>
+    public IDisposable BlockStarts(TaskRunner task)
+    {
+        _startBlockedReason = task.BusyMessage;
+        return new StartBlock(this);
+    }
+
     /// <summary>Starts a server, and MySQL first when the server needs it.</summary>
     public async Task StartAsync(string name)
     {
@@ -81,7 +87,7 @@ public sealed class ServerManager
     async Task StartAsync(ManagedProcess process, CancellationToken token, bool restart = false)
     {
         token.ThrowIfCancellationRequested();
-        if (StartBlockedReason is { } reason)
+        if (_startBlockedReason is { } reason)
             throw new InvalidOperationException(reason);
         if (!Directory.Exists(_paths.MySqlDataDir))
             throw new InvalidOperationException("The database isn't set up yet, run the setup first.");
@@ -241,4 +247,9 @@ public sealed class ServerManager
     }
 
     ProcessSpec ServerSpec(string name) => new(_paths.ServerExe(name), [], _paths.ServerBin);
+
+    sealed class StartBlock(ServerManager servers) : IDisposable
+    {
+        public void Dispose() => servers._startBlockedReason = null;
+    }
 }

@@ -67,7 +67,7 @@ public sealed partial class RepackService(AppPaths paths, SettingsStore settings
     public async Task InstallAsync(TaskRunner task, ServerManager servers, string build, CancellationToken token)
     {
         EnsureServersStopped(servers);
-        servers.StartBlockedReason = $"Wait for \"{task.Current?.Title}\" to finish first.";
+        using var startBlock = servers.BlockStarts(task);
         var staging = Path.Combine(paths.LauncherDir, "staging");
         try
         {
@@ -99,25 +99,40 @@ public sealed partial class RepackService(AppPaths paths, SettingsStore settings
                 Directories.MoveInto(Path.Combine(staging, "server"), paths.ServerDir);
                 Directories.MoveInto(Path.Combine(staging, "mysql"), paths.MySqlDir);
             });
-            File.Delete(zip);
+
+            // The server is installed: a leftover archive only takes space, and deleting the server clears it
+            try
+            {
+                File.Delete(zip);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                Log.Error($"Could not delete {zip}", ex);
+            }
         }
         finally
         {
-            await Task.Run(() => Directories.Delete(staging));
-            servers.StartBlockedReason = null;
             ForgetServer();
+            await Task.Run(() => Directories.DeleteLeftover(staging));
         }
 
         // For the modules the release adds
-        if (configs.ConfigsExist)
-            configs.CreateConfigs(overwrite: false);
+        try
+        {
+            if (configs.ConfigsExist)
+                configs.CreateConfigs(overwrite: false);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            throw new IOException($"The server is installed, but creating the configuration of its new modules failed: {ex.Message}", ex);
+        }
     }
 
     /// <summary>Deletes server\ and mysql\: the server, and its databases, configuration, client data and logs.</summary>
     public async Task DeleteAsync(TaskRunner task, ServerManager servers)
     {
         EnsureServersStopped(servers);
-        servers.StartBlockedReason = $"Wait for \"{task.Current?.Title}\" to finish first.";
+        using var startBlock = servers.BlockStarts(task);
         task.Stage("Deleting the server");
         try
         {
@@ -131,7 +146,6 @@ public sealed partial class RepackService(AppPaths paths, SettingsStore settings
         }
         finally
         {
-            servers.StartBlockedReason = null;
             ForgetServer();
             settings.Update(s =>
             {
