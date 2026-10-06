@@ -1,0 +1,72 @@
+name: Release
+
+# Publishes the launcher when a version tag (v1.2.3) is pushed on master. The tag has to match <Version> in
+# the project file, which the build takes the version from.
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+jobs:
+  check:
+    name: Check the tag
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # With master, which a tag trigger can't be limited to
+          fetch-depth: 0
+
+      - name: Check the tag
+        run: |
+          $ErrorActionPreference = 'Stop'
+          git merge-base --is-ancestor $env:GITHUB_SHA origin/master
+          if ($LASTEXITCODE -ne 0) { throw "$env:GITHUB_REF_NAME isn't on master." }
+          $version = (Select-Xml -Path ArchipelaWoW.Launcher/ArchipelaWoW.Launcher.csproj -XPath '//Version').Node.InnerText
+          if ("v$version" -ne $env:GITHUB_REF_NAME) { throw "The tag is $env:GITHUB_REF_NAME, but the project's version is $version." }
+
+  build:
+    needs: check
+    uses: ./.github/workflows/build.yml
+
+  release:
+    name: Publish the release
+    needs: build
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: ArchipelaWoW-Launcher
+          path: package
+
+      - name: Publish the release
+        run: |
+          $PSNativeCommandUseErrorActionPreference = $true
+          $version = $env:GITHUB_REF_NAME.Substring(1)
+          $apworld = '${{ needs.build.outputs.apworld }}'
+          $archive = "ArchipelaWoW-Launcher-$version.zip"
+          Push-Location package
+          zip -r -9 "../$archive" 'ArchipelaWoW Launcher'
+          Pop-Location
+
+          $notes = @(
+            "Extract ``$archive`` close to the root of a drive (e.g. ``C:\Games``), start ``ArchipelaWoW.Launcher.exe`` and install the server from its setup."
+            ''
+            "The player options editor follows apworld [$apworld](https://github.com/r-o-b-o-t-o/archipelawow/releases/tag/$apworld)."
+          )
+          $notes | Set-Content release-notes.md
+          # --latest: the date tags of the releases from before the repack moved out rank above the version tags
+          gh release create $env:GITHUB_REF_NAME $archive --title "ArchipelaWoW Launcher $version" --notes-file release-notes.md --verify-tag --latest
