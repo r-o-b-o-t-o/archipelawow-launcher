@@ -113,7 +113,14 @@ function ConfigEditor() {
 	const [original, setOriginal] = createSignal("");
 
 	createEffect(
-		on(files, (list) => list?.length && !file() && setFile(list.find((f) => f === "worldserver.conf") ?? list[0])),
+		on(files, (list) => {
+			// Deleted with the server: unsaved edits of these files would only hold up leaving and quitting
+			if (!list?.length) {
+				setFile(null);
+				setText("");
+				setOriginal("");
+			} else if (!file()) setFile(list.find((f) => f === "worldserver.conf") ?? list[0]);
+		}),
 	);
 	createEffect(
 		on(file, async (name) => {
