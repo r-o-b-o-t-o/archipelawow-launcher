@@ -49,7 +49,8 @@ To update the launcher, close it and extract the new release to the same place, 
 
 Coming from a release that had the server in it (the ones numbered by date, like 2026.10.3.2): extract
 the launcher over it the same way, then update the server from the settings. The `release.json` left at
-the root of the folder is no longer used.
+the root of the folder is no longer used, nor are the server's licenses left in `licenses` (AzerothCore,
+OpenSSL, the modules and `AzerothCore dependencies`): the current ones are in `server\licenses`.
 
 ### What's in the folder
 

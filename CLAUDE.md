@@ -12,8 +12,9 @@ from `archipelawow-repack` releases; `README.md` covers the layout and developme
 - `mod-i-found-your-sword` — the AzerothCore module. The launcher edits its `archipelawow.conf`
   connection keys; renaming them needs a matching change on the other side.
 - `archipelawow` — the apworld. `scripts/dump-options-schema.py` turns its newest release's options
-  (pre-releases included) into the schema the YAML editor renders; a new option type needs support there and in
-  `OptionField.tsx`. It loads `options.py` alone, so that file can't import the rest of the world.
+  (pre-releases included) into the schema the YAML editor renders; a new option type needs support
+  there and in `OptionField.tsx`. It loads `options.py` alone, so that file can't import the rest of
+  the world.
 
 ## Code
 

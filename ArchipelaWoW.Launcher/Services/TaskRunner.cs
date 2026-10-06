@@ -5,8 +5,8 @@ namespace ArchipelaWoW.Launcher.Services;
 public sealed record TaskInfo(string Title, string Stage, double? Progress, string? Detail, DateTimeOffset StartedAt);
 
 /// <summary>
-/// Runs one long operation at a time (database setup, client data download or extraction). Tools
-/// it starts print to the shared "tasks" terminal.
+/// Runs one long operation at a time (installing, updating or deleting the server, database setup, client
+/// data download or extraction). Tools it starts print to the shared "tasks" terminal.
 /// </summary>
 public sealed class TaskRunner(string logDirectory) : ITerminalHost
 {
