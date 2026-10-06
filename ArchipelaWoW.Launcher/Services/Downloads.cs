@@ -59,27 +59,36 @@ public static class Downloads
             throw new IOException($"The download ended early ({done >> 20} of {size >> 20} MB). Start it again to resume it.");
     }
 
+    /// <summary>Extracts a zip, deleting it when it's damaged so that the next attempt downloads it again.</summary>
     public static void ExtractZip(string zip, string directory, TaskRunner task, CancellationToken token)
     {
-        using var archive = ZipFile.OpenRead(zip);
-        var root = Path.GetFullPath(directory) + Path.DirectorySeparatorChar;
-        var total = archive.Entries.Sum(e => e.Length);
-        long done = 0;
-        foreach (var entry in archive.Entries)
+        try
         {
-            token.ThrowIfCancellationRequested();
-            var target = Path.GetFullPath(Path.Combine(root, entry.FullName));
-            if (!target.StartsWith(root, StringComparison.OrdinalIgnoreCase))
-                throw new InvalidDataException($"Unexpected path in the archive: {entry.FullName}");
-            if (entry.FullName.EndsWith('/'))
+            using var archive = ZipFile.OpenRead(zip);
+            var root = Path.GetFullPath(directory) + Path.DirectorySeparatorChar;
+            var total = archive.Entries.Sum(e => e.Length);
+            long done = 0;
+            foreach (var entry in archive.Entries)
             {
-                Directory.CreateDirectory(target);
-                continue;
+                token.ThrowIfCancellationRequested();
+                var target = Path.GetFullPath(Path.Combine(root, entry.FullName));
+                if (!target.StartsWith(root, StringComparison.OrdinalIgnoreCase))
+                    throw new InvalidDataException($"Unexpected path in the archive: {entry.FullName}");
+                if (entry.FullName.EndsWith('/'))
+                {
+                    Directory.CreateDirectory(target);
+                    continue;
+                }
+                Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+                entry.ExtractToFile(target, overwrite: true);
+                done += entry.Length;
+                task.Progress((double)done / total, $"{done >> 20} / {total >> 20} MB");
             }
-            Directory.CreateDirectory(Path.GetDirectoryName(target)!);
-            entry.ExtractToFile(target, overwrite: true);
-            done += entry.Length;
-            task.Progress((double)done / total, $"{done >> 20} / {total >> 20} MB");
+        }
+        catch (InvalidDataException ex)
+        {
+            File.Delete(zip);
+            throw new InvalidDataException($"{Path.GetFileName(zip)} is damaged, start again to download it anew. {ex.Message}", ex);
         }
     }
 }
