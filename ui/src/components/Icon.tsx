@@ -18,6 +18,7 @@ import RefreshCw from "lucide-solid/icons/refresh-cw";
 import RotateCw from "lucide-solid/icons/rotate-cw";
 import Save from "lucide-solid/icons/save";
 import Scale from "lucide-solid/icons/scale";
+import Server from "lucide-solid/icons/server";
 import SlidersVertical from "lucide-solid/icons/sliders-vertical";
 import Square from "lucide-solid/icons/square";
 import Sword from "lucide-solid/icons/sword";
@@ -63,6 +64,7 @@ const icons = {
 	info: Info,
 	package: Package,
 	eraser: Eraser,
+	server: Server,
 };
 
 export type IconName = keyof typeof icons;

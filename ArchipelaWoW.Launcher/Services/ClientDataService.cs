@@ -56,6 +56,8 @@ public sealed class ClientDataService(AppPaths paths, SettingsStore settings, Ht
     public async Task ExtractFromClientAsync(TaskRunner task, ServerManager servers, string clientPath, bool generateMmaps,
         CancellationToken token)
     {
+        if (!File.Exists(paths.ServerExe("map_extractor")))
+            throw new InvalidOperationException("Install the server first, the extractors come with it.");
         EnsureWorldServerStopped(servers);
         clientPath = Path.GetFullPath(clientPath);
         var clientData = Path.Combine(clientPath, "Data");

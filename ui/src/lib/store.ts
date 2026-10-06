@@ -7,8 +7,12 @@ const [servers, setServers] = createSignal<ServerStatus[]>([]);
 const [task, setTask] = createSignal<TaskInfo | null>(null);
 const [appInfo, setAppInfo] = createSignal<AppInfo | null>(null);
 const [shuttingDown, setShuttingDown] = createSignal(false);
+// Bumped once the server is installed, updated or deleted: a source for the resources that read its files
+const [serverRevision, setServerRevision] = createSignal(1);
 
-export { appInfo, servers, shuttingDown, task };
+export { appInfo, serverRevision, servers, shuttingDown, task };
+
+export const serverChanged = () => setServerRevision((revision) => revision + 1);
 
 export const server = (name: ServerName) => servers().find((s) => s.name === name);
 

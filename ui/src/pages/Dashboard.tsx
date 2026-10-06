@@ -62,7 +62,17 @@ export default function Dashboard() {
 			<div class="flex min-h-0 flex-1 gap-5 overflow-hidden p-6">
 				<div class="flex min-w-0 flex-1 flex-col gap-5">
 					<PathLengthWarning status={setup()} />
-					<Show when={setup() && (!setup()!.databaseInitialized || !setup()!.configsCreated)}>
+					<Show when={setup() && !setup()!.serverInstalled}>
+						<Callout tone="amber">
+							The server isn't installed yet.{" "}
+							<A href="/setup" class="font-semibold underline">
+								Install it
+							</A>
+						</Callout>
+					</Show>
+					<Show
+						when={setup()?.serverInstalled && (!setup()!.databaseInitialized || !setup()!.configsCreated)}
+					>
 						<Callout tone="amber">
 							The server isn't set up yet.{" "}
 							<A href="/setup" class="font-semibold underline">

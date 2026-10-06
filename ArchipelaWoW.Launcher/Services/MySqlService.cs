@@ -67,6 +67,8 @@ public sealed class MySqlService(AppPaths paths, SettingsStore settings)
     /// <summary>Creates the data directory, starts the server and creates the AzerothCore user.</summary>
     public async Task InitializeAsync(TaskRunner task, ServerManager servers, CancellationToken token)
     {
+        if (!File.Exists(paths.MySqlExe("mysqld")))
+            throw new InvalidOperationException("Install the server first.");
         if (servers.MySql.IsActive)
             throw new InvalidOperationException("Stop MySQL before initializing the database.");
 

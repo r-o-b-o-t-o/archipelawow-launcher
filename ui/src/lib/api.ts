@@ -23,22 +23,21 @@ export interface TaskInfo {
 	startedAt: string;
 }
 
-/** release.json, written by the release workflow. */
-export interface ReleaseManifest {
+/** server\release.json, written by the archipelawow-repack workflow. */
+export interface ServerManifest {
 	version: string;
+	build: string;
 	builtAt: string;
 	repository: string;
 	azerothcore: { repository: string; commit: string };
 	modules: { name: string; repository: string; commit: string }[];
 	mysql: string;
-	apworld: string;
 }
 
 export interface AppInfo {
 	version: string;
 	root: string;
 	windowsBuild: number;
-	manifest: ReleaseManifest | null;
 }
 
 export interface Settings {
@@ -57,13 +56,28 @@ export interface ClientDataStatus {
 
 export interface SetupStatus {
 	serverInstalled: boolean;
-	mySqlInstalled: boolean;
+	/** Null when the server isn't installed, or was installed without its release.json. */
+	server: ServerManifest | null;
 	databaseInitialized: boolean;
 	configsCreated: boolean;
 	clientData: ClientDataStatus;
 	/** Longest SQL path worldserver opens, which must stay within the limit. */
 	sourcePathLength: number;
 	sourcePathLimit: number;
+}
+
+export interface RepackArchive {
+	build: string;
+	name: string;
+	size: number;
+	url: string;
+}
+
+export interface RepackRelease {
+	version: string;
+	publishedAt: string;
+	url: string;
+	archives: RepackArchive[];
 }
 
 export interface ClientDataRelease {
@@ -102,6 +116,11 @@ export const api = {
 		getStatus: () => call<SetupStatus>("setup.getStatus"),
 		initDatabase: () => call<SetupStatus>("setup.initDatabase"),
 		createConfigs: (overwrite: boolean) => call<string[]>("setup.createConfigs", { overwrite }),
+	},
+	repack: {
+		getLatestRelease: () => call<RepackRelease>("repack.getLatestRelease"),
+		install: (build: string) => call<SetupStatus>("repack.install", { build }),
+		delete: () => call<SetupStatus>("repack.delete"),
 	},
 	clientData: {
 		getStatus: () => call<ClientDataStatus>("clientData.getStatus"),

@@ -1,9 +1,12 @@
 import { createEffect, createResource, createSignal, For, on, Show } from "solid-js";
 import ClientDataPanel from "../components/ClientDataPanel";
+import ServerPanel from "../components/ServerPanel";
+import TaskPanel from "../components/TaskPanel";
 import { Button, Card, Code, Field, inputBase, PageHeader, Select, Switch, TextInput } from "../components/ui";
-import { api, type FolderTarget } from "../lib/api";
+import { api, type FolderTarget, type SetupStatus } from "../lib/api";
 import { formatDate } from "../lib/format";
-import { appInfo, servers, isActive } from "../lib/store";
+import { schema } from "../lib/playerOptions";
+import { appInfo, serverRevision, servers, isActive } from "../lib/store";
 import { attempt, toast } from "../lib/toast";
 import { guardUnsaved } from "../lib/unsaved";
 
@@ -18,14 +21,20 @@ const folders: { target: FolderTarget; label: string }[] = [
 ];
 
 export default function Settings() {
+	const [setup] = createResource(serverRevision, api.setup.getStatus);
+
 	return (
 		<>
 			<PageHeader title="Settings" subtitle="Configure the launcher and the servers." />
 			<div class="flex-1 overflow-y-auto">
 				<div class="mx-auto flex max-w-5xl flex-col gap-5 p-6">
+					<TaskPanel />
 					<General />
+					<Card title="Server" icon="server">
+						<ServerPanel status={setup()} />
+					</Card>
 					<Card title="Client data" icon="package">
-						<ClientDataPanel />
+						<ClientDataPanel serverInstalled={setup()?.serverInstalled ?? false} />
 					</Card>
 					<ConfigEditor />
 					<Card title="Folders" icon="folder">
@@ -43,7 +52,7 @@ export default function Settings() {
 							</For>
 						</div>
 					</Card>
-					<About />
+					<About setup={setup()} />
 				</div>
 			</div>
 		</>
@@ -98,7 +107,7 @@ function General() {
 }
 
 function ConfigEditor() {
-	const [files] = createResource(api.config.list);
+	const [files] = createResource(serverRevision, api.config.list);
 	const [file, setFile] = createSignal<string | null>(null);
 	const [text, setText] = createSignal("");
 	const [original, setOriginal] = createSignal("");
@@ -164,8 +173,8 @@ function ConfigEditor() {
 	);
 }
 
-function About() {
-	const manifest = () => appInfo()?.manifest;
+function About(props: { setup: SetupStatus | undefined }) {
+	const manifest = () => props.setup?.server;
 	const commitLink = (repository: string, commit: string) => (
 		<a class="font-mono text-gold hover:underline" href={`${repository}/commit/${commit}`} target="_blank">
 			{commit.slice(0, 10)}
@@ -175,14 +184,31 @@ function About() {
 	return (
 		<Card title="About" icon="info">
 			<dl class="grid grid-cols-[max-content_1fr] gap-x-6 gap-y-2 text-[13px]">
-				<dt class="text-zinc-500">Version</dt>
+				<dt class="text-zinc-500">Launcher</dt>
+				<dd class="text-zinc-200">
+					{appInfo()?.version}{" "}
+					<a
+						class="text-gold hover:underline"
+						href="https://github.com/r-o-b-o-t-o/archipelawow-launcher/releases"
+						target="_blank"
+					>
+						releases
+					</a>
+				</dd>
+				<dt class="text-zinc-500">Player options</dt>
+				<dd class="text-zinc-200">for apworld {schema.worldVersion}</dd>
+				<dt class="text-zinc-500">Server</dt>
 				<Show
 					when={manifest()}
-					fallback={<dd class="text-zinc-200">{appInfo()?.version}, development build</dd>}
+					fallback={
+						<dd class="text-zinc-200">
+							{props.setup?.serverInstalled ? "version unknown" : "not installed"}
+						</dd>
+					}
 				>
 					{(m) => (
 						<dd class="text-zinc-200">
-							{m().version}, built {formatDate(m().builtAt)}{" "}
+							{m().version}, {m().build} build, built {formatDate(m().builtAt)}{" "}
 							<a class="text-gold hover:underline" href={`${m().repository}/releases`} target="_blank">
 								releases
 							</a>
@@ -204,8 +230,6 @@ function About() {
 							</For>
 							<dt class="text-zinc-500">MySQL</dt>
 							<dd class="text-zinc-200">{m().mysql}</dd>
-							<dt class="text-zinc-500">Player options</dt>
-							<dd class="text-zinc-200">for apworld {m().apworld}</dd>
 						</>
 					)}
 				</Show>

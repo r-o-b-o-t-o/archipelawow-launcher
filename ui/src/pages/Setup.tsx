@@ -3,20 +3,22 @@ import { createResource, createSignal, Show, type ParentProps } from "solid-js";
 import ClientDataPanel from "../components/ClientDataPanel";
 import Icon from "../components/Icon";
 import PathLengthWarning from "../components/PathLengthWarning";
+import ServerPanel from "../components/ServerPanel";
 import TaskPanel from "../components/TaskPanel";
 import Terminal from "../components/Terminal";
-import { Button, Callout, Card, Code, PageHeader } from "../components/ui";
+import { Button, Card, Code, PageHeader } from "../components/ui";
 import { api } from "../lib/api";
-import { task } from "../lib/store";
+import { serverRevision, task } from "../lib/store";
 import { attempt, toast } from "../lib/toast";
 
 export default function Setup() {
 	const navigate = useNavigate();
-	const [status, { refetch }] = createResource(api.setup.getStatus);
+	const [status, { refetch }] = createResource(serverRevision, api.setup.getStatus);
 	const [busy, setBusy] = createSignal<"database" | "configs" | "start" | null>(null);
 
-	const ready = () => status()?.databaseInitialized && status()?.configsCreated && status()?.clientData.ready;
-	const incomplete = () => status() && (!status()!.serverInstalled || !status()!.mySqlInstalled);
+	const installed = () => status()?.serverInstalled ?? false;
+	const ready = () =>
+		installed() && status()?.databaseInitialized && status()?.configsCreated && status()?.clientData.ready;
 
 	const createConfigs = async (overwrite: boolean) => {
 		if (
@@ -58,15 +60,16 @@ export default function Setup() {
 
 			<div class="flex-1 overflow-y-auto">
 				<div class="mx-auto flex max-w-5xl flex-col gap-4 p-6">
-					<Show when={incomplete()}>
-						<Callout tone="red">
-							This folder is incomplete: <Code>server\bin</Code> or <Code>mysql\bin</Code> is missing.
-							Download the launcher again and extract the whole archive.
-						</Callout>
-					</Show>
 					<PathLengthWarning status={status()} />
 
-					<Step number={1} title="Database" done={status()?.databaseInitialized}>
+					<Step number={1} title="Server" done={installed()}>
+						<p class="mb-4 text-[13px] text-zinc-400">
+							Only needed to host the game: the player options editor works without it.
+						</p>
+						<ServerPanel status={status()} />
+					</Step>
+
+					<Step number={2} title="Database" done={status()?.databaseInitialized}>
 						<p class="text-[13px] text-zinc-400">
 							Creates the MySQL data files and the <Code>acore</Code> user the servers log in with. They
 							create their databases the first time they start. MySQL is only reachable from this
@@ -78,7 +81,7 @@ export default function Setup() {
 								icon="database"
 								class="mt-4"
 								busy={busy() === "database"}
-								disabled={task() !== null}
+								disabled={!installed() || task() !== null}
 								onClick={setUpDatabase}
 							>
 								Set up the database
@@ -86,7 +89,7 @@ export default function Setup() {
 						</Show>
 					</Step>
 
-					<Step number={2} title="Configuration" done={status()?.configsCreated}>
+					<Step number={3} title="Configuration" done={status()?.configsCreated}>
 						<p class="text-[13px] text-zinc-400">
 							Creates the server configuration files from their defaults, with the paths and settings the
 							launcher needs. You can edit them later from the settings.
@@ -99,6 +102,7 @@ export default function Setup() {
 									icon="file"
 									class="mt-4"
 									busy={busy() === "configs"}
+									disabled={!installed()}
 									onClick={() => createConfigs(false)}
 								>
 									Create the configuration
@@ -117,12 +121,12 @@ export default function Setup() {
 						</Show>
 					</Step>
 
-					<Step number={3} title="Client data" done={status()?.clientData.ready}>
+					<Step number={4} title="Client data" done={status()?.clientData.ready}>
 						<p class="mb-4 text-[13px] text-zinc-400">
 							The maps and game data the worldserver reads, taken from the World of Warcraft 3.3.5a
 							client. Download them, or extract them from your own client.
 						</p>
-						<ClientDataPanel onChange={() => refetch()} />
+						<ClientDataPanel serverInstalled={installed()} onChange={() => refetch()} />
 					</Step>
 
 					<TaskPanel />

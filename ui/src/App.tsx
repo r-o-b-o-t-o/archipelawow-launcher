@@ -14,9 +14,10 @@ export default function App(props: RouteSectionProps) {
 	onMount(async () => {
 		try {
 			await initStore();
-			// First launch: nothing works before the setup is done
+			// Installed servers don't run before the setup is done. Without them, the player options may be all
+			// that's wanted, and the dashboard points to the setup.
 			const status = inLauncher ? await api.setup.getStatus() : null;
-			if (status && (!status.databaseInitialized || !status.configsCreated))
+			if (status?.serverInstalled && (!status.databaseInitialized || !status.configsCreated))
 				navigate("/setup", { replace: true });
 		} catch (error) {
 			toast(errorMessage(error), "error");
@@ -90,9 +91,7 @@ function Sidebar() {
 						</div>
 					)}
 				</Show>
-				<div class="mt-2 text-[11px] text-zinc-600">
-					Version {appInfo()?.manifest?.version ?? appInfo()?.version}
-				</div>
+				<div class="mt-2 text-[11px] text-zinc-600">Version {appInfo()?.version}</div>
 			</div>
 		</nav>
 	);

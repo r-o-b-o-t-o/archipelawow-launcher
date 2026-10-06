@@ -14,6 +14,8 @@ public sealed class AppPaths(string root)
     public string DataDir => Path.Combine(ServerDir, "data");
     public string LogsDir => Path.Combine(ServerDir, "logs");
     public string SourceDir => Path.Combine(ServerDir, "source");
+    public string ServerLicensesDir => Path.Combine(ServerDir, "licenses");
+    public string ManifestFile => Path.Combine(ServerDir, "release.json");
 
     public string MySqlDir => Path.Combine(Root, "mysql");
     public string MySqlBin => Path.Combine(MySqlDir, "bin");
@@ -24,9 +26,9 @@ public sealed class AppPaths(string root)
     public string LauncherLogsDir => Path.Combine(LauncherDir, "logs");
     public string SettingsFile => Path.Combine(LauncherDir, "settings.json");
     public string WebViewDataDir => Path.Combine(LauncherDir, "webview2");
+    public string DownloadsDir => Path.Combine(LauncherDir, "downloads");
 
     public string PlayersDir => Path.Combine(Root, "players");
-    public string ManifestFile => Path.Combine(Root, "release.json");
 
     public string ServerExe(string name) => Path.Combine(ServerBin, name + ".exe");
     public string MySqlExe(string name) => Path.Combine(MySqlBin, name + ".exe");

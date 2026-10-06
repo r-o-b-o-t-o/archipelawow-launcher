@@ -20,7 +20,7 @@ public sealed class ConfigService(AppPaths paths, SettingsStore settings)
     public IReadOnlyList<string> CreateConfigs(bool overwrite)
     {
         if (!Directory.Exists(paths.ConfigsDir))
-            throw new DirectoryNotFoundException($"{paths.ConfigsDir} is missing, the installation looks incomplete.");
+            throw new DirectoryNotFoundException($"{paths.ConfigsDir} is missing: install the server first.");
 
         var defaults = LoadDefaults();
         var written = new List<string>();

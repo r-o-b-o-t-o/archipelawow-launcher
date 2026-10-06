@@ -1,7 +1,7 @@
 import { createResource, createSignal, For, Show } from "solid-js";
 import { api, type ClientDataStatus } from "../lib/api";
 import { formatBytes, formatDate } from "../lib/format";
-import { isActive, server, task } from "../lib/store";
+import { isActive, server, serverRevision, task } from "../lib/store";
 import { attempt } from "../lib/toast";
 import Icon from "./Icon";
 import { Button, Callout, Switch } from "./ui";
@@ -10,13 +10,18 @@ import { Button, Callout, Switch } from "./ui";
 const FOLDERS = ["dbc", "maps", "vmaps", "mmaps", "Cameras"];
 
 /** Installs the client data worldserver needs, by download or by extraction from the user's client. */
-export default function ClientDataPanel(props: { onChange?: (status: ClientDataStatus) => void }) {
-	const [status, { mutate }] = createResource(api.clientData.getStatus);
+export default function ClientDataPanel(props: {
+	serverInstalled: boolean;
+	onChange?: (status: ClientDataStatus) => void;
+}) {
+	const [status, { mutate }] = createResource(serverRevision, api.clientData.getStatus);
 	const [release] = createResource(api.clientData.getLatestRelease);
 	const [settings] = createResource(api.settings.get);
 	const [chosenPath, setChosenPath] = createSignal<string | null>(null);
 	const [generateMmaps, setGenerateMmaps] = createSignal(true);
 
+	// Reading a resource that failed throws
+	const latest = () => (release.error ? undefined : release());
 	const clientPath = () => chosenPath() ?? settings()?.wowClientPath ?? null;
 	const blocked = () => task() !== null || isActive(server("worldserver"));
 
@@ -83,7 +88,7 @@ export default function ClientDataPanel(props: { onChange?: (status: ClientDataS
 					</p>
 					<div class="mt-3 text-xs text-zinc-500">
 						<Show
-							when={release()}
+							when={latest()}
 							fallback={
 								release.error
 									? "Couldn't reach GitHub to look up the latest release."
@@ -116,6 +121,7 @@ export default function ClientDataPanel(props: { onChange?: (status: ClientDataS
 					</div>
 					<p class="mt-2 text-[13px] text-zinc-400">
 						Runs AzerothCore's extractors on your own World of Warcraft 3.3.5a (12340) installation.
+						<Show when={!props.serverInstalled}> They come with the server: install it first.</Show>
 					</p>
 					<div class="mt-3 flex items-center gap-2">
 						<Button size="sm" icon="folder" disabled={blocked()} onClick={pickFolder}>
@@ -143,7 +149,7 @@ export default function ClientDataPanel(props: { onChange?: (status: ClientDataS
 						variant="primary"
 						icon="package"
 						class="mt-4 self-start"
-						disabled={blocked() || !clientPath()}
+						disabled={blocked() || !clientPath() || !props.serverInstalled}
 						onClick={async () =>
 							finish(
 								await attempt(

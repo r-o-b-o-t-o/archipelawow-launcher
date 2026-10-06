@@ -38,7 +38,6 @@ public static partial class BridgeApi
             Version = Version(),
             paths.Root,
             WindowsBuild = Environment.OSVersion.Version.Build,
-            services.Manifest,
         });
         bridge.Handle<TargetParams>("app.openPath", p =>
         {
@@ -90,6 +89,18 @@ public static partial class BridgeApi
 
         // Setup
         bridge.Handle("setup.getStatus", () => SetupStatus(services));
+        bridge.HandleAsync("repack.getLatestRelease", async () => await services.Repack.GetLatestReleaseAsync(CancellationToken.None));
+        bridge.HandleAsync<BuildParams>("repack.install", async p =>
+        {
+            var title = services.Repack.IsInstalled ? "Updating the server" : "Installing the server";
+            await tasks.RunAsync(title, (task, token) => services.Repack.InstallAsync(task, servers, p.Build, token));
+            return SetupStatus(services);
+        });
+        bridge.HandleAsync("repack.delete", async () =>
+        {
+            await tasks.RunAsync("Deleting the server", (task, token) => services.Repack.DeleteAsync(task, servers, token));
+            return SetupStatus(services);
+        });
         bridge.HandleAsync("setup.initDatabase", async () =>
         {
             await tasks.RunAsync("Setting up the database", (task, token) => services.MySql.InitializeAsync(task, servers, token));
@@ -280,13 +291,13 @@ public static partial class BridgeApi
 
     static object SetupStatus(AppServices services) => new
     {
-        ServerInstalled = File.Exists(services.Paths.ServerExe("worldserver")),
-        MySqlInstalled = File.Exists(services.Paths.MySqlExe("mysqld")),
+        ServerInstalled = services.Repack.IsInstalled,
+        Server = services.Repack.ReadManifest(),
         DatabaseInitialized = services.MySql.IsInitialized,
         ConfigsCreated = services.Configs.ConfigsExist,
         ClientData = services.ClientData.GetStatus(),
-        SourcePathLength = services.LongestSourcePath,
-        SourcePathLimit = AppServices.MaxPath,
+        SourcePathLength = services.Repack.LongestSourcePath,
+        SourcePathLimit = RepackService.MaxPath,
     };
 
     static object ServerStatuses(ServerManager servers) =>
@@ -322,6 +333,7 @@ public static partial class BridgeApi
     sealed record UrlParams(string Url);
     sealed record UnsavedChangesParams(bool Unsaved);
     sealed record SettingsPatch(int? MySqlPort, bool? AutoStartServers);
+    sealed record BuildParams(string Build);
     sealed record CreateConfigsParams(bool Overwrite);
     sealed record ExtractParams(string ClientPath, bool GenerateMmaps);
     sealed record PickFolderParams(string? Title, string? InitialDirectory);
