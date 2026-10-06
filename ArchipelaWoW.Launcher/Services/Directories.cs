@@ -24,14 +24,14 @@ public static class Directories
     /// <summary>Merges a directory into another, replacing the files they share and the links in the way.</summary>
     public static void MoveInto(string source, string destination)
     {
+        if (new DirectoryInfo(destination).LinkTarget != null)
+            Directory.Delete(destination);
         Directory.CreateDirectory(destination);
         foreach (var file in Directory.EnumerateFiles(source))
             File.Move(file, Path.Combine(destination, Path.GetFileName(file)), overwrite: true);
         foreach (var directory in Directory.EnumerateDirectories(source))
         {
             var target = Path.Combine(destination, Path.GetFileName(directory));
-            if (new DirectoryInfo(target).LinkTarget != null)
-                Directory.Delete(target);
             if (Directory.Exists(target))
                 MoveInto(directory, target);
             else
