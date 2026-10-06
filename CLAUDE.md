@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-ArchipelaWoW Launcher: a WPF (.NET 10) window hosting a SolidJS UI (`src/ui`) in WebView2. Releases
+ArchipelaWoW Launcher: a WPF (.NET 10) window hosting a SolidJS UI (`ui`) in WebView2. Releases
 bundle it with a prebuilt AzerothCore, the ArchipelaWoW modules and MySQL as a portable folder;
 `README.md` covers the layout and development commands.
 
@@ -24,9 +24,9 @@ bundle it with a prebuilt AzerothCore, the ArchipelaWoW modules and MySQL as a p
 - The product is "ArchipelaWoW Launcher"; "repack" only means the prebuilt server build it bundles.
 - Generated files (the UI's `options-schema.json`) aren't committed or given a fallback: if generating
   fails, so does the build or release.
-- `Bridge/BridgeApi.cs` and `src/ui/src/lib/api.ts` match methods and events by name: change them
+- `Bridge/BridgeApi.cs` and `ui/src/lib/api.ts` match methods and events by name: change them
   together.
-- In `src/ui`:
+- In `ui`:
   - Format with `npm run format` (Prettier).
   - Tailwind doesn't settle conflicting utilities by class order: shared class strings leave sizes out
     (`inputBase`).

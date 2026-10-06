@@ -70,7 +70,7 @@ public partial class MainWindow : Window
             {
                 if (!UiContent.IsAvailable)
                     throw new InvalidOperationException(
-                        "This build has no interface embedded: build src/ui first, or start with --dev-server http://localhost:5173.");
+                        "This build has no interface embedded: build ui first, or start with --dev-server http://localhost:5173.");
                 UiContent.Attach(webView);
             }
 

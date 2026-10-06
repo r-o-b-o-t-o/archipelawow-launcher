@@ -77,8 +77,8 @@ URL of a channel's webhook.
 ## 🛠️ Development
 
 The launcher is a WPF window (.NET 10) hosting a WebView2 that shows a SolidJS interface. They talk
-over WebView2 web messages ([`BridgeApi.cs`](src/ArchipelaWoW.Launcher/Bridge/BridgeApi.cs) on one side,
-[`api.ts`](src/ui/src/lib/api.ts) on the other). The servers run in pseudoconsoles (ConPTY), which the
+over WebView2 web messages ([`BridgeApi.cs`](ArchipelaWoW.Launcher/Bridge/BridgeApi.cs) on one side,
+[`api.ts`](ui/src/lib/api.ts) on the other). The servers run in pseudoconsoles (ConPTY), which the
 interface shows with xterm.js.
 
 Requirements: the .NET 10 SDK, Node.js 22 and Python 3.11 or later.
@@ -89,13 +89,13 @@ Requirements: the .NET 10 SDK, Node.js 22 and Python 3.11 or later.
 
    ```bash
    pip install PyYAML schema typing_extensions pathspec
-   python scripts/dump-options-schema.py --archipelago <Archipelago> --world <archipelawow> --output src/ui/src/data/options-schema.json
+   python scripts/dump-options-schema.py --archipelago <Archipelago> --world <archipelawow> --output ui/src/data/options-schema.json
    ```
 
 2. **Run the interface** from the Vite dev server:
 
    ```bash
-   cd src/ui
+   cd ui
    npm install
    npm run dev
    ```
@@ -103,17 +103,17 @@ Requirements: the .NET 10 SDK, Node.js 22 and Python 3.11 or later.
 3. **Start the launcher** on an installation folder, loading the interface from the dev server:
 
    ```bash
-   dotnet run --project src/ArchipelaWoW.Launcher -- --root <installation folder> --dev-server http://localhost:5173
+   dotnet run --project ArchipelaWoW.Launcher -- --root <installation folder> --dev-server http://localhost:5173
    ```
 
 A Release build embeds the interface, building it first:
 
 ```bash
-dotnet publish src/ArchipelaWoW.Launcher -c Release -o publish
+dotnet publish ArchipelaWoW.Launcher -c Release -o publish
 ```
 
-- The interface is formatted with Prettier: `npm run format` in `src/ui`.
+- The interface is formatted with Prettier: `npm run format` in `ui`.
 - The values written into the server configuration on first launch are in
-  [`config-defaults.json`](src/ArchipelaWoW.Launcher/Resources/config-defaults.json).
+  [`config-defaults.json`](ArchipelaWoW.Launcher/Resources/config-defaults.json).
 - [`scripts/package.ps1`](scripts/package.ps1) assembles the portable folder from a built core, MySQL
   and the launcher, as the workflow does.

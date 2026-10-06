@@ -1,5 +1,3 @@
 <Solution>
-  <Folder Name="/src/">
-    <Project Path="src/ArchipelaWoW.Launcher/ArchipelaWoW.Launcher.csproj" />
-  </Folder>
+  <Project Path="ArchipelaWoW.Launcher/ArchipelaWoW.Launcher.csproj" />
 </Solution>

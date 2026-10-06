@@ -6,9 +6,9 @@ obj/
 
 # UI
 node_modules/
-src/ui/dist/
+ui/dist/
 # Generated from the apworld, see the README
-src/ui/src/data/options-schema.json
+ui/src/data/options-schema.json
 
 # Editors
 .idea/

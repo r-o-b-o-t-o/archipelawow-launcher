@@ -83,7 +83,7 @@ jobs:
           Expand-Archive apworld\*.zip -DestinationPath apworld
           python -m pip install --quiet PyYAML schema typing_extensions pathspec
           $world = Get-ChildItem apworld -Directory | Select-Object -First 1
-          python scripts/dump-options-schema.py --archipelago archipelago --world $world.FullName --output src/ui/src/data/options-schema.json
+          python scripts/dump-options-schema.py --archipelago archipelago --world $world.FullName --output ui/src/data/options-schema.json
           "tag=$tag" >> $env:GITHUB_OUTPUT
 
       - name: Cache Boost and MySQL
@@ -168,7 +168,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: src/ui/package-lock.json
+          cache-dependency-path: ui/package-lock.json
 
       - uses: actions/setup-dotnet@v6
         with:
@@ -177,7 +177,7 @@ jobs:
       - name: Publish the launcher
         # Builds the UI too, see BuildUi in the project
         run: >
-          dotnet publish src/ArchipelaWoW.Launcher/ArchipelaWoW.Launcher.csproj -c Release -o publish
+          dotnet publish ArchipelaWoW.Launcher/ArchipelaWoW.Launcher.csproj -c Release -o publish
           -p:Version=${{ steps.version.outputs.version }}
 
       - name: Package

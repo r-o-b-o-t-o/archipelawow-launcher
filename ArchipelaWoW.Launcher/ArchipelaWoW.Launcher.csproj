@@ -37,7 +37,7 @@
   <!-- Release builds bundle the UI; skip with -p:SkipUiBuild=true when dist/ is already built. -->
   <Target Name="BuildUi" BeforeTargets="BeforeBuild" Condition="'$(Configuration)' == 'Release' And '$(SkipUiBuild)' != 'true'">
     <Error Condition="!Exists('$(UiDir)\src\data\options-schema.json')"
-           Text="The player options schema is missing: generate src\ui\src\data\options-schema.json from the apworld first, see the README." />
+           Text="The player options schema is missing: generate ui\src\data\options-schema.json from the apworld first, see the README." />
     <Exec Command="npm ci" WorkingDirectory="$(UiDir)" />
     <Exec Command="npm run build" WorkingDirectory="$(UiDir)" />
   </Target>
