@@ -42,11 +42,13 @@ bundle it with a prebuilt AzerothCore, the ArchipelaWoW modules and MySQL as a p
 - Ship `data/sql/archive`: the base schemas list its updates as applied, and missing files are reported
   on every start.
 - The servers create the databases they miss: `ServerManager` sets `AC_DISABLE_INTERACTIVE=1`, without
-  which they ask on their console first and wait. Start all waits for the authserver: both would create
-  the login database.
+  which they ask on their console first and wait. The authserver and the worldserver would both create
+  the login database: for this and the reason below, `ServerManager` starts neither while the other
+  starts.
 - Since AzerothCore #26658 the authserver flags every realm offline when it starts, which hides the
-  realms also flagged "version mismatch", as a worldserver that died while starting leaves its own; with
-  none left, the authserver exits. `ServerManager` clears that flag before starting it, and
+  realms also flagged "version mismatch", as a worldserver leaves its own from when it has set up its
+  databases until it's started, or for good if it dies while starting; with none left, the authserver
+  exits. `ServerManager` clears the version mismatch flag before starting the authserver, and
   `UpdateUptimeInterval` has a running worldserver clear the offline flag within a minute.
 - The servers run under ConPTY: on a pipe the CRT block-buffers their output.
 - ConPTY rewrites the last character of a wrapped line after moving the cursor, doubling it in the

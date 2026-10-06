@@ -68,15 +68,27 @@ export default function ServerCard(props: {
 				<Show
 					when={isActive(props.status)}
 					fallback={
-						<Button
-							size="sm"
-							variant="primary"
-							icon="play"
-							busy={busy() === "start"}
-							onClick={() => run("start")}
-						>
-							Start
-						</Button>
+						<>
+							<Button
+								size="sm"
+								variant="primary"
+								icon="play"
+								busy={busy() === "start"}
+								onClick={() => run("start")}
+							>
+								Start
+							</Button>
+							{/* A start can wait minutes for the other server: stopping cancels it */}
+							<Show when={busy() === "start"}>
+								<Button
+									size="sm"
+									icon="stop"
+									onClick={() => attempt(() => api.servers.stop(props.status.name))}
+								>
+									Stop
+								</Button>
+							</Show>
+						</>
 					}
 				>
 					<Button

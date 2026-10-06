@@ -135,7 +135,7 @@ public partial class MainWindow : Window
         _services.Tasks.Cancel();
         try
         {
-            await _services.Servers.StopAllAsync();
+            await _services.Servers.ShutDownAsync();
         }
         catch (Exception ex)
         {
