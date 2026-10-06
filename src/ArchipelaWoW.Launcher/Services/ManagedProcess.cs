@@ -146,6 +146,20 @@ public sealed class ManagedProcess(
         }
     }
 
+    /// <summary>Completes once the process is neither starting nor stopping: running, or gone.</summary>
+    public Task WaitUntilSettledAsync()
+    {
+        var settled = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        void Check()
+        {
+            if (State is not (ServerState.Starting or ServerState.Stopping) && settled.TrySetResult())
+                StateChanged -= Check;
+        }
+        StateChanged += Check;
+        Check();
+        return settled.Task;
+    }
+
     public void Input(string data) => _pty?.Write(data);
 
     public void Resize(short columns, short rows)

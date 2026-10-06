@@ -16,8 +16,14 @@ public sealed class ServerManager
     // then leaves running. Once shutting down, MySQL's stays cancelled, and with it every start, as they all need it.
     readonly Dictionary<ManagedProcess, CancellationTokenSource> _startCancellations;
     bool _shuttingDown;
-    // Authserver starts and restarts that have yet to launch it, which a worldserver start waits for
-    int _pendingAuthServerStarts;
+    // Held by an authserver or worldserver start or restart from its beginning until the server it launches is
+    // running or gone, so that neither launches while the other starts. From when it has set up its databases until
+    // it's started, a worldserver flags its realm "version mismatch". Along with the offline flag an authserver sets
+    // on every realm as it starts, that hides the realm from it, and an authserver left without a realm exits.
+    // Clearing the flag doesn't make up for it, as the worldserver may set it after. Both would also create a
+    // missing login database.
+    readonly SemaphoreSlim _launchGate = new(1);
+    ManagedProcess? _launchGateHolder;
 
     public ManagedProcess MySql { get; }
     public ManagedProcess AuthServer { get; }
@@ -71,48 +77,52 @@ public sealed class ServerManager
         if (!Directory.Exists(_paths.MySqlDataDir))
             throw new InvalidOperationException("The database isn't set up yet, run the setup first.");
 
-        if (process == AuthServer)
-            _pendingAuthServerStarts++;
+        if (process == MySql)
+            process.Start();
+        else
+            await LaunchAsync(process, restart: false, token);
+    }
+
+    // Starts the authserver or worldserver within the launch gate, and MySQL first. A restart stops the server once
+    // in the gate, so that the other server doesn't start meanwhile, only for this one to wait out its start.
+    async Task LaunchAsync(ManagedProcess process, bool restart, CancellationToken token)
+    {
+        if (_launchGateHolder is { } holder)
+            process.Terminal.WriteNotice($"Waiting for {holder.DisplayName} to start...");
+        await _launchGate.WaitAsync(token);
+        _launchGateHolder = process;
         try
         {
-            if (process != MySql)
-            {
-                if (!_configs.ConfigsExist)
-                    throw new InvalidOperationException("The server configuration files are missing, run the setup first.");
-                MySql.Start();
-                await MySql.WaitUntilRunningAsync(token);
-                if (!process.IsActive)
-                {
-                    // From when it has set up its databases until it's started, a worldserver flags its realm
-                    // "version mismatch". Along with the offline flag an authserver sets on every realm as it
-                    // starts, that hides the realm from it, and an authserver left without a realm exits. Clearing
-                    // the flag doesn't make up for it, as the worldserver may set it after. Both would also create
-                    // a missing login database. The worldserver goes on whether the authserver then runs or not:
-                    // it can run without it.
-                    var other = process == AuthServer ? WorldServer : AuthServer;
-                    bool OtherStarting() =>
-                        other.State == ServerState.Starting || (other == AuthServer && _pendingAuthServerStarts > 0);
-                    if (OtherStarting())
-                    {
-                        process.Terminal.WriteNotice($"Waiting for {other.DisplayName} to start...");
-                        while (OtherStarting())
-                            await Task.Delay(250, token);
-                    }
-                    // The worldserver launches right after its last check, as an authserver start could begin
-                    // unseen during an await; an authserver start counts from its beginning instead
-                    if (process == AuthServer &&
-                        _configs.GetDatabaseName("authserver.conf", "LoginDatabaseInfo") is { } loginDatabase)
-                        await _mySql.ClearRealmVersionMismatchAsync(loginDatabase);
-                }
-                token.ThrowIfCancellationRequested();
-            }
+            if (restart)
+                await process.StopAsync();
+            if (!_configs.ConfigsExist)
+                throw new InvalidOperationException("The server configuration files are missing, run the setup first.");
+            MySql.Start();
+            await MySql.WaitUntilRunningAsync(token);
+            if (process == AuthServer && !AuthServer.IsActive &&
+                _configs.GetDatabaseName("authserver.conf", "LoginDatabaseInfo") is { } loginDatabase)
+                await _mySql.ClearRealmVersionMismatchAsync(loginDatabase);
+            token.ThrowIfCancellationRequested();
             process.Start();
         }
-        finally
+        catch
         {
-            if (process == AuthServer)
-                _pendingAuthServerStarts--;
+            LeaveLaunchGate();
+            throw;
         }
+        _ = LeaveLaunchGateOnceSettledAsync(process);
+    }
+
+    async Task LeaveLaunchGateOnceSettledAsync(ManagedProcess process)
+    {
+        await process.WaitUntilSettledAsync();
+        LeaveLaunchGate();
+    }
+
+    void LeaveLaunchGate()
+    {
+        _launchGateHolder = null;
+        _launchGate.Release();
     }
 
     /// <summary>Stops a server, and first the servers that depend on it. Cancels the starts that need it.</summary>
@@ -130,18 +140,13 @@ public sealed class ServerManager
         var process = Get(name);
         // Made before stopping, so that stopping this server or MySQL meanwhile cancels the start too
         using var cancellation = StartCancellation(process);
-        if (process == AuthServer)
-            _pendingAuthServerStarts++;
-        try
+        if (process != MySql)
         {
-            await process.StopAsync();
-            await IgnoreCancellation(StartAsync(process, cancellation.Token));
+            await IgnoreCancellation(LaunchAsync(process, restart: true, cancellation.Token));
+            return;
         }
-        finally
-        {
-            if (process == AuthServer)
-                _pendingAuthServerStarts--;
-        }
+        await process.StopAsync();
+        await IgnoreCancellation(StartAsync(process, cancellation.Token));
     }
 
     public async Task StartAllAsync()
