@@ -87,8 +87,17 @@ public static class Downloads
         }
         catch (InvalidDataException ex)
         {
-            File.Delete(zip);
-            throw new InvalidDataException($"{Path.GetFileName(zip)} is damaged, start again to download it anew. {ex.Message}", ex);
+            var next = "start again to download it anew";
+            try
+            {
+                File.Delete(zip);
+            }
+            catch (Exception deleteError) when (deleteError is IOException or UnauthorizedAccessException)
+            {
+                Log.Error($"Could not delete {zip}", deleteError);
+                next = $"delete {zip} and start again";
+            }
+            throw new InvalidDataException($"{Path.GetFileName(zip)} is damaged, {next}. {ex.Message}", ex);
         }
     }
 }
