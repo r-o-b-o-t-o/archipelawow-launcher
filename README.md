@@ -1,13 +1,13 @@
 # 🌍 ArchipelaWoW Launcher
 
 The easiest way to host [ArchipelaWoW](https://github.com/r-o-b-o-t-o/archipelawow) on Windows: a
-launcher bundled with a ready-to-run build of [AzerothCore](https://www.azerothcore.org/) and the
-ArchipelaWoW modules.
+launcher that installs a ready-to-run build of [AzerothCore](https://www.azerothcore.org/) with the
+ArchipelaWoW modules, and edits Archipelago player options.
 
 No development tools, database server or runtime to install: extract the archive and start
-`ArchipelaWoW.Launcher.exe`. The launcher sets up the database and the configuration on first launch,
-gets the client data, runs the servers with their consoles in one window, and edits Archipelago player
-options.
+`ArchipelaWoW.Launcher.exe`. The launcher downloads the server, sets up the database and the
+configuration, gets the client data, runs the servers with their consoles in one window, and keeps the
+server up to date. The player options editor works without the server.
 
 > [!WARNING]
 > The launcher is a convenient way to run ArchipelaWoW with its default setup, and nothing more: the
@@ -24,10 +24,13 @@ options.
 1. Download `ArchipelaWoW-Launcher-<version>.zip` from the [latest release](../../releases/latest).
 2. Extract it close to the root of a drive, e.g. into `C:\Games`. Deep folders don't work: the server
    can't open files whose path is longer than 259 characters, and the launcher warns about it.
-3. Start `ArchipelaWoW.Launcher.exe` and follow the setup: database, configuration, then the client
-   data, which you can download or extract from your own World of Warcraft 3.3.5a client.
+3. Start `ArchipelaWoW.Launcher.exe` and follow the setup: the server, the database, the configuration,
+   then the client data, which you can download or extract from your own World of Warcraft 3.3.5a
+   client.
 4. Start the servers from the dashboard, create a game account there, and set `set realmlist 127.0.0.1`
    in your client's `Data\<locale>\realmlist.wtf`.
+
+To only make player options, skip the setup and open **Player options**.
 
 It runs on 64-bit Windows 10 (1809 or later) and 11. The interface uses the Microsoft Edge WebView2
 Runtime, which comes with Windows 11 and up-to-date Windows 10; the launcher links to its installer
@@ -35,32 +38,64 @@ when it's missing.
 
 The whole folder is portable: move it and it keeps working.
 
-To update, close the launcher, delete the `server\source` folder, and extract the new release to the
-same place, replacing files. The database, configuration, client data and player options are not part
-of the archive, so they stay as they are, and the server applies the new database updates when it
-starts. `server\source` only holds files from the release, and leftovers of the old one would confuse
-the database updater when AzerothCore renames an update.
+### Updating
+
+The server's card in the settings shows when a new server release is out. Updating it keeps the
+databases, configuration, client data and player options, and the server applies the new database
+updates when it starts. The same card switches to another build of the server, or deletes the server
+with its databases, configuration, client data and logs.
+
+To update the launcher, close it and extract the new release to the same place, replacing files.
+
+Coming from a release that had the server in it (the ones numbered by date, like 2026.10.3.2): extract
+the launcher over it the same way, then update the server from the settings. The `release.json` left at
+the root of the folder is no longer used.
 
 ### What's in the folder
 
 | Path | Contents |
 | --- | --- |
 | `ArchipelaWoW.Launcher.exe` | The launcher |
-| `release.json` | What the release was built from: versions and commits |
+| `licenses` | The licenses of the software the launcher is built with |
+| `launcher` | The launcher's settings, logs (including the MySQL and tasks consoles) and downloads |
+| `players` | Archipelago player options (YAML) |
 | `server\bin` | authserver, worldserver, dbimport, the client data extractors, and `configs\` |
 | `server\source` | The SQL files the server builds and updates its databases from |
+| `server\licenses` | The licenses of the software in the server, besides MySQL's, which are in `mysql` |
+| `server\release.json` | What the server was built from: versions and commits |
 | `server\data`, `server\logs` | Client data and server logs, created by the launcher |
 | `mysql` | MySQL Community Server; `mysql\data` holds the databases |
-| `launcher` | The launcher's settings and logs, including the MySQL and tasks consoles |
-| `players` | Archipelago player options (YAML) |
-| `licenses` | The licenses of the bundled software, besides MySQL's, which are in `mysql` |
+
+`server` and `mysql` come from the [server releases](https://github.com/r-o-b-o-t-o/archipelawow-repack/releases),
+built by [archipelawow-repack](https://github.com/r-o-b-o-t-o/archipelawow-repack).
 
 MySQL listens on `127.0.0.1:3310` only (the port can be changed in the settings), with the user `acore`
 and the password `acore`, for tools such as HeidiSQL or Keira3.
 
 ## 📦 Releases
 
-The server is built by [archipelawow-repack](https://github.com/r-o-b-o-t-o/archipelawow-repack).
+Pushing a version tag on master releases the launcher with [`release.yml`](.github/workflows/release.yml).
+The tag must match `<Version>` in [`ArchipelaWoW.Launcher.csproj`](ArchipelaWoW.Launcher/ArchipelaWoW.Launcher.csproj):
+bump it, push to master, then tag that commit.
+
+```bash
+git tag v1.2.3
+```
+
+```bash
+git push origin v1.2.3
+```
+
+[`build.yml`](.github/workflows/build.yml) builds every push to master and every pull request, and
+checks the interface's formatting.
+
+The player options editor follows the latest release of the apworld, whose options both workflows turn
+into a schema with [`scripts/dump-options-schema.py`](scripts/dump-options-schema.py). When that fails,
+so does the build.
+
+The setup offers each archive of the latest
+[server release](https://github.com/r-o-b-o-t-o/archipelawow-repack/releases/latest) as a build:
+`ArchipelaWoW-Repack-<build>-<version>.zip`.
 
 ## 🛠️ Development
 
@@ -88,7 +123,8 @@ Requirements: the .NET 10 SDK, Node.js 22 and Python 3.11 or later.
    npm run dev
    ```
 
-3. **Start the launcher** on an installation folder, loading the interface from the dev server:
+3. **Start the launcher** on an installation folder, loading the interface from the dev server. An empty
+   folder works: install the server from the setup.
 
    ```bash
    dotnet run --project ArchipelaWoW.Launcher -- --root <installation folder> --dev-server http://localhost:5173
