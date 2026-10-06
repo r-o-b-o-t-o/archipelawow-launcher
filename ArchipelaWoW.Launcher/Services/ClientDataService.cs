@@ -42,7 +42,7 @@ public sealed class ClientDataService(AppPaths paths, SettingsStore settings, Ht
         await Downloads.DownloadOnceAsync(http, release.Url, zip, release.Size, task, token);
 
         task.Stage("Extracting the client data");
-        await InstallAsync(servers, staging => Task.Run(() => Downloads.ExtractZip(zip, staging, task, token), token));
+        await InstallAsync(task, servers, staging => Task.Run(() => Downloads.ExtractZip(zip, staging, task, token), token));
         Directories.Delete(downloadDir);
         settings.Update(s => s.ClientDataVersion = release.Tag);
     }
@@ -60,7 +60,7 @@ public sealed class ClientDataService(AppPaths paths, SettingsStore settings, Ht
         settings.Update(s => s.WowClientPath = clientPath);
 
         var steps = generateMmaps ? 4 : 3;
-        await InstallAsync(servers, async staging =>
+        await InstallAsync(task, servers, async staging =>
         {
             task.Stage($"Extracting DBC files, maps and cameras (1/{steps})");
             await RunExtractorAsync(task, "map_extractor", ["-i", clientPath, "-o", staging], staging, token);
@@ -88,29 +88,43 @@ public sealed class ClientDataService(AppPaths paths, SettingsStore settings, Ht
     /// Has <paramref name="produce"/> write the data folders to a staging directory, and only then replaces
     /// the installed ones with them, so that a failed or cancelled extraction leaves the data as it was.
     /// </summary>
-    async Task InstallAsync(ServerManager servers, Func<string, Task> produce)
+    async Task InstallAsync(TaskRunner task, ServerManager servers, Func<string, Task> produce)
     {
         var staging = Path.Combine(paths.DataDir, ".staging");
-        Directories.Delete(staging);
-        Directory.CreateDirectory(staging);
+        await Task.Run(() =>
+        {
+            Directories.Delete(staging);
+            Directory.CreateDirectory(staging);
+        });
         try
         {
             await produce(staging);
             // Generating mmaps takes hours: a worldserver started meanwhile would hold the old files open,
             // and deleting them would stop halfway
             EnsureWorldServerStopped(servers);
-            foreach (var folder in Folders)
+            servers.StartBlockedReason = $"Wait for \"{task.Current?.Title}\" to finish first.";
+            try
             {
-                var target = Path.Combine(paths.DataDir, folder);
-                Directories.Delete(target);
-                var source = Path.Combine(staging, folder);
-                if (Directory.Exists(source))
-                    Directory.Move(source, target);
+                await Task.Run(() =>
+                {
+                    foreach (var folder in Folders)
+                    {
+                        var target = Path.Combine(paths.DataDir, folder);
+                        Directories.Delete(target);
+                        var source = Path.Combine(staging, folder);
+                        if (Directory.Exists(source))
+                            Directory.Move(source, target);
+                    }
+                });
+            }
+            finally
+            {
+                servers.StartBlockedReason = null;
             }
         }
         finally
         {
-            Directories.Delete(staging);
+            await Task.Run(() => Directories.Delete(staging));
         }
     }
 
