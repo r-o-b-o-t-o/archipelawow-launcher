@@ -1,8 +1,3 @@
-using System.IO.Compression;
-using System.Net;
-using System.Net.Http.Headers;
-using System.Text.Json;
-
 namespace ArchipelaWoW.Launcher.Services;
 
 public sealed record ClientDataRelease(string Tag, DateTimeOffset PublishedAt, string AssetName, long Size, string Url);
@@ -13,7 +8,7 @@ public sealed record ClientDataRelease(string Tag, DateTimeOffset PublishedAt, s
 /// </summary>
 public sealed class ClientDataService(AppPaths paths, SettingsStore settings, HttpClient http)
 {
-    const string LatestReleaseUrl = "https://api.github.com/repos/wowgaming/client-data/releases/latest";
+    const string Repository = "wowgaming/client-data";
     static readonly string[] Folders = ["dbc", "maps", "vmaps", "mmaps", "Cameras"];
     // worldserver refuses to start without these; mmaps and cameras are optional
     static readonly string[] RequiredFolders = ["dbc", "maps", "vmaps"];
@@ -31,20 +26,9 @@ public sealed class ClientDataService(AppPaths paths, SettingsStore settings, Ht
 
     public async Task<ClientDataRelease> GetLatestReleaseAsync(CancellationToken token)
     {
-        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(token);
-        timeout.CancelAfter(TimeSpan.FromSeconds(30));
-        using var response = await http.GetAsync(LatestReleaseUrl, timeout.Token);
-        response.EnsureSuccessStatusCode();
-        using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync(timeout.Token));
-        var release = document.RootElement;
-        var asset = release.GetProperty("assets").EnumerateArray()
-            .First(a => a.GetProperty("name").GetString()!.EndsWith(".zip", StringComparison.OrdinalIgnoreCase));
-        return new ClientDataRelease(
-            release.GetProperty("tag_name").GetString()!,
-            release.GetProperty("published_at").GetDateTimeOffset(),
-            asset.GetProperty("name").GetString()!,
-            asset.GetProperty("size").GetInt64(),
-            asset.GetProperty("browser_download_url").GetString()!);
+        var release = await GitHub.GetLatestReleaseAsync(http, Repository, token);
+        var asset = release.Assets.First(a => a.Name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase));
+        return new ClientDataRelease(release.Tag, release.PublishedAt, asset.Name, asset.Size, asset.Url);
     }
 
     public async Task DownloadAsync(TaskRunner task, ServerManager servers, CancellationToken token)
@@ -59,12 +43,12 @@ public sealed class ClientDataService(AppPaths paths, SettingsStore settings, Ht
         if (!File.Exists(zip) || new FileInfo(zip).Length != release.Size)
         {
             task.Stage($"Downloading {release.AssetName} {release.Tag}");
-            await DownloadFileAsync(release.Url, zip + ".part", release.Size, task, token);
+            await Downloads.DownloadFileAsync(http, release.Url, zip + ".part", release.Size, task, token);
             File.Move(zip + ".part", zip, overwrite: true);
         }
 
         task.Stage("Extracting the client data");
-        await InstallAsync(servers, staging => Task.Run(() => ExtractArchive(zip, staging, task, token), token));
+        await InstallAsync(servers, staging => Task.Run(() => Downloads.ExtractZip(zip, staging, task, token), token));
         Directory.Delete(downloadDir, recursive: true);
         settings.Update(s => s.ClientDataVersion = release.Tag);
     }
@@ -141,70 +125,6 @@ public sealed class ClientDataService(AppPaths paths, SettingsStore settings, Ht
         var exitCode = await task.RunToolAsync(paths.ServerExe(tool), arguments, workingDirectory, token);
         if (exitCode != 0)
             throw new InvalidOperationException($"{tool} failed with code {exitCode}.");
-    }
-
-    async Task DownloadFileAsync(string url, string file, long size, TaskRunner task, CancellationToken token)
-    {
-        // Resume a previous attempt when the server supports it
-        var existing = File.Exists(file) ? new FileInfo(file).Length : 0;
-        using var request = new HttpRequestMessage(HttpMethod.Get, url);
-        if (existing > 0 && existing < size)
-            request.Headers.Range = new RangeHeaderValue(existing, null);
-        using var response = await http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, token);
-        response.EnsureSuccessStatusCode();
-
-        var resumed = response.StatusCode == HttpStatusCode.PartialContent;
-        var done = resumed ? existing : 0;
-        await using var output = new FileStream(file, resumed ? FileMode.Append : FileMode.Create, FileAccess.Write, FileShare.None,
-            1 << 16, useAsync: true);
-        await using var input = await response.Content.ReadAsStreamAsync(token);
-        var buffer = new byte[1 << 16];
-        while (true)
-        {
-            // A connection that goes quiet would otherwise hang the download forever
-            using var stall = CancellationTokenSource.CreateLinkedTokenSource(token);
-            stall.CancelAfter(TimeSpan.FromSeconds(60));
-            int read;
-            try
-            {
-                read = await input.ReadAsync(buffer, stall.Token);
-            }
-            catch (OperationCanceledException) when (!token.IsCancellationRequested)
-            {
-                throw new IOException("The download stalled. Start it again to resume where it stopped.");
-            }
-            if (read == 0)
-                break;
-            await output.WriteAsync(buffer.AsMemory(0, read), token);
-            done += read;
-            task.Progress((double)done / size, $"{done >> 20} / {size >> 20} MB");
-        }
-        if (done != size)
-            throw new IOException($"The download ended early ({done >> 20} of {size >> 20} MB). Start it again to resume it.");
-    }
-
-    static void ExtractArchive(string zip, string directory, TaskRunner task, CancellationToken token)
-    {
-        using var archive = ZipFile.OpenRead(zip);
-        var root = Path.GetFullPath(directory) + Path.DirectorySeparatorChar;
-        var total = archive.Entries.Sum(e => e.Length);
-        long done = 0;
-        foreach (var entry in archive.Entries)
-        {
-            token.ThrowIfCancellationRequested();
-            var target = Path.GetFullPath(Path.Combine(root, entry.FullName));
-            if (!target.StartsWith(root, StringComparison.OrdinalIgnoreCase))
-                throw new InvalidDataException($"Unexpected path in the archive: {entry.FullName}");
-            if (entry.FullName.EndsWith('/'))
-            {
-                Directory.CreateDirectory(target);
-                continue;
-            }
-            Directory.CreateDirectory(Path.GetDirectoryName(target)!);
-            entry.ExtractToFile(target, overwrite: true);
-            done += entry.Length;
-            task.Progress((double)done / total, $"{done >> 20} / {total >> 20} MB");
-        }
     }
 
     void DeleteDataFolders(IEnumerable<string> folders)
