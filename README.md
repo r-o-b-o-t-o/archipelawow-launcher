@@ -86,11 +86,11 @@ git tag v1.2.3
 git push origin v1.2.3
 ```
 
-[`build.yml`](.github/workflows/build.yml) builds every push to master and every pull request, and
-checks the interface's formatting.
+[`build.yml`](.github/workflows/build.yml) builds every push to master and every pull request into it,
+and checks the interface's formatting.
 
-The player options editor follows the latest release of the apworld, whose options both workflows turn
-into a schema with [`scripts/dump-options-schema.py`](scripts/dump-options-schema.py). When that fails,
+The player options editor follows the newest release of the apworld, pre-releases included, whose
+options both workflows turn into a schema with [`scripts/dump-options-schema.py`](scripts/dump-options-schema.py). When that fails,
 so does the build.
 
 The setup offers each archive of the latest

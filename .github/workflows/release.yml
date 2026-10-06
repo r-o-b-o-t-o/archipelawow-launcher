@@ -68,5 +68,6 @@ jobs:
             "The player options editor follows apworld [$apworld](https://github.com/r-o-b-o-t-o/archipelawow/releases/tag/$apworld)."
           )
           $notes | Set-Content release-notes.md
-          # --latest: the date tags of the releases from before the repack moved out rank above the version tags
+          # Marked as the latest explicitly: GitHub may rank the date tags of the releases from before the repack moved
+          # out above the version tags
           gh release create $env:GITHUB_REF_NAME $archive --title "ArchipelaWoW Launcher $version" --notes-file release-notes.md --verify-tag --latest

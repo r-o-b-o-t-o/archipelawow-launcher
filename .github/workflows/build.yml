@@ -17,7 +17,7 @@ on:
         value: ${{ jobs.build.outputs.apworld }}
 
 env:
-  # The apworld whose player options the YAML editor offers, taken from its latest release
+  # The apworld whose player options the YAML editor offers, taken from its newest release, pre-releases included
   APWORLD_REPOSITORY: r-o-b-o-t-o/archipelawow
 
 permissions:
