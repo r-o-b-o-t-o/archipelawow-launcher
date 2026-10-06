@@ -56,7 +56,7 @@ export interface ClientDataStatus {
 
 export interface SetupStatus {
 	serverInstalled: boolean;
-	/** Null when the server isn't installed, or was installed without its release.json. */
+	/** Null when the server isn't installed, or its release.json is missing or unreadable. */
 	server: ServerManifest | null;
 	databaseInitialized: boolean;
 	configsCreated: boolean;

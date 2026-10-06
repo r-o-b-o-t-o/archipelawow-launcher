@@ -292,7 +292,7 @@ public static partial class BridgeApi
     static object SetupStatus(AppServices services) => new
     {
         ServerInstalled = services.Repack.IsInstalled,
-        Server = services.Repack.Manifest,
+        Server = services.Repack.IsInstalled ? services.Repack.Manifest : null,
         DatabaseInitialized = services.MySql.IsInitialized,
         ConfigsCreated = services.Configs.ConfigsExist,
         ClientData = services.ClientData.GetStatus(),
