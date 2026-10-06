@@ -40,7 +40,9 @@ export default function App(props: RouteSectionProps) {
 			<Show when={shuttingDown()}>
 				<div class="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-black/70 backdrop-blur-sm">
 					<Spinner class="size-8 text-gold" />
-					<p class="text-zinc-200">Stopping the servers...</p>
+					<p class="text-zinc-200">
+						{task() ? "Stopping the servers and the task in progress..." : "Stopping the servers..."}
+					</p>
 				</div>
 			</Show>
 		</div>

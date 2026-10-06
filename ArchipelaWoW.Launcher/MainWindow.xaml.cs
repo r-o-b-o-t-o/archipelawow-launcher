@@ -136,7 +136,7 @@ public partial class MainWindow : Window
         try
         {
             await _services.Servers.ShutDownAsync();
-            // Installing or deleting the server doesn't stop halfway
+            // Cancelling doesn't stop a task while it replaces or deletes files, such as the server's or the client data's
             await _services.Tasks.Idle;
         }
         catch (Exception ex)
