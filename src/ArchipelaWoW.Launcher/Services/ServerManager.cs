@@ -11,9 +11,9 @@ public sealed class ServerManager
     readonly AppPaths _paths;
     readonly MySqlService _mySql;
     readonly ConfigService _configs;
-    // Per server, cancelled and replaced by its stop: a start still waiting for MySQL or the authserver would
-    // otherwise start it once the stop is done, which closing the window then leaves running. Once shutting
-    // down, MySQL's stays cancelled, and with it every start, as they all need it.
+    // Per server, cancelled and replaced by its stop: a start still waiting for MySQL, or for the other of the
+    // authserver and worldserver, would otherwise start its server once the stop is done, which closing the window
+    // then leaves running. Once shutting down, MySQL's stays cancelled, and with it every start, as they all need it.
     readonly Dictionary<ManagedProcess, CancellationTokenSource> _startCancellations;
     bool _shuttingDown;
     // Authserver starts and restarts that have yet to launch it, which a worldserver start waits for
@@ -84,10 +84,11 @@ public sealed class ServerManager
                 if (!process.IsActive)
                 {
                     // From when it has set up its databases until it's started, a worldserver flags its realm
-                    // "version mismatch", which hides it from an authserver loading the realms meanwhile, and that
-                    // one exits for lack of a realm; both would also create a missing login database. Clearing the
-                    // flag doesn't make up for it, as the worldserver may set it after. The worldserver goes on
-                    // whether the authserver then runs or not: it can run without it.
+                    // "version mismatch". Along with the offline flag an authserver sets on every realm as it
+                    // starts, that hides the realm from it, and an authserver left without a realm exits. Clearing
+                    // the flag doesn't make up for it, as the worldserver may set it after. Both would also create
+                    // a missing login database. The worldserver goes on whether the authserver then runs or not:
+                    // it can run without it.
                     var other = process == AuthServer ? WorldServer : AuthServer;
                     bool OtherStarting() =>
                         other.State == ServerState.Starting || (other == AuthServer && _pendingAuthServerStarts > 0);
