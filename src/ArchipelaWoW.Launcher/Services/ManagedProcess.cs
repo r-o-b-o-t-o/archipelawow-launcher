@@ -21,10 +21,8 @@ public sealed class ManagedProcess(
 {
     readonly object _lock = new();
     PtyProcess? _pty;
+    Task _exitHandled = Task.CompletedTask;
     bool _stopRequested;
-    // From an exit with RestartExitCode until the restart: a stop in between cancels it, which closing the
-    // window would otherwise leave running
-    bool _restartPending;
     short _columns = 120, _rows = 30;
 
     public string Name { get; } = name;
@@ -46,17 +44,17 @@ public sealed class ManagedProcess(
     /// <summary>Raised on any thread.</summary>
     public event Action? StateChanged;
 
-    public void Start() => Start(restart: false);
+    /// <summary>Raised on any thread when the process exits by itself with <see cref="RestartExitCode"/>.</summary>
+    public event Action? RestartRequested;
 
-    void Start(bool restart)
+    public void Start()
     {
         PtyProcess pty;
         bool portTaken;
         lock (_lock)
         {
-            if (IsActive || restart && !_restartPending)
+            if (IsActive)
                 return;
-            _restartPending = false;
 
             var processSpec = spec();
             Terminal.WriteNotice($"Starting {DisplayName}...");
@@ -80,26 +78,27 @@ public sealed class ManagedProcess(
             _pty = pty;
             StartedAt = DateTimeOffset.Now;
             State = ServerState.Starting;
+            _exitHandled = pty.Exited.ContinueWith(t => OnExited(pty, t.Result), TaskScheduler.Default);
         }
         StateChanged?.Invoke();
         // Whatever holds the port would pass for this process being ready
         if (!portTaken)
             _ = WatchReadinessAsync(pty);
-        _ = pty.Exited.ContinueWith(t => OnExited(pty, t.Result), TaskScheduler.Default);
     }
 
-    // Handles the exit itself before returning, as Start's continuation may not have yet: a restart would
-    // otherwise find the process still stopping and not start it
+    // Returns once the exit is handled, not just once the process exits: a restart would otherwise find it
+    // still stopping and not start it
     public async Task StopAsync()
     {
         PtyProcess pty;
+        Task exitHandled;
         bool alreadyStopping;
         lock (_lock)
         {
-            _restartPending = false;
             if (!IsActive || _pty == null)
                 return;
             pty = _pty;
+            exitHandled = _exitHandled;
             alreadyStopping = State == ServerState.Stopping;
             _stopRequested = true;
             State = ServerState.Stopping;
@@ -108,7 +107,7 @@ public sealed class ManagedProcess(
         // down, and falling back to Ctrl+C then cuts MySQL's shutdown short
         if (alreadyStopping)
         {
-            OnExited(pty, await pty.Exited);
+            await exitHandled;
             return;
         }
         StateChanged?.Invoke();
@@ -121,7 +120,7 @@ public sealed class ManagedProcess(
             Terminal.WriteNotice($"{DisplayName} did not stop within {stopTimeout.TotalSeconds:0} seconds, killing it.");
             pty.Kill();
         }
-        OnExited(pty, await pty.Exited);
+        await exitHandled;
     }
 
     public void Kill()
@@ -142,12 +141,12 @@ public sealed class ManagedProcess(
         {
             if (!IsActive)
                 throw new InvalidOperationException($"{DisplayName} stopped before it was ready, see its output for details.");
-            await Task.Delay(250, token);
+            await WaitUntilSettledAsync(token);
         }
     }
 
     /// <summary>Completes once the process is neither starting nor stopping: running, or gone.</summary>
-    public Task WaitUntilSettledAsync()
+    public Task WaitUntilSettledAsync(CancellationToken token = default)
     {
         var settled = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         void Check()
@@ -157,7 +156,7 @@ public sealed class ManagedProcess(
         }
         StateChanged += Check;
         Check();
-        return settled.Task;
+        return settled.Task.WaitAsync(token);
     }
 
     public void Input(string data) => _pty?.Write(data);
@@ -194,29 +193,16 @@ public sealed class ManagedProcess(
         bool restart;
         lock (_lock)
         {
-            if (_pty != pty)
-                return;
             _pty = null;
             ExitCode = exitCode;
             restart = !_stopRequested && exitCode == RestartExitCode;
-            _restartPending = restart;
             State = _stopRequested || exitCode == 0 || restart ? ServerState.Stopped : ServerState.Crashed;
         }
         pty.Dispose();
         Terminal.WriteNotice($"{DisplayName} exited with code {exitCode}.");
         StateChanged?.Invoke();
-
         if (restart)
-        {
-            try
-            {
-                Start(restart: true);
-            }
-            catch (Exception ex)
-            {
-                Log.Error($"Could not restart {DisplayName}", ex);
-            }
-        }
+            RestartRequested?.Invoke();
     }
 
     static bool IsListening(int port) =>

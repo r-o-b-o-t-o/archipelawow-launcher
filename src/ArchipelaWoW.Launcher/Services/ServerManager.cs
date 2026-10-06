@@ -16,14 +16,14 @@ public sealed class ServerManager
     // then leaves running. Once shutting down, MySQL's stays cancelled, and with it every start, as they all need it.
     readonly Dictionary<ManagedProcess, CancellationTokenSource> _startCancellations;
     bool _shuttingDown;
-    // Held by an authserver or worldserver start or restart from its beginning until the server it launches is
-    // running or gone, so that neither launches while the other starts. From when it has set up its databases until
-    // it's started, a worldserver flags its realm "version mismatch". Along with the offline flag an authserver sets
-    // on every realm as it starts, that hides the realm from it, and an authserver left without a realm exits.
-    // Clearing the flag doesn't make up for it, as the worldserver may set it after. Both would also create a
-    // missing login database.
+    // Held by an authserver or worldserver start or restart until the server it launches is running or gone. A
+    // worldserver flags its realm "version mismatch" until it's started, possibly after the authserver's start cleared
+    // the flag, leaving that authserver without a realm (see ClearRealmVersionMismatchAsync). Both would also create
+    // a missing login database.
     readonly SemaphoreSlim _launchGate = new(1);
     ManagedProcess? _launchGateHolder;
+    // Until MySQL's restart has started it again: the starts waiting for MySQL wait it out instead of failing
+    Task? _mySqlRestart;
 
     public ManagedProcess MySql { get; }
     public ManagedProcess AuthServer { get; }
@@ -58,6 +58,10 @@ public sealed class ServerManager
         };
         All = [MySql, AuthServer, WorldServer];
         _startCancellations = All.ToDictionary(p => p, _ => new CancellationTokenSource());
+
+        // Restarted like any start: through the launch gate, on the UI thread this is made on
+        var uiThread = SynchronizationContext.Current!;
+        WorldServer.RestartRequested += () => uiThread.Post(_ => RestartAfterExit(WorldServer), null);
     }
 
     public ManagedProcess Get(string name) =>
@@ -71,34 +75,65 @@ public sealed class ServerManager
         await IgnoreCancellation(StartAsync(process, cancellation.Token));
     }
 
-    async Task StartAsync(ManagedProcess process, CancellationToken token)
+    async Task StartAsync(ManagedProcess process, CancellationToken token, bool restart = false)
     {
         token.ThrowIfCancellationRequested();
         if (!Directory.Exists(_paths.MySqlDataDir))
             throw new InvalidOperationException("The database isn't set up yet, run the setup first.");
 
-        if (process == MySql)
+        if (process != MySql)
+        {
+            await LaunchAsync(process, restart, token);
+            return;
+        }
+        if (!restart)
+        {
             process.Start();
-        else
-            await LaunchAsync(process, restart: false, token);
+            return;
+        }
+        var restarted = new TaskCompletionSource();
+        _mySqlRestart = restarted.Task;
+        try
+        {
+            await process.StopAsync();
+            token.ThrowIfCancellationRequested();
+            process.Start();
+        }
+        finally
+        {
+            _mySqlRestart = null;
+            restarted.SetResult();
+        }
     }
 
     // Starts the authserver or worldserver within the launch gate, and MySQL first. A restart stops the server once
     // in the gate, so that the other server doesn't start meanwhile, only for this one to wait out its start.
     async Task LaunchAsync(ManagedProcess process, bool restart, CancellationToken token)
     {
-        if (_launchGateHolder is { } holder)
-            process.Terminal.WriteNotice($"Waiting for {holder.DisplayName} to start...");
+        // Its own start holds the gate until it's started
+        if (restart && _launchGateHolder == process)
+            await process.StopAsync();
+        if (_launchGate.CurrentCount == 0 && _launchGateHolder != process)
+            process.Terminal.WriteNotice($"Waiting for {(process == AuthServer ? WorldServer : AuthServer).DisplayName} to start...");
         await _launchGate.WaitAsync(token);
         _launchGateHolder = process;
         try
         {
             if (restart)
                 await process.StopAsync();
+            token.ThrowIfCancellationRequested();
             if (!_configs.ConfigsExist)
                 throw new InvalidOperationException("The server configuration files are missing, run the setup first.");
             MySql.Start();
-            await MySql.WaitUntilRunningAsync(token);
+            try
+            {
+                await MySql.WaitUntilRunningAsync(token);
+            }
+            catch (InvalidOperationException) when (_mySqlRestart is { } mySqlRestart)
+            {
+                await mySqlRestart.WaitAsync(token);
+                await MySql.WaitUntilRunningAsync(token);
+            }
             if (process == AuthServer && !AuthServer.IsActive &&
                 _configs.GetDatabaseName("authserver.conf", "LoginDatabaseInfo") is { } loginDatabase)
                 await _mySql.ClearRealmVersionMismatchAsync(loginDatabase);
@@ -140,13 +175,19 @@ public sealed class ServerManager
         var process = Get(name);
         // Made before stopping, so that stopping this server or MySQL meanwhile cancels the start too
         using var cancellation = StartCancellation(process);
-        if (process != MySql)
+        await IgnoreCancellation(StartAsync(process, cancellation.Token, restart: true));
+    }
+
+    async void RestartAfterExit(ManagedProcess process)
+    {
+        try
         {
-            await IgnoreCancellation(LaunchAsync(process, restart: true, cancellation.Token));
-            return;
+            await StartAsync(process.Name);
         }
-        await process.StopAsync();
-        await IgnoreCancellation(StartAsync(process, cancellation.Token));
+        catch (Exception ex)
+        {
+            Log.Error($"Could not restart {process.DisplayName}", ex);
+        }
     }
 
     public async Task StartAllAsync()
