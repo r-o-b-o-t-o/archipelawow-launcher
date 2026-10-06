@@ -1,0 +1,89 @@
+name: Build
+
+# Builds the launcher and its interface. The release workflow builds through this one.
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+  workflow_call:
+    outputs:
+      apworld:
+        description: The apworld release whose player options the build offers
+        value: ${{ jobs.build.outputs.apworld }}
+
+env:
+  # The apworld whose player options the YAML editor offers, taken from its latest release
+  APWORLD_REPOSITORY: r-o-b-o-t-o/archipelawow
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build
+    runs-on: windows-latest
+    outputs:
+      apworld: ${{ steps.schema.outputs.apworld }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+    defaults:
+      run:
+        shell: pwsh
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Generate the player options schema
+        id: schema
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          $archipelago = gh release view --repo ArchipelagoMW/Archipelago --json tagName --jq .tagName
+          git clone --depth 1 --branch $archipelago https://github.com/ArchipelagoMW/Archipelago.git archipelago
+          # Newest release, pre-releases included
+          $tag = gh release list --repo $env:APWORLD_REPOSITORY --limit 1 --json tagName --jq '.[0].tagName'
+          gh release download $tag --repo $env:APWORLD_REPOSITORY --pattern '*.apworld' --dir apworld
+          # An .apworld is a zip holding the world's folder
+          Get-ChildItem apworld\*.apworld | Rename-Item -NewName { "$($_.BaseName).zip" }
+          Expand-Archive apworld\*.zip -DestinationPath apworld
+          python -m pip install --quiet PyYAML schema typing_extensions pathspec
+          $world = Get-ChildItem apworld -Directory | Select-Object -First 1
+          python scripts/dump-options-schema.py --archipelago archipelago --world $world.FullName --output ui/src/data/options-schema.json
+          "apworld=$tag" >> $env:GITHUB_OUTPUT
+
+      - name: Publish
+        # Builds the interface too, see BuildUi in the project
+        run: dotnet publish ArchipelaWoW.Launcher -c Release -o 'package/ArchipelaWoW Launcher'
+
+      - name: Check the interface's formatting
+        working-directory: ui
+        run: npm run format:check
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ArchipelaWoW-Launcher
+          path: package
+          if-no-files-found: error
