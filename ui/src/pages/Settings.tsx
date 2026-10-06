@@ -1,6 +1,4 @@
 import { createEffect, createResource, createSignal, For, on, onMount, Show } from "solid-js";
-import ClientDataPanel from "../components/ClientDataPanel";
-import ServerPanel from "../components/ServerPanel";
 import TaskPanel from "../components/TaskPanel";
 import { Button, Card, Code, Field, inputBase, PageHeader, Select, Switch, TextInput } from "../components/ui";
 import { api, type FolderTarget, type SetupStatus } from "../lib/api";
@@ -40,12 +38,6 @@ export default function Settings() {
 					<TaskPanel />
 					<General />
 					<Launcher />
-					<Card title="Server" icon="server">
-						<ServerPanel status={setup()} />
-					</Card>
-					<Card title="Client data" icon="package">
-						<ClientDataPanel serverInstalled={setup()?.serverInstalled ?? false} />
-					</Card>
 					<ConfigEditor />
 					<Card title="Folders" icon="folder">
 						<div class="flex flex-wrap gap-2">

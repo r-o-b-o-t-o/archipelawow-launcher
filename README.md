@@ -44,10 +44,10 @@ The portable launcher's folder can be moved: it keeps working from its new place
 
 ### Updating
 
-The server's card in the settings shows when a new server release is out. Updating it keeps the
-databases, configuration, client data and player options, and the server applies the new database
-updates when it starts. The same card switches to another build of the server, or deletes the server
-with its databases, configuration, client data and logs.
+The server step of the launcher's **Setup** page shows when a new server release is out. Updating it
+keeps the databases, configuration, client data and player options, and the server applies the new
+database updates when it starts. The same step switches to another build of the server, or deletes the
+server with its databases, configuration, client data and logs.
 
 The sidebar shows when a new launcher release is out. Update from the launcher's card in the
 settings: the launcher downloads the release, stops the servers (asking first) and restarts. If you
@@ -57,14 +57,14 @@ launcher keeps the server, its settings and the player options.
 Launcher 1.0.0 and the releases before it don't update themselves: close the launcher, extract the
 portable archive over its folder, delete the old `ArchipelaWoW.Launcher.exe` and `licenses`, and start
 `ArchipelaWoW Launcher.exe`. Coming from a release that had the server in it (the ones numbered by
-date, like 2026.10.3.2), update the server from the settings next: the `release.json` left at the root
+date, like 2026.10.3.2), update the server from the Setup page next: the `release.json` left at the root
 of the folder is no longer used.
 
 ### Uninstalling
 
 The launcher installed by the setup is uninstalled from Windows' installed apps, which leaves
-`%LocalAppData%\ArchipelaWoW`: delete the server from the settings first, or delete that folder after.
-The portable launcher is only its folder.
+`%LocalAppData%\ArchipelaWoW`: delete the server from the Setup page first, or delete that folder
+after. The portable launcher is only its folder.
 
 ### What's in the folder
 
