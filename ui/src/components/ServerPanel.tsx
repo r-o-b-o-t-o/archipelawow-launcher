@@ -6,15 +6,8 @@ import { isActive, serverChanged, servers, task } from "../lib/store";
 import { attempt, errorMessage } from "../lib/toast";
 import { Badge, Button, Callout, Field, Select } from "./ui";
 
-// Release versions are numbers joined by dots, e.g. 2026.10.6.12
-function compareVersions(a: string, b: string) {
-	const [x, y] = [a.split(".").map(Number), b.split(".").map(Number)];
-	for (let i = 0; i < Math.max(x.length, y.length); i++) {
-		const difference = (x[i] ?? 0) - (y[i] ?? 0);
-		if (difference !== 0) return difference;
-	}
-	return 0;
-}
+// Release versions are numbers joined by dots, e.g. 2026.10.6.12: compared number by number
+const compareVersions = (a: string, b: string) => a.localeCompare(b, "en", { numeric: true });
 
 /** Installs the server from the latest archipelawow-repack release, updates it, or deletes it. */
 export default function ServerPanel(props: { status: SetupStatus | undefined }) {
