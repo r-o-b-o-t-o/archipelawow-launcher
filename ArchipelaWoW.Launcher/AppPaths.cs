@@ -27,6 +27,7 @@ public sealed class AppPaths(string root)
     public string SettingsFile => Path.Combine(LauncherDir, "settings.json");
     public string WebViewDataDir => Path.Combine(LauncherDir, "webview2");
     public string DownloadsDir => Path.Combine(LauncherDir, "downloads");
+    public string StagingDir => Path.Combine(LauncherDir, "staging");
 
     public string PlayersDir => Path.Combine(Root, "players");
 

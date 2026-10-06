@@ -68,7 +68,7 @@ public sealed partial class RepackService(AppPaths paths, SettingsStore settings
     {
         EnsureServersStopped(servers);
         using var startBlock = servers.BlockStarts(task);
-        var staging = Path.Combine(paths.LauncherDir, "staging");
+        var staging = paths.StagingDir;
         try
         {
             task.Stage("Looking up the latest server release");
@@ -140,8 +140,9 @@ public sealed partial class RepackService(AppPaths paths, SettingsStore settings
             {
                 Directories.Delete(paths.ServerDir);
                 Directories.Delete(paths.MySqlDir);
-                // Archives left by a failed or cancelled install
+                // What a failed or cancelled install may have left
                 Directories.Delete(paths.DownloadsDir);
+                Directories.Delete(paths.StagingDir);
             });
         }
         finally
