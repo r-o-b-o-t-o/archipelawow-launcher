@@ -380,7 +380,7 @@ export default function MapView(props: {
 								top: `${screen()[1]}px`,
 								background: markerBackground(marker().checks),
 							}}
-							title={marker().checks.length === 1 ? marker().checks[0].name : undefined}
+							data-tooltip={marker().checks.length === 1 ? marker().checks[0].name : undefined}
 							onPointerDown={(event) => event.stopPropagation()}
 							onClick={() => setPopup(marker())}
 						>

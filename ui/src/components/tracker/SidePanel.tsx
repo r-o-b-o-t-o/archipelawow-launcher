@@ -136,7 +136,7 @@ function Summary(props: { data: TrackerData }) {
 			<div class="grid grid-cols-5 gap-1.5">
 				<For each={progressive()}>
 					{(item) => (
-						<div class="relative" title={`${item.name}: ${item.have}/${item.total}`}>
+						<div class="relative" data-tooltip={`${item.name}: ${item.have}/${item.total}`}>
 							<Img
 								src={item.icon}
 								class={`size-full rounded border border-black/60 ${item.have === 0 ? "opacity-35 grayscale" : ""}`}
@@ -182,7 +182,7 @@ function SideChecks(props: { checks: Check[]; hideChecked: boolean }) {
 								"border-gold/60 bg-gold/10": selected() === key,
 								"border-white/5 bg-surface-2 hover:bg-surface-3": selected() !== key,
 							}}
-							title={bracketName(entry.bracket)}
+							data-tooltip={bracketName(entry.bracket)}
 							onClick={() => setSelected(selected() === key ? null : key)}
 						>
 							<span class="relative">

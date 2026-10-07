@@ -38,7 +38,7 @@ export default function ServerCard(props: {
 				props.selected ? "border-gold/40 bg-surface-2" : "border-white/5 bg-surface-2/60 hover:border-white/10"
 			}`}
 		>
-			<div class="flex items-start gap-3" title={props.description}>
+			<div class="flex items-start gap-3" data-tooltip={props.description}>
 				<div class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-surface-3 text-gold">
 					<Icon name={props.icon} class="size-5" />
 				</div>

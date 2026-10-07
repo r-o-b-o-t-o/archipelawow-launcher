@@ -46,7 +46,7 @@ function CheckRow(props: { check: Check }) {
 				disabled={!blocked()}
 				onClick={() => setOpen(!open())}
 				class="flex w-full items-center gap-2.5 px-3 py-1.5 text-left enabled:hover:bg-white/5"
-				title={props.check.name}
+				data-tooltip={props.check.name}
 			>
 				<img
 					src={props.check.icon}
@@ -67,7 +67,7 @@ function CheckRow(props: { check: Check }) {
 				<span
 					class="size-2.5 shrink-0 rounded-full"
 					style={{ background: stateColors[state()] }}
-					title={stateLabels[state()]}
+					data-tooltip={stateLabels[state()]}
 				/>
 				<Show when={blocked()}>
 					<Icon
