@@ -23,7 +23,16 @@
     "Mail.PushInboxOnDelivery": 1,
     // The authserver flags every realm offline when it starts, and a running worldserver clears it on
     // this interval (10 minutes by default): an authserver restart would list the realm offline that long
-    "UpdateUptimeInterval": 1
+    "UpdateUptimeInterval": 1,
+    "MailDeliveryDelay": 180,
+    "EnablePlayerSettings": 1,
+    "AllowTwoSide.Accounts": 1,
+    "AllowTwoSide.Interaction.Calendar": 1,
+    "AllowTwoSide.Interaction.Chat": 1,
+    "AllowTwoSide.Interaction.Channel": 1,
+    "AllowTwoSide.Interaction.Group": 1,
+    "AllowTwoSide.Interaction.Guild": 1,
+    "AllowTwoSide.Interaction.Auction": 1
   },
   "dbimport.conf": {
     "LogsDir": "../logs",
@@ -34,5 +43,22 @@
     "CharacterDatabaseInfo": "127.0.0.1;{mysqlPort};acore;acore;acore_characters"
   },
   "modules/archipelawow.conf": {
+  },
+  "modules/transmog.conf": {
+    "Transmogrification.AllowPoor": 1,
+    "Transmogrification.AllowCommon": 1,
+    "Transmogrification.AllowUncommon": 1,
+    "Transmogrification.AllowRare": 1,
+    "Transmogrification.AllowEpic": 1,
+    "Transmogrification.AllowLegendary": 1,
+    "Transmogrification.AllowArtifact": 1,
+    "Transmogrification.AllowHeirloom": 1,
+    "Transmogrification.AllowTradeable": 1,
+    "Transmogrification.AllowMixedArmorTypes": 1,
+    "Transmogrification.AllowLowerTiers": 1,
+    "Transmogrification.AllowMixedOffhandArmorTypes": 1,
+    "Transmogrification.AllowMixedWeaponTypes": 1,
+    "Transmogrification.AllowMixedWeaponHandedness": 1,
+    "Transmogrification.AllowFishingPoles": 1
   }
 }
