@@ -31,13 +31,13 @@ interface Target {
 	rect: Rect;
 }
 
-/** A marker's colour: green and red split when it holds checks both in and out of logic. */
+/** A marker's colour, split between the states of the checks it holds that are left to do. */
 export function markerBackground(checks: Check[]) {
 	const states = new Set(checks.map((check) => checkState(check.id)));
-	if (states.has("available") && states.has("blocked"))
-		return `conic-gradient(${stateColors.available} 0 50%, ${stateColors.blocked} 0)`;
-	for (const state of ["available", "blocked", "unknown"] as const) if (states.has(state)) return stateColors[state];
-	return stateColors.checked;
+	const left = (["available", "sequenceBreak", "blocked", "unknown"] as const).filter((state) => states.has(state));
+	if (left.length <= 1) return stateColors[left[0] ?? "checked"];
+	const slice = 100 / left.length;
+	return `conic-gradient(${left.map((state, i) => `${stateColors[state]} ${i * slice}% ${(i + 1) * slice}%`).join(", ")})`;
 }
 
 /**

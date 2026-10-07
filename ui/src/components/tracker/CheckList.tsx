@@ -5,9 +5,10 @@ import type { Requirement } from "../../tracker/logic";
 import { checkState, whyBlocked, type CheckState } from "../../tracker/state";
 import Icon from "../Icon";
 
-/** The colours of PopTracker: in logic, out of logic, checked, plus one for seeds without rules. */
+/** The colours of PopTracker: in logic, sequence break, out of logic, checked, plus one for seeds without rules. */
 export const stateColors: Record<CheckState, string> = {
 	available: "#22c55e",
+	sequenceBreak: "#facc15",
 	blocked: "#ef4444",
 	checked: "#71717a",
 	unknown: "#38bdf8",
@@ -15,12 +16,13 @@ export const stateColors: Record<CheckState, string> = {
 
 const stateLabels: Record<CheckState, string> = {
 	available: "In logic",
+	sequenceBreak: "Out of logic, but doable",
 	blocked: "Out of logic",
 	checked: "Checked",
 	unknown: "No logic",
 };
 
-const stateOrder: Record<CheckState, number> = { available: 0, unknown: 1, blocked: 2, checked: 3 };
+const stateOrder: Record<CheckState, number> = { available: 0, unknown: 1, sequenceBreak: 2, blocked: 3, checked: 4 };
 
 /** The checks of a marker or a group, the ones in logic first; a check out of logic shows why on click. */
 export default function CheckList(props: { checks: Check[] }) {
@@ -38,12 +40,12 @@ export default function CheckList(props: { checks: Check[] }) {
 function CheckRow(props: { check: Check }) {
 	const [open, setOpen] = createSignal(false);
 	const state = () => checkState(props.check.id);
-	const blocked = () => state() === "blocked";
+	const outOfLogic = () => state() === "sequenceBreak" || state() === "blocked";
 	return (
 		<li class="border-b border-white/5 last:border-b-0">
 			<button
 				type="button"
-				disabled={!blocked()}
+				disabled={!outOfLogic()}
 				onClick={() => setOpen(!open())}
 				class="flex w-full items-center gap-2.5 px-3 py-1.5 text-left enabled:hover:bg-white/5"
 				data-tooltip={props.check.name}
@@ -69,14 +71,14 @@ function CheckRow(props: { check: Check }) {
 					style={{ background: stateColors[state()] }}
 					data-tooltip={stateLabels[state()]}
 				/>
-				<Show when={blocked()}>
+				<Show when={outOfLogic()}>
 					<Icon
 						name="chevronRight"
 						class={`size-3.5 shrink-0 text-zinc-500 transition-transform ${open() ? "rotate-90" : ""}`}
 					/>
 				</Show>
 			</button>
-			<Show when={open() && blocked()}>
+			<Show when={open() && outOfLogic()}>
 				<div class="px-3 pb-2 pl-11">
 					<Requirements requirements={whyBlocked(props.check.id)} />
 				</div>

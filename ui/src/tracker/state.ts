@@ -6,8 +6,11 @@ import { buildChecks, type Check } from "./checks";
 import { evaluate, explainLocation, reachableRegions, type Requirement } from "./logic";
 import type { SlotData, TrackerData } from "./types";
 
-/** Checked, in logic, out of logic, or unknown for a seed without rules. */
-export type CheckState = "checked" | "available" | "blocked" | "unknown";
+/** Checked, in logic, doable out of logic, out of logic, or unknown for a seed without rules. */
+export type CheckState = "checked" | "available" | "sequenceBreak" | "blocked" | "unknown";
+
+// ProgressiveType.RIDING in the apworld's items/progressive.py
+const RIDING_TRACK = 5;
 
 const [status, setStatus] = createSignal<TrackerStatus>({ status: "disconnected", error: null });
 const [seed, setSeed] = createSignal<TrackerSeed | null>(null);
@@ -67,6 +70,19 @@ const derived = createRoot(() => {
 		return logic ? reachableRegions(logic, counts()) : null;
 	});
 
+	// The level brackets also ask for the class's abilities and the riding ranks, which pace the seed rather
+	// than make its checks doable: with them all, the regions a check can be done in out of logic
+	const reachableOutOfLogic = createMemo(() => {
+		const slot = slotData();
+		if (!slot?.logic) return null;
+		const names = seed()!.itemNames;
+		const paced = new Map(counts());
+		for (const [id] of slot.items.spells) paced.set(names[id], 1);
+		for (const [id, track, steps] of slot.items.progressive)
+			if (track === RIDING_TRACK) paced.set(names[id], steps.length);
+		return reachableRegions(slot.logic, paced);
+	});
+
 	// Most quests share their rule with others, so each rule is evaluated once
 	const ruleResults = createMemo(() => slotData()?.logic?.rules.map((rule) => evaluate(rule, counts())) ?? []);
 
@@ -84,22 +100,17 @@ const derived = createRoot(() => {
 	const states = createMemo(() => {
 		const done = checked();
 		const regions = reachable();
+		const regionsOutOfLogic = reachableOutOfLogic();
 		const results = ruleResults();
-		const result = new Map<number, CheckState>();
-		for (const check of checks()) {
-			const entry = locationLogic().get(check.id);
-			result.set(
-				check.id,
-				done.has(check.id)
-					? "checked"
-					: !regions || !entry
-						? "unknown"
-						: regions.has(entry.region) && results[entry.rule]
-							? "available"
-							: "blocked",
-			);
-		}
-		return result;
+		const stateOf = (id: number): CheckState => {
+			const entry = locationLogic().get(id);
+			if (done.has(id)) return "checked";
+			if (!regions || !regionsOutOfLogic || !entry) return "unknown";
+			if (!results[entry.rule]) return "blocked";
+			if (regions.has(entry.region)) return "available";
+			return regionsOutOfLogic.has(entry.region) ? "sequenceBreak" : "blocked";
+		};
+		return new Map(checks().map((check) => [check.id, stateOf(check.id)]));
 	});
 
 	return { slotData, counts, reachable, locationLogic, checks, states };
