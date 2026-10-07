@@ -8,6 +8,8 @@ import { Badge, Button, Callout, Field, Select } from "./ui";
 
 // Release versions are numbers joined by dots, e.g. 2026.10.6.12: compared number by number
 const compareVersions = (a: string, b: string) => a.localeCompare(b, "en", { numeric: true });
+// Offered when no build is installed. GitHub lists the archives by name, which puts it after "playerbots".
+const defaultBuild = "standard";
 
 /** Installs the server from the latest archipelawow-repack release, updates it, or deletes it. */
 export default function ServerPanel(props: { status: SetupStatus | undefined }) {
@@ -25,12 +27,10 @@ export default function ServerPanel(props: { status: SetupStatus | undefined }) 
 		installedBuild() !== undefined &&
 		latest() !== undefined &&
 		!archives().some((a) => a.build === installedBuild());
+	const preferredArchive = () =>
+		archives().find((a) => a.build === (installedBuild() ?? defaultBuild)) ?? archives()[0];
 	// The installed build unless another is picked, so that updating keeps it
-	const build = () =>
-		chosenBuild() ??
-		(installedBuildGone()
-			? null
-			: ((archives().find((a) => a.build === installedBuild()) ?? archives()[0])?.build ?? null));
+	const build = () => chosenBuild() ?? (installedBuildGone() ? null : (preferredArchive()?.build ?? null));
 	// Positive when the latest release is newer, which an unknown installed version counts as
 	const versionOrder = () => {
 		const [installedVersion, latestVersion] = [manifest()?.version, latest()?.version];
