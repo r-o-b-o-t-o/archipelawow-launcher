@@ -11,6 +11,17 @@ public sealed class LauncherSettings
     /// <summary>Release tag of the downloaded client data, or "extracted".</summary>
     public string? ClientDataVersion { get; set; }
     public string? WowClientPath { get; set; }
+    public TrackerSettings Tracker { get; set; } = new();
+}
+
+/// <summary>The room the tracker last connected to, and how it shows the checks.</summary>
+public sealed class TrackerSettings
+{
+    public string? Host { get; set; }
+    public int? Port { get; set; }
+    public string? Slot { get; set; }
+    public string? Password { get; set; }
+    public bool HideChecked { get; set; } = true;
 }
 
 public sealed class SettingsStore(string file)

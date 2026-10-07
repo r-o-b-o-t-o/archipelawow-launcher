@@ -27,6 +27,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Archipelago.MultiClient.Net" Version="6.7.1" />
     <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4258.31" GeneratePathProperty="true" />
     <!-- The release workflow packs the launcher with the vpk of the same version -->
     <PackageReference Include="Velopack" Version="1.2.161" />
@@ -65,6 +66,10 @@
       <!-- Its package has no license file. Also Velopack's: the Update.exe and the stub that vpk adds, though not the Rust
            crates built into them, whose notices Velopack doesn't publish. -->
       <LicenseFile Include="Licenses\Velopack.txt" Name="Velopack.txt" />
+      <!-- Neither has a license file in its package either: Archipelago.MultiClient.Net ships its own build of
+           Newtonsoft.Json rather than depending on the package -->
+      <LicenseFile Include="Licenses\Archipelago.MultiClient.Net.txt" Name="Archipelago.MultiClient.Net.txt" />
+      <LicenseFile Include="Licenses\Newtonsoft.Json.txt" Name="Newtonsoft.Json.txt" />
       <LicenseFile Include="$(UiDir)\dist\.vite\license.md" Name="Launcher interface.md" />
     </ItemGroup>
     <Copy SourceFiles="@(LicenseFile)" DestinationFiles="@(LicenseFile->'$(PublishDir)licenses\%(Name)')" />
