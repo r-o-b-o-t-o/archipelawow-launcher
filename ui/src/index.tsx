@@ -7,6 +7,7 @@ import Dashboard from "./pages/Dashboard";
 import PlayerOptions from "./pages/PlayerOptions";
 import Settings from "./pages/Settings";
 import Setup from "./pages/Setup";
+import Tracker from "./pages/Tracker";
 
 // Hash routing: the launcher serves the UI as static files, with nothing to fall back to index.html
 render(
@@ -15,6 +16,7 @@ render(
 			<Route path="/" component={Dashboard} />
 			<Route path="/setup" component={Setup} />
 			<Route path="/player-options" component={PlayerOptions} />
+			<Route path="/tracker" component={Tracker} />
 			<Route path="/settings" component={Settings} />
 		</HashRouter>
 	),

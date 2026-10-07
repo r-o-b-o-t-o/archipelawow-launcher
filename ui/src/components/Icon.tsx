@@ -1,5 +1,8 @@
 import ChevronDown from "lucide-solid/icons/chevron-down";
+import ChevronRight from "lucide-solid/icons/chevron-right";
 import Check from "lucide-solid/icons/check";
+import CircleCheck from "lucide-solid/icons/circle-check";
+import CircleX from "lucide-solid/icons/circle-x";
 import Copy from "lucide-solid/icons/copy";
 import Database from "lucide-solid/icons/database";
 import Dice5 from "lucide-solid/icons/dice-5";
@@ -11,8 +14,10 @@ import Folder from "lucide-solid/icons/folder";
 import Globe from "lucide-solid/icons/globe";
 import Info from "lucide-solid/icons/info";
 import LayoutDashboard from "lucide-solid/icons/layout-dashboard";
+import MapIcon from "lucide-solid/icons/map";
 import Package from "lucide-solid/icons/package";
 import Play from "lucide-solid/icons/play";
+import Plug from "lucide-solid/icons/plug";
 import Plus from "lucide-solid/icons/plus";
 import RefreshCw from "lucide-solid/icons/refresh-cw";
 import Rocket from "lucide-solid/icons/rocket";
@@ -26,6 +31,7 @@ import Sword from "lucide-solid/icons/sword";
 import Terminal from "lucide-solid/icons/terminal";
 import Trash from "lucide-solid/icons/trash";
 import TriangleAlert from "lucide-solid/icons/triangle-alert";
+import Unplug from "lucide-solid/icons/unplug";
 import Upload from "lucide-solid/icons/upload";
 import UserPlus from "lucide-solid/icons/user-plus";
 import WandSparkles from "lucide-solid/icons/wand-sparkles";
@@ -67,6 +73,12 @@ const icons = {
 	eraser: Eraser,
 	server: Server,
 	rocket: Rocket,
+	map: MapIcon,
+	chevronRight: ChevronRight,
+	circleCheck: CircleCheck,
+	circleX: CircleX,
+	plug: Plug,
+	unplug: Unplug,
 };
 
 export type IconName = keyof typeof icons;

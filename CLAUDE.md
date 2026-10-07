@@ -15,7 +15,10 @@ the layout and development commands.
 - `archipelawow` — the apworld. `scripts/dump-options-schema.py` turns its newest release's options
   (pre-releases included) into the schema the YAML editor renders; a new option type needs support
   there and in `OptionField.tsx`. It loads `options.py` alone, so that file can't import the rest of
-  the world.
+  the world. The tracker reads its slot data (`fill_slot_data` in `world.py`), its rules included
+  (`logic_export.py`): `ui/src/tracker/types.ts` holds the shape, change them together.
+- `archipelawow-data-extractor` — writes the tracker's maps, positions and icons to `ui/public/tracker`.
+  Never hand-edit them: change the extractor and regenerate. Their shape is in `ui/src/tracker/types.ts`.
 
 ## Code
 
@@ -25,7 +28,8 @@ the layout and development commands.
   easily miss. Keep comments brief and don't restate the code.
 - No machine-specific paths or credentials in committed files.
 - Generated files (the UI's `options-schema.json`) aren't committed or given a fallback: if generating
-  fails, so does the build or release.
+  fails, so does the build or release. The tracker's extracts are the exception: they're read from a
+  world database and a game client, which the workflows don't have.
 - `Bridge/BridgeApi.cs` and `ui/src/lib/api.ts` match methods and events by name: change them
   together.
 - In `ui`:
@@ -81,6 +85,9 @@ the layout and development commands.
   screenshot the UI over the Chrome DevTools Protocol.
 - Check player options changes by generating a seed from a saved YAML with Archipelago's
   `Generate.py`.
+- Check tracker changes against a seed hosted with `MultiServer.py --disable_save`. A script connecting
+  as the slot's game and sending `LocationChecks` gives it items and checks. Check logic changes against
+  Archipelago's: the locations it finds reachable for a set of items must match the tracker's exactly.
 - Check launcher update changes on a portable build updating from a local feed
   (`ARCHIPELAWOW_UPDATE_FEED`, see the README), not on a setup install: it adds shortcuts and an
   installed app.
