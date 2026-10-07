@@ -44,6 +44,10 @@
   },
   "modules/archipelawow.conf": {
   },
+  // The playerbots build's: mod-playerbots creates and updates this database itself
+  "modules/playerbots.conf": {
+    "PlayerbotsDatabaseInfo": "127.0.0.1;{mysqlPort};acore;acore;acore_playerbots"
+  },
   "modules/transmog.conf": {
     "Transmogrification.AllowPoor": 1,
     "Transmogrification.AllowCommon": 1,
