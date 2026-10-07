@@ -50,6 +50,7 @@ checked (hidden by default). Enter the room's host and port, your slot name and 
 has one; with the server installed, the tracker starts from the room the server connects to.
 
 - Drag to move a map, use the wheel to zoom, left click a zone to open it and right click to go back up.
+  A zone's map also opens the zones around it, where they show at its edges.
 - Checks close to one another share a marker, like the quests of a quest hub. Click a marker for its
   checks, and a red check for what it's waiting for.
 - The side panel shows your character, the goal and the progressive items, the checks that have no place

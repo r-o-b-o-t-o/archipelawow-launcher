@@ -23,6 +23,14 @@ interface Marker {
 	aggregate: boolean;
 }
 
+type Rect = [number, number, number, number];
+
+/** A map the pointer goes to from the one shown, with where its highlight lies on that one. */
+interface Target {
+	map: MapInfo;
+	rect: Rect;
+}
+
 /** A marker's colour: green and red split when it holds checks both in and out of logic. */
 export function markerBackground(checks: Check[]) {
 	const states = new Set(checks.map((check) => checkState(check.id)));
@@ -66,6 +74,24 @@ export default function MapView(props: {
 	const children = createMemo(() =>
 		props.data.maps.filter((m) => m.parent === props.mapId && (m.highlight || m.hit)),
 	);
+
+	/** The maps the pointer goes to from this one that light up, with where their highlight is on it. */
+	const targets = createMemo<Target[]>(() => {
+		const result: Target[] = children()
+			.filter((child) => child.highlight)
+			.map((child) => ({ map: child, rect: child.highlight!.rect }));
+		// A zone's map is its rectangle on the continent, which shows the zones around it: they're placed as
+		// they are there
+		const view = map();
+		if (view.kind !== "zone" || !view.highlight) return result;
+		const [x, y, w, h] = view.highlight.rect;
+		for (const zone of props.data.maps) {
+			if (zone.parent !== view.parent || zone.kind !== "zone" || !zone.highlight || zone.id === view.id) continue;
+			const [zx, zy, zw, zh] = zone.highlight.rect;
+			result.push({ map: zone, rect: [(zx - x) / w, (zy - y) / h, zw / w, zh / h] });
+		}
+		return result;
+	});
 	const fit = () => Math.min(size().width / MAP_WIDTH, size().height / MAP_HEIGHT) || 1;
 	const scale = () => fit() * zoom();
 
@@ -124,10 +150,10 @@ export default function MapView(props: {
 	});
 
 	/**
-	 * The child map under a point: by its hit rectangle, or a city by the highlight that's strongest there;
-	 * else a zone, from the continent's grid as the game finds it.
+	 * The map under a point: a child map by its hit rectangle, or a city by the highlight that's strongest
+	 * there; else a zone, from the continent's grid as the game finds it. None where it's the zone shown.
 	 */
-	const childAt = (u: number, v: number) => {
+	const targetAt = (u: number, v: number) => {
 		let best: MapInfo | null = null;
 		let strongest = 24;
 		for (const child of children()) {
@@ -148,15 +174,19 @@ export default function MapView(props: {
 		}
 		if (best) return best;
 
-		const grid = map().zones;
-		if (!grid) return null;
+		// A zone's map is its rectangle on the continent
+		const view = map();
+		const continent = view.kind === "zone" ? maps().get(view.parent!) : view;
+		const grid = continent?.zones;
+		if (!grid || (view.kind === "zone" && !view.highlight)) return null;
+		const [vx, vy, vw, vh] = view.kind === "zone" ? view.highlight!.rect : [0, 0, 1, 1];
 		const [x, y, w, h] = grid.rect;
 		const rows = grid.cells.length / grid.columns;
-		const column = Math.floor(((u - x) / w) * grid.columns);
-		const row = Math.floor(((v - y) / h) * rows);
+		const column = Math.floor(((vx + u * vw - x) / w) * grid.columns);
+		const row = Math.floor(((vy + v * vh - y) / h) * rows);
 		if (column < 0 || column >= grid.columns || row < 0 || row >= rows) return null;
 		const id = grid.cells[row * grid.columns + column];
-		return id ? (maps().get(id) ?? null) : null;
+		return id && id !== props.mapId ? (maps().get(id) ?? null) : null;
 	};
 
 	/** Where a point of the map is on screen. */
@@ -259,7 +289,7 @@ export default function MapView(props: {
 			}
 		}
 		const [x, y] = position();
-		setHovered(childAt((sx - x) / (MAP_WIDTH * scale()), (sy - y) / (MAP_HEIGHT * scale())));
+		setHovered(targetAt((sx - x) / (MAP_WIDTH * scale()), (sy - y) / (MAP_HEIGHT * scale())));
 	};
 
 	const onPointerUp = () => {
@@ -303,7 +333,7 @@ export default function MapView(props: {
 			onContextMenu={onContextMenu}
 		>
 			<div
-				class="absolute top-0 left-0 origin-top-left"
+				class="absolute top-0 left-0 origin-top-left overflow-hidden"
 				style={{
 					width: `${MAP_WIDTH}px`,
 					height: `${MAP_HEIGHT}px`,
@@ -311,21 +341,22 @@ export default function MapView(props: {
 				}}
 			>
 				<img src={asset(map().image)} alt="" draggable={false} class="absolute inset-0 size-full" />
-				{/* Every highlight is there from the start, loaded, and only shown while hovered */}
-				<For each={children().filter((child) => child.highlight)}>
-					{(child) => (
+				{/* Every highlight is there from the start, loaded, and only shown while hovered. A zone around
+				    the one shown can be wider than the map, which Tailwind's max-width would squeeze it into. */}
+				<For each={targets()}>
+					{(target) => (
 						<img
-							src={asset(child.highlight!.image)}
+							src={asset(target.map.highlight!.image)}
 							alt=""
 							draggable={false}
-							class="pointer-events-none absolute"
-							classList={{ hidden: hovered()?.id !== child.id }}
+							class="pointer-events-none absolute max-w-none"
+							classList={{ hidden: hovered()?.id !== target.map.id }}
 							style={{
-								left: `${child.highlight!.rect[0] * MAP_WIDTH}px`,
-								top: `${child.highlight!.rect[1] * MAP_HEIGHT}px`,
-								width: `${child.highlight!.rect[2] * MAP_WIDTH}px`,
-								height: `${child.highlight!.rect[3] * MAP_HEIGHT}px`,
-								"mix-blend-mode": child.highlight!.blend === "add" ? "plus-lighter" : "normal",
+								left: `${target.rect[0] * MAP_WIDTH}px`,
+								top: `${target.rect[1] * MAP_HEIGHT}px`,
+								width: `${target.rect[2] * MAP_WIDTH}px`,
+								height: `${target.rect[3] * MAP_HEIGHT}px`,
+								"mix-blend-mode": target.map.highlight!.blend === "add" ? "plus-lighter" : "normal",
 							}}
 						/>
 					)}
