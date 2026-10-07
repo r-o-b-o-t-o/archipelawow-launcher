@@ -50,7 +50,7 @@ export default function Setup() {
 
 	return (
 		<>
-			<PageHeader title="Setup" subtitle="Get the server ready to play. Each step only needs doing once.">
+			<PageHeader title="Setup" subtitle="Get the server ready to play, and keep it up to date.">
 				<Show when={ready()}>
 					<Button variant="primary" icon="play" busy={busy() === "start"} onClick={start}>
 						Start the servers
