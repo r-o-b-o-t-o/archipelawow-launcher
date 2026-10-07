@@ -19,6 +19,7 @@ export function loadTrackerData(): Promise<TrackerData> {
 		"quests",
 		"flightpaths",
 		"dungeons",
+		"explorations",
 		"spells",
 		"achievements",
 		"items",

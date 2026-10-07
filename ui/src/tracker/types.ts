@@ -40,6 +40,8 @@ export interface SlotData {
 	locations: {
 		achievements: LocationPairs;
 		bosses: LocationPairs;
+		/** By Achievement_Criteria.dbc id. Missing from seeds generated before the apworld had exploration checks. */
+		explorations?: LocationPairs;
 		flightpaths: LocationPairs;
 		levels: LocationPairs;
 		quests: LocationPairs;
@@ -93,6 +95,8 @@ export interface TrackerData {
 	quests: Record<string, { givers?: Position[]; atEnder?: boolean; map?: number }>;
 	flightpaths: Record<string, { position: Position }>;
 	dungeons: Record<string, { entrances: Position[]; encounters: number[] }>;
+	/** By Achievement_Criteria.dbc id: the middle of the subzone, and its achievement's icon. */
+	explorations: Record<string, { position: Position; icon?: string }>;
 	spells: Record<string, { icon: string }>;
 	achievements: Record<string, { name: string; icon?: string; map?: number }>;
 	items: Record<string, { icon: string }>;

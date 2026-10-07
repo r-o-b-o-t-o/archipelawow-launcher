@@ -26,6 +26,8 @@ export interface Check {
 
 const QUEST_ICON = asset("ui/quest.webp");
 const FLIGHT_ICON = asset("ui/flightmaster.webp");
+/** World Explorer's, for a subzone the extracts don't know. */
+const EXPLORATION_ICON = iconUrl("inv_misc_map02");
 
 /** The icon of the level achievement at or above a level: Level 10 for levels 2 to 10. */
 export const levelIcon = (level: number) => iconUrl(`achievement_level_${Math.min(80, Math.ceil(level / 10) * 10)}`);
@@ -107,6 +109,17 @@ export function buildChecks(data: TrackerData, slot: SlotData, names: Record<str
 			icon: (mapId != null && dungeonIcons.get(mapId)) || FALLBACK_ICON,
 			spot: where,
 			group: where ? undefined : "achievements",
+		});
+	}
+
+	for (const [criteria, id] of slot.locations.explorations ?? []) {
+		const exploration = data.explorations[criteria];
+		checks.push({
+			id,
+			name: name(id),
+			icon: exploration?.icon ? iconUrl(exploration.icon) : EXPLORATION_ICON,
+			spot: exploration && spot(exploration.position),
+			group: exploration ? undefined : "achievements",
 		});
 	}
 
