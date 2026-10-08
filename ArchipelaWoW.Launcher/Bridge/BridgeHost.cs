@@ -23,6 +23,7 @@ public sealed class BridgeHost
     readonly string _trustedOrigin;
     readonly IReadOnlyList<TerminalBuffer> _terminals;
     readonly Dictionary<string, Func<JsonElement, Task<object?>>> _methods = new();
+    bool _closed;
 
     public BridgeHost(CoreWebView2 webView, Dispatcher dispatcher, string trustedOrigin, IReadOnlyList<TerminalBuffer> terminals)
     {
@@ -53,6 +54,12 @@ public sealed class BridgeHost
     /// <summary>Pushes an event to the page. Safe to call from any thread.</summary>
     public void Emit(string name, object? data) =>
         _dispatcher.InvokeAsync(() => Post(new { @event = name, data }));
+
+    /// <summary>
+    /// Stops posting to the page once its window has closed, which disposes the view: events still come in while
+    /// the launcher shuts down.
+    /// </summary>
+    public void Close() => _closed = true;
 
     async void OnMessage(object? sender, CoreWebView2WebMessageReceivedEventArgs e)
     {
@@ -98,14 +105,8 @@ public sealed class BridgeHost
 
     void Post(object message)
     {
-        try
-        {
+        if (!_closed)
             _webView.PostWebMessageAsJson(JsonSerializer.Serialize(message, JsonOptions));
-        }
-        catch (InvalidOperationException)
-        {
-            // The view was closed; events still come in while the launcher shuts down
-        }
     }
 
     sealed record Request(int Id, string Method, JsonElement Params);

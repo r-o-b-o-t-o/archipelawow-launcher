@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "@xterm/xterm/css/xterm.css";
+@import "tippy.js/dist/tippy.css";
 
 @theme {
 	--font-sans: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
@@ -64,6 +65,17 @@ pre,
 
 input[type="range"] {
 	accent-color: var(--color-gold);
+}
+
+/* lib/tooltips.ts */
+.tippy-box[data-theme~="launcher"] {
+	background: var(--color-surface-4);
+	border: 1px solid rgb(255 255 255 / 0.1);
+	border-radius: 6px;
+	box-shadow: 0 4px 12px rgb(0 0 0 / 0.5);
+	color: #e4e4e7;
+	font-size: 12px;
+	overflow-wrap: anywhere;
 }
 
 @keyframes indeterminate {

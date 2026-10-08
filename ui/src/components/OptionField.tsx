@@ -157,7 +157,7 @@ export default function OptionField(props: {
 				<Show when={isWeighted(props.option) && props.option.supportsWeighting}>
 					<button
 						type="button"
-						title={
+						data-tooltip={
 							showWeights()
 								? "Pick a single value"
 								: "Weights: let Archipelago roll between several values"

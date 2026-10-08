@@ -189,7 +189,8 @@ export default function PlayerOptions() {
 										<span class="min-w-0 flex-1 truncate">{file.name}</span>
 										<button
 											type="button"
-											title="Delete"
+											aria-label="Delete"
+											data-tooltip="Delete"
 											class="hidden text-zinc-500 group-hover:block hover:text-red-400"
 											onClick={(e) => {
 												e.stopPropagation();

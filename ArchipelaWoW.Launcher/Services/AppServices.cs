@@ -11,6 +11,7 @@ public sealed class AppServices : IDisposable
     public RepackService Repack { get; }
     public ClientDataService ClientData { get; }
     public PlayerFilesService Players { get; }
+    public TrackerService Tracker { get; } = new();
     public LauncherUpdater LauncherUpdater { get; } = new();
     public HttpClient Http { get; }
 
@@ -33,5 +34,9 @@ public sealed class AppServices : IDisposable
         Players = new PlayerFilesService(paths);
     }
 
-    public void Dispose() => Http.Dispose();
+    public void Dispose()
+    {
+        Tracker.Dispose();
+        Http.Dispose();
+    }
 }

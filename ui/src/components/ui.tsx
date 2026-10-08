@@ -26,7 +26,7 @@ export function Button(
 	return (
 		<button
 			type={props.type ?? "button"}
-			title={props.title}
+			data-tooltip={props.title}
 			disabled={props.disabled || props.busy}
 			onClick={(event) => props.onClick?.(event)}
 			class={`inline-flex items-center justify-center gap-2 rounded-lg transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
@@ -51,7 +51,8 @@ export function IconButton(props: {
 	return (
 		<button
 			type="button"
-			title={props.title}
+			aria-label={props.title}
+			data-tooltip={props.title}
 			disabled={props.disabled}
 			onClick={() => props.onClick()}
 			class={`inline-flex size-8 items-center justify-center rounded-lg text-zinc-400 transition-colors hover:bg-white/5 hover:text-zinc-100 disabled:opacity-30 ${props.class ?? ""}`}

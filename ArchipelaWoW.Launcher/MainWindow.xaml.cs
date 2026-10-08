@@ -31,6 +31,7 @@ public partial class MainWindow : Window
         SourceInitialized += (_, _) => UseDarkTitleBar();
         Loaded += OnLoaded;
         Closing += OnClosing;
+        Closed += (_, _) => _bridge?.Close();
     }
 
     async void OnLoaded(object sender, RoutedEventArgs e)

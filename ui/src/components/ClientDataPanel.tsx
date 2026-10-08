@@ -139,7 +139,7 @@ export default function ClientDataPanel(props: {
 						</Button>
 						<span
 							class="min-w-0 truncate font-mono text-xs text-zinc-400"
-							title={clientPath() ?? undefined}
+							data-tooltip={clientPath() ?? undefined}
 						>
 							{clientPath() ?? "No folder chosen"}
 						</span>

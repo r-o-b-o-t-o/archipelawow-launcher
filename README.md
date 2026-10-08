@@ -2,12 +2,12 @@
 
 The easiest way to host [ArchipelaWoW](https://github.com/r-o-b-o-t-o/archipelawow) on Windows: a
 launcher that installs a ready-to-run build of [AzerothCore](https://www.azerothcore.org/) with the
-ArchipelaWoW modules, and edits Archipelago player options.
+ArchipelaWoW modules, edits Archipelago player options, and tracks your checks on the game's world maps.
 
 No development tools, database server or runtime to install: run the setup, or extract the portable
 archive. The launcher downloads the server, sets up the database and the configuration, gets the client
 data, runs the servers with their consoles in one window, and keeps the server and itself up to date.
-The player options editor works without the server.
+The player options editor and the tracker work without the server.
 
 > [!WARNING]
 > The launcher is a convenient way to run ArchipelaWoW with its default setup, and nothing more: the
@@ -34,13 +34,32 @@ The player options editor works without the server.
 3. Start the servers from the dashboard, create a game account there, and set `set realmlist 127.0.0.1`
    in your client's `Data\<locale>\realmlist.wtf`.
 
-To only make player options, skip the setup and open **Player options**.
+To only make player options or track a seed, skip the setup and open **Player options** or **Tracker**.
 
 It runs on 64-bit Windows 10 (1809 or later) and 11. The interface uses the Microsoft Edge WebView2
 Runtime, which comes with Windows 11 and up-to-date Windows 10; the launcher links to its installer
 when it's missing.
 
 The portable launcher's folder can be moved: it keeps working from its new place.
+
+### Tracking a seed
+
+The **Tracker** joins your slot in the Archipelago room, next to your game, and shows the seed's checks on
+the world maps: green in logic, red out of logic, grey once checked (hidden by default). Yellow checks are
+out of logic but doable: they only miss class abilities or riding ranks, which the level brackets ask for
+to pace the seed. A marker holding checks of several colours is split between them. Enter the room's host
+and port, your slot name and the room's password if it has one; with the server installed, the tracker
+starts from the room the server connects to.
+
+- Drag to move a map, use the wheel to zoom, left click a zone to open it and right click to go back up.
+  A zone's map also opens the zones around it, where they show at its edges.
+- Checks close to one another share a marker, like the quests of a quest hub. Click a marker for its
+  checks, and a red check for what it's waiting for.
+- The side panel shows your character, the goal and the progressive items, the checks that have no place
+  on a map, such as class training and levels by bracket, and the items you received.
+
+Logic comes with the seed: one generated with an apworld older than its rules for trackers shows its
+checks without logic colours.
 
 ### Updating
 
@@ -179,5 +198,9 @@ vpk pack --packId ArchipelaWoW.Launcher --packVersion 1.2.3 --packDir publish --
 ```
 
 - The interface is formatted with Prettier: `npm run format` in `ui`.
+- The tracker's maps, positions and icons in `ui/public/tracker` are written by
+  [archipelawow-data-extractor](https://github.com/r-o-b-o-t-o/archipelawow-data-extractor) from a world
+  database and a game client, with `TRACKER_OUT_DIR` pointing there. Unlike the player options schema,
+  they're committed: the workflows have neither.
 - The values written into the server configuration on first launch are in
   [`config-defaults.json`](ArchipelaWoW.Launcher/Resources/config-defaults.json).

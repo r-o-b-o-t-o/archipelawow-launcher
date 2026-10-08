@@ -57,6 +57,15 @@ export interface Settings {
 	databaseInitialized: boolean;
 	clientDataVersion: string | null;
 	wowClientPath: string | null;
+	tracker: TrackerSettings;
+}
+
+export interface TrackerSettings {
+	host: string | null;
+	port: number | null;
+	slot: string | null;
+	password: string | null;
+	hideChecked: boolean;
 }
 
 export interface ClientDataStatus {
@@ -108,6 +117,37 @@ export interface ArchipelagoConnection {
 	password: string | null;
 }
 
+export type TrackerStatusName = "disconnected" | "connecting" | "connected";
+
+export interface TrackerStatus {
+	status: TrackerStatusName;
+	/** Why the last connection attempt failed or the connection was lost. */
+	error: string | null;
+}
+
+/** An item the slot received, from its own world or another player's. */
+export interface TrackerItem {
+	/** Its place in the order the room hands the slot's items out. */
+	index: number;
+	item: number;
+	name: string;
+	locationName: string;
+	/** The slot whose world held the item, 0 for the starting inventory. */
+	player: number;
+	playerName: string;
+}
+
+/** The seed the tracker is connected to. Its slot data is read in tracker/types.ts. */
+export interface TrackerSeed {
+	playerName: string;
+	slotData: unknown;
+	itemNames: Record<string, string>;
+	/** The slot's locations, by id. */
+	locations: Record<string, string>;
+	checked: number[];
+	items: TrackerItem[];
+}
+
 export const api = {
 	app: {
 		getInfo: () => call<AppInfo>("app.getInfo"),
@@ -122,7 +162,7 @@ export const api = {
 	},
 	settings: {
 		get: () => call<Settings>("settings.get"),
-		update: (patch: Partial<Pick<Settings, "mySqlPort" | "autoStartServers">>) =>
+		update: (patch: Partial<Pick<Settings, "mySqlPort" | "autoStartServers">> & { trackerHideChecked?: boolean }) =>
 			call<Settings>("settings.update", patch),
 	},
 	setup: {
@@ -176,6 +216,13 @@ export const api = {
 		getConnection: () => call<ArchipelagoConnection>("archipelago.getConnection"),
 		setConnection: (host: string, port: number, password: string) =>
 			call<{ reloaded: boolean }>("archipelago.setConnection", { host, port, password }),
+	},
+	tracker: {
+		getStatus: () => call<TrackerStatus>("tracker.getStatus"),
+		getSeed: () => call<TrackerSeed | null>("tracker.getSeed"),
+		connect: (host: string, port: number, slot: string, password: string) =>
+			call<TrackerStatus>("tracker.connect", { host, port, slot, password }),
+		disconnect: () => call("tracker.disconnect"),
 	},
 	players: {
 		list: () => call<PlayerFile[]>("players.list"),

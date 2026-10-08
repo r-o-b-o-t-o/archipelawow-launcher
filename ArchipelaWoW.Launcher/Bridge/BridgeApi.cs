@@ -31,6 +31,11 @@ public static partial class BridgeApi
         foreach (var server in servers.All)
             server.StateChanged += () => bridge.Emit("servers.changed", ServerStatuses(servers));
         tasks.Changed += () => bridge.Emit("task.changed", tasks.Current);
+        var tracker = services.Tracker;
+        tracker.StatusChanged += () => bridge.Emit("tracker.status", TrackerStatus(tracker));
+        tracker.SeedChanged += seed => bridge.Emit("tracker.seed", seed);
+        tracker.ItemsReceived += items => bridge.Emit("tracker.items", items);
+        tracker.LocationsChecked += ids => bridge.Emit("tracker.checked", ids);
 
         // App
         bridge.Handle("app.getInfo", () => new
@@ -95,6 +100,8 @@ public static partial class BridgeApi
             }
             if (p.AutoStartServers is { } autoStart)
                 services.Settings.Update(s => s.AutoStartServers = autoStart);
+            if (p.TrackerHideChecked is { } hideChecked)
+                services.Settings.Update(s => s.Tracker.HideChecked = hideChecked);
             return services.Settings.Current;
         });
 
@@ -263,6 +270,33 @@ public static partial class BridgeApi
             return new { reloaded = reload };
         });
 
+        // Tracker
+        bridge.Handle("tracker.getStatus", () => TrackerStatus(tracker));
+        bridge.Handle("tracker.getSeed", () => tracker.Seed);
+        bridge.HandleAsync<TrackerConnectParams>("tracker.connect", async p =>
+        {
+            if (string.IsNullOrWhiteSpace(p.Host))
+                throw new ArgumentException("Enter the host name of the Archipelago server.");
+            if (p.Port is < 1 or > 65535)
+                throw new ArgumentException("The port must be between 1 and 65535.");
+            if (string.IsNullOrWhiteSpace(p.Slot))
+                throw new ArgumentException("Enter your slot name.");
+            services.Settings.Update(s =>
+            {
+                s.Tracker.Host = p.Host.Trim();
+                s.Tracker.Port = p.Port;
+                s.Tracker.Slot = p.Slot.Trim();
+                s.Tracker.Password = p.Password;
+            });
+            await tracker.ConnectAsync(p.Host, p.Port, p.Slot, p.Password);
+            return TrackerStatus(tracker);
+        });
+        bridge.Handle("tracker.disconnect", () =>
+        {
+            tracker.Disconnect();
+            return null;
+        });
+
         // Player options
         bridge.Handle("players.list", services.Players.List);
         bridge.Handle<NameParams>("players.read", p => services.Players.Read(p.Name));
@@ -311,6 +345,8 @@ public static partial class BridgeApi
         SourcePathLimit = RepackService.MaxPath,
     };
 
+    static object TrackerStatus(TrackerService tracker) => new { tracker.Status, tracker.Error };
+
     static object ServerStatuses(ServerManager servers) =>
         servers.All.Select(p => new { p.Name, p.DisplayName, p.State, p.Pid, p.StartedAt, p.ExitCode }).ToList();
 
@@ -343,7 +379,7 @@ public static partial class BridgeApi
     sealed record TargetParams(string Target);
     sealed record UrlParams(string Url);
     sealed record UnsavedChangesParams(bool Unsaved);
-    sealed record SettingsPatch(int? MySqlPort, bool? AutoStartServers);
+    sealed record SettingsPatch(int? MySqlPort, bool? AutoStartServers, bool? TrackerHideChecked);
     sealed record BuildParams(string Build);
     sealed record CreateConfigsParams(bool Overwrite);
     sealed record ExtractParams(string ClientPath, bool GenerateMmaps);
@@ -353,5 +389,6 @@ public static partial class BridgeApi
     sealed record CommandParams(string Command);
     sealed record AccountParams(string Username, string Password, int GmLevel);
     sealed record ConnectionParams(string Host, int Port, string? Password);
+    sealed record TrackerConnectParams(string Host, int Port, string Slot, string? Password);
     sealed record FileContentParams(string Name, string Content);
 }
