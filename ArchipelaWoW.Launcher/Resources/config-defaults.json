@@ -49,6 +49,7 @@
     "PlayerbotsDatabaseInfo": "127.0.0.1;{mysqlPort};acore;acore;acore_playerbots"
   },
   "modules/transmog.conf": {
+    "Transmogrification.UseVendorInterface": 1,
     "Transmogrification.AllowPoor": 1,
     "Transmogrification.AllowCommon": 1,
     "Transmogrification.AllowUncommon": 1,
