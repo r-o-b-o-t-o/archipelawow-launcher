@@ -12,8 +12,8 @@ import { attempt, toast } from "../lib/toast";
 
 const cards: { name: ServerName; description: string; icon: IconName }[] = [
 	{ name: "mysql", description: "Database server", icon: "database" },
-	{ name: "authserver", description: "Logins and realm list", icon: "globe" },
-	{ name: "worldserver", description: "The game world", icon: "sword" },
+	{ name: "authserver", description: "Logins and realm list", icon: "key" },
+	{ name: "worldserver", description: "The game world", icon: "globe" },
 ];
 
 const terminals: { name: TerminalName; label: string }[] = [

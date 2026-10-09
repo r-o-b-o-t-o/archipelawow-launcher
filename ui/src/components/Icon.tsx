@@ -13,6 +13,7 @@ import FileText from "lucide-solid/icons/file-text";
 import Folder from "lucide-solid/icons/folder";
 import Globe from "lucide-solid/icons/globe";
 import Info from "lucide-solid/icons/info";
+import Key from "lucide-solid/icons/key";
 import LayoutDashboard from "lucide-solid/icons/layout-dashboard";
 import MapIcon from "lucide-solid/icons/map";
 import Package from "lucide-solid/icons/package";
@@ -79,6 +80,7 @@ const icons = {
 	circleX: CircleX,
 	plug: Plug,
 	unplug: Unplug,
+	key: Key,
 };
 
 export type IconName = keyof typeof icons;
