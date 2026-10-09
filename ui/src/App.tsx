@@ -65,14 +65,14 @@ function Sidebar() {
 				<NavLink href="/" icon="dashboard" end>
 					Dashboard
 				</NavLink>
+				<NavLink href="/setup" icon="wand">
+					Setup
+				</NavLink>
 				<NavLink href="/player-options" icon="sword">
 					Player options
 				</NavLink>
 				<NavLink href="/tracker" icon="map">
 					Tracker
-				</NavLink>
-				<NavLink href="/setup" icon="wand">
-					Setup
 				</NavLink>
 				<NavLink href="/settings" icon="sliders">
 					Settings
