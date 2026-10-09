@@ -45,6 +45,8 @@ export interface SlotData {
 		flightpaths: LocationPairs;
 		levels: LocationPairs;
 		quests: LocationPairs;
+		/** SkillLine.dbc id, skill value, location id. Missing from seeds generated before the apworld had skill checks. */
+		skills?: [number, number, number][];
 		spells: LocationPairs;
 	};
 	items: {
@@ -98,6 +100,8 @@ export interface TrackerData {
 	/** By Achievement_Criteria.dbc id: the middle of the subzone, and its achievement's icon. */
 	explorations: Record<string, { position: Position; icon?: string }>;
 	spells: Record<string, { icon: string }>;
+	/** By SkillLine.dbc id. */
+	skills: Record<string, { name: string; icon?: string }>;
 	achievements: Record<string, { name: string; icon?: string; map?: number }>;
 	items: Record<string, { icon: string }>;
 	/** A race's side is 1 for the Alliance, 2 for the Horde, as a quest giver's. */

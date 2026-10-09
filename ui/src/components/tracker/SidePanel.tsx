@@ -65,7 +65,7 @@ export default function SidePanel(props: { data: TrackerData; checks: Check[]; h
 			</div>
 			<div class="min-h-0 flex-1 overflow-y-auto">
 				<Show when={tab() === "checks"} fallback={<ReceivedItems data={props.data} />}>
-					<SideChecks checks={props.checks} hideChecked={props.hideChecked} />
+					<SideChecks data={props.data} checks={props.checks} hideChecked={props.hideChecked} />
 				</Show>
 			</div>
 		</aside>
@@ -152,8 +152,20 @@ function Summary(props: { data: TrackerData }) {
 	);
 }
 
-/** The checks with no spot on the maps: class training and level ups by bracket, achievements, unplaced quests. */
-function SideChecks(props: { checks: Check[]; hideChecked: boolean }) {
+/** A tile of a side panel grid, and the checks it opens. */
+interface Tile {
+	key: number;
+	name: string;
+	label: string;
+	icon: string;
+	checks: Check[];
+}
+
+/**
+ * The checks with no spot on the maps: class training and level ups by bracket, skills by skill, achievements,
+ * unplaced quests.
+ */
+function SideChecks(props: { data: TrackerData; checks: Check[]; hideChecked: boolean }) {
 	const [selected, setSelected] = createSignal<string | null>(null);
 	const visible = (checks: Check[]) =>
 		props.hideChecked ? checks.filter((c) => checkState(c.id) !== "checked") : checks;
@@ -168,51 +180,80 @@ function SideChecks(props: { checks: Check[]; hideChecked: boolean }) {
 		return [...result.entries()].sort(([a], [b]) => a - b).map(([bracket, checks]) => ({ bracket, checks }));
 	};
 
-	const BracketGrid = (gridProps: { name: SideGroup; icon: (bracket: number) => string }) => (
-		<div class="grid grid-cols-4 gap-1.5">
-			<For each={brackets(gridProps.name).filter((b) => visible(b.checks).length > 0)}>
-				{(entry) => {
-					const key = `${gridProps.name}:${entry.bracket}`;
-					const pending = () => entry.checks.filter((c) => checkState(c.id) !== "checked").length;
-					return (
-						<button
-							type="button"
-							class="flex flex-col items-center gap-1 rounded-lg border px-1 py-1.5 transition-colors"
-							classList={{
-								"border-gold/60 bg-gold/10": selected() === key,
-								"border-white/5 bg-surface-2 hover:bg-surface-3": selected() !== key,
-							}}
-							data-tooltip={bracketName(entry.bracket)}
-							onClick={() => setSelected(selected() === key ? null : key)}
-						>
-							<span class="relative">
-								<Img
-									src={gridProps.icon(entry.bracket)}
-									class="size-7 rounded border border-black/60"
-								/>
-								<span
-									class="absolute -right-1 -bottom-1 size-3 rounded-full border-2 border-surface-2"
-									style={{ background: markerBackground(entry.checks) }}
-								/>
-							</span>
-							<span class="text-[11px] text-zinc-400">
-								{bracketName(entry.bracket).replace("Levels ", "")}
-							</span>
-							<span class="text-[11px] text-zinc-500">
-								{entry.checks.length - pending()}/{entry.checks.length}
-							</span>
-						</button>
-					);
-				}}
-			</For>
-		</div>
-	);
+	const bracketTiles = (name: SideGroup, icon: (bracket: number) => string): Tile[] =>
+		brackets(name).map(({ bracket, checks }) => ({
+			key: bracket,
+			name: bracketName(bracket),
+			label: bracketName(bracket).replace("Levels ", ""),
+			icon: icon(bracket),
+			checks,
+		}));
 
-	const selectedChecks = (name: SideGroup) => {
-		const key = selected();
-		if (!key?.startsWith(`${name}:`)) return null;
-		const bracket = +key.split(":")[1];
-		return visible(brackets(name).find((b) => b.bracket === bracket)?.checks ?? []);
+	const skillTiles = (): Tile[] => {
+		const result = new Map<number, Check[]>();
+		for (const check of group("skills")) result.set(check.skill!, [...(result.get(check.skill!) ?? []), check]);
+		return [...result.entries()]
+			.map(([skill, checks]) => {
+				const name = props.data.skills[skill]?.name ?? `Skill ${skill}`;
+				return { key: skill, name, label: name.replace("Two-Handed ", "2H "), icon: checks[0].icon, checks };
+			})
+			.sort((a, b) => a.name.localeCompare(b.name));
+	};
+
+	/** A grid of tiles, and below it the checks of the one selected. */
+	const TileGrid = (gridProps: { name: SideGroup; tiles: Tile[] }) => {
+		const selectedChecks = () => {
+			const key = selected();
+			if (!key?.startsWith(`${gridProps.name}:`)) return null;
+			const tile = +key.split(":")[1];
+			return visible(gridProps.tiles.find((t) => t.key === tile)?.checks ?? []);
+		};
+
+		return (
+			<>
+				<div class="grid grid-cols-4 gap-1.5">
+					<For each={gridProps.tiles.filter((t) => visible(t.checks).length > 0)}>
+						{(tile) => {
+							const key = `${gridProps.name}:${tile.key}`;
+							const pending = () => tile.checks.filter((c) => checkState(c.id) !== "checked").length;
+							return (
+								<button
+									type="button"
+									class="flex flex-col items-center gap-1 rounded-lg border px-1 py-1.5 transition-colors"
+									classList={{
+										"border-gold/60 bg-gold/10": selected() === key,
+										"border-white/5 bg-surface-2 hover:bg-surface-3": selected() !== key,
+									}}
+									data-tooltip={tile.name}
+									onClick={() => setSelected(selected() === key ? null : key)}
+								>
+									<span class="relative">
+										<Img src={tile.icon} class="size-7 rounded border border-black/60" />
+										<span
+											class="absolute -right-1 -bottom-1 size-3 rounded-full border-2 border-surface-2"
+											style={{ background: markerBackground(tile.checks) }}
+										/>
+									</span>
+									<span class="text-center text-[11px] leading-tight text-zinc-400">
+										{tile.label}
+									</span>
+									<span class="mt-auto text-[11px] text-zinc-500">
+										{tile.checks.length - pending()}/{tile.checks.length}
+									</span>
+								</button>
+							);
+						}}
+					</For>
+				</div>
+				<Show when={selectedChecks()}>
+					{(checks) => (
+						<div class="mt-2 rounded-lg border border-white/5 bg-surface-2">
+							<CheckList checks={checks()} />
+						</div>
+					)}
+				</Show>
+			</>
+		);
 	};
 
 	const Section = (sectionProps: { title: string; count: number; children: JSX.Element }) => (
@@ -229,24 +270,16 @@ function SideChecks(props: { checks: Check[]; hideChecked: boolean }) {
 	return (
 		<>
 			<Section title="Class training" count={visible(group("spells")).length}>
-				<BracketGrid name="spells" icon={() => asset(`ui/class_${slotData()?.options.character_class}.webp`)} />
-				<Show when={selectedChecks("spells")}>
-					{(checks) => (
-						<div class="mt-2 rounded-lg border border-white/5 bg-surface-2">
-							<CheckList checks={checks()} />
-						</div>
-					)}
-				</Show>
+				<TileGrid
+					name="spells"
+					tiles={bracketTiles("spells", () => asset(`ui/class_${slotData()?.options.character_class}.webp`))}
+				/>
 			</Section>
 			<Section title="Levels" count={visible(group("levels")).length}>
-				<BracketGrid name="levels" icon={(bracket) => levelIcon((bracket + 1) * 5)} />
-				<Show when={selectedChecks("levels")}>
-					{(checks) => (
-						<div class="mt-2 rounded-lg border border-white/5 bg-surface-2">
-							<CheckList checks={checks()} />
-						</div>
-					)}
-				</Show>
+				<TileGrid name="levels" tiles={bracketTiles("levels", (bracket) => levelIcon((bracket + 1) * 5))} />
+			</Section>
+			<Section title="Skills" count={visible(group("skills")).length}>
+				<TileGrid name="skills" tiles={skillTiles()} />
 			</Section>
 			<Section title="Achievements" count={visible(group("achievements")).length}>
 				<div class="rounded-lg border border-white/5 bg-surface-2">

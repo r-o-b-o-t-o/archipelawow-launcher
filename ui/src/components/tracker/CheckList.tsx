@@ -28,7 +28,9 @@ const stateOrder: Record<CheckState, number> = { available: 0, unknown: 1, seque
 export default function CheckList(props: { checks: Check[] }) {
 	const sorted = () =>
 		[...props.checks].sort(
-			(a, b) => stateOrder[checkState(a.id)] - stateOrder[checkState(b.id)] || a.name.localeCompare(b.name),
+			(a, b) =>
+				stateOrder[checkState(a.id)] - stateOrder[checkState(b.id)] ||
+				a.name.localeCompare(b.name, undefined, { numeric: true }),
 		);
 	return (
 		<ul class="flex flex-col">

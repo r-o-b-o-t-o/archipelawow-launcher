@@ -21,6 +21,7 @@ export function loadTrackerData(): Promise<TrackerData> {
 		"dungeons",
 		"explorations",
 		"spells",
+		"skills",
 		"achievements",
 		"items",
 		"characters",

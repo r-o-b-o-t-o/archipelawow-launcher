@@ -3,7 +3,7 @@ import { asset, FALLBACK_ICON, iconUrl } from "./data";
 import type { MapInfo, Position, SlotData, TrackerData } from "./types";
 
 /** Where the side panel lists a check that has no spot on the maps. */
-export type SideGroup = "spells" | "levels" | "achievements" | "quests";
+export type SideGroup = "spells" | "levels" | "skills" | "achievements" | "quests";
 
 interface Spot {
 	/** The map's id. */
@@ -21,6 +21,8 @@ export interface Check {
 	group?: SideGroup;
 	/** The level a spell is trained at, or the level reached. */
 	level?: number;
+	/** The SkillLine.dbc id of a skill check. */
+	skill?: number;
 	note?: string;
 }
 
@@ -137,6 +139,11 @@ export function buildChecks(data: TrackerData, slot: SlotData, names: Record<str
 
 	for (const [level, id] of slot.locations.levels)
 		checks.push({ id, name: name(id), icon: levelIcon(level), group: "levels", level });
+
+	for (const [skill, , id] of slot.locations.skills ?? []) {
+		const icon = data.skills[skill]?.icon;
+		checks.push({ id, name: name(id), icon: icon ? iconUrl(icon) : FALLBACK_ICON, group: "skills", skill });
+	}
 
 	return checks;
 }
