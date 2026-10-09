@@ -1,13 +1,14 @@
-import { createResource, createSignal, For, onMount, Show } from "solid-js";
+import { For, Show, createResource, createSignal, onMount } from "solid-js";
+
 import Icon from "../components/Icon";
 import MapView from "../components/tracker/MapView";
 import SidePanel from "../components/tracker/SidePanel";
-import { Button, Callout, inputBase, Spinner, Switch, TextInput } from "../components/ui";
+import { Button, Callout, Spinner, Switch, TextInput, inputBase } from "../components/ui";
 import { api } from "../lib/api";
 import { inLauncher } from "../lib/bridge";
 import { errorMessage, toast } from "../lib/toast";
 import { loadTrackerData } from "../tracker/data";
-import { checks, checkState, initTracker, seed, setData, slotData, status } from "../tracker/state";
+import { checkState, checks, initTracker, seed, setData, slotData, status } from "../tracker/state";
 import type { MapInfo } from "../tracker/types";
 
 const DEFAULT_PORT = 38281;

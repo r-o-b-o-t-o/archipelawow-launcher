@@ -1,6 +1,7 @@
 // Archipelago player options for World of Warcraft: the schema generated from the apworld by
 // scripts/dump-options-schema.py, and conversion between the editor's state and YAML files.
 import YAML from "yaml";
+
 import schemaJson from "../data/options-schema.json";
 
 export interface Choice {

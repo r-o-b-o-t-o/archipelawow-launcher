@@ -1,5 +1,6 @@
-import { A, useNavigate, type RouteSectionProps } from "@solidjs/router";
-import { For, onMount, Show, type ParentProps } from "solid-js";
+import { A, type RouteSectionProps, useNavigate } from "@solidjs/router";
+import { For, type ParentProps, Show, onMount } from "solid-js";
+
 import Icon, { type IconName } from "./components/Icon";
 import { serverStates } from "./components/ServerCard";
 import { Dot, Spinner } from "./components/ui";

@@ -1,7 +1,8 @@
-import { createEffect, createResource, createSignal, For, on, onMount, Show } from "solid-js";
+import { For, Show, createEffect, createResource, createSignal, on, onMount } from "solid-js";
+
 import TaskPanel from "../components/TaskPanel";
-import { Button, Card, Code, Field, inputBase, PageHeader, Select, Switch, TextInput } from "../components/ui";
-import { api, type FolderTarget, type SetupStatus } from "../lib/api";
+import { Button, Card, Code, Field, PageHeader, Select, Switch, TextInput, inputBase } from "../components/ui";
+import { type FolderTarget, type SetupStatus, api } from "../lib/api";
 import { formatDate } from "../lib/format";
 import { schema } from "../lib/playerOptions";
 import {

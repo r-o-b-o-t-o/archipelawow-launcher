@@ -1,4 +1,5 @@
 import { Show } from "solid-js";
+
 import type { SetupStatus } from "../lib/api";
 import { appInfo } from "../lib/store";
 import { Callout, Code } from "./ui";

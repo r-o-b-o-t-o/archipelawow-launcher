@@ -1,5 +1,6 @@
-import { createResource, createSignal, Show } from "solid-js";
-import { api, type SetupStatus } from "../lib/api";
+import { Show, createResource, createSignal } from "solid-js";
+
+import { type SetupStatus, api } from "../lib/api";
 import { formatBytes, formatDate } from "../lib/format";
 import { loaded } from "../lib/resource";
 import { isActive, serverChanged, servers, task } from "../lib/store";

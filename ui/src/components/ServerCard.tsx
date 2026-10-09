@@ -1,5 +1,6 @@
-import { createSignal, Match, Show, Switch } from "solid-js";
-import { api, type ServerState, type ServerStatus } from "../lib/api";
+import { Match, Show, Switch, createSignal } from "solid-js";
+
+import { type ServerState, type ServerStatus, api } from "../lib/api";
 import { now } from "../lib/clock";
 import { formatDuration } from "../lib/format";
 import { isActive } from "../lib/store";

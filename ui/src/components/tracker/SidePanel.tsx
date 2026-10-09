@@ -1,6 +1,7 @@
-import { createMemo, createSignal, For, Show, type JSX } from "solid-js";
-import { levelIcon, type Check, type SideGroup } from "../../tracker/checks";
-import { asset, FALLBACK_ICON, iconUrl } from "../../tracker/data";
+import { For, type JSX, Show, createMemo, createSignal } from "solid-js";
+
+import { type Check, type SideGroup, levelIcon } from "../../tracker/checks";
+import { FALLBACK_ICON, asset, iconUrl } from "../../tracker/data";
 import { explain } from "../../tracker/logic";
 import { checkRegion, checkState, counts, items, seed, slotData } from "../../tracker/state";
 import type { TrackerData } from "../../tracker/types";

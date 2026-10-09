@@ -1,6 +1,7 @@
 // State pushed by the launcher, shared by every page.
 import { createSignal } from "solid-js";
-import { api, type AppInfo, type LauncherUpdate, type ServerName, type ServerStatus, type TaskInfo } from "./api";
+
+import { type AppInfo, type LauncherUpdate, type ServerName, type ServerStatus, type TaskInfo, api } from "./api";
 import { inLauncher, on } from "./bridge";
 import { errorMessage } from "./toast";
 

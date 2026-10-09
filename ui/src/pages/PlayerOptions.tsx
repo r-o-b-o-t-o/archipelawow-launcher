@@ -1,19 +1,20 @@
-import { createMemo, createResource, createSignal, For, Show } from "solid-js";
+import { For, Show, createMemo, createResource, createSignal } from "solid-js";
+
 import Icon from "../components/Icon";
 import OptionField from "../components/OptionField";
 import { Button, Callout, Code, Field, IconButton, Modal, PageHeader, Select, TextInput } from "../components/ui";
 import { api } from "../lib/api";
 import {
+	NAME_MAX_LENGTH,
+	type OptionValue,
+	type PlayerDoc,
 	applyPreset,
 	defaultDoc,
-	NAME_MAX_LENGTH,
 	parsePlayerYaml,
 	randomizedDoc,
 	schema,
 	toPlayerYaml,
 	validate,
-	type OptionValue,
-	type PlayerDoc,
 } from "../lib/playerOptions";
 import { attempt, errorMessage, toast } from "../lib/toast";
 import { guardUnsaved } from "../lib/unsaved";

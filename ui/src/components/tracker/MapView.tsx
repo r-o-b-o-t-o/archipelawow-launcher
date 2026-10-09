@@ -1,5 +1,6 @@
-import { createEffect, createMemo, createSignal, For, Index, on, onCleanup, onMount, Show } from "solid-js";
-import { projectSpot, type Check } from "../../tracker/checks";
+import { For, Index, Show, createEffect, createMemo, createSignal, on, onCleanup, onMount } from "solid-js";
+
+import { type Check, projectSpot } from "../../tracker/checks";
 import { asset } from "../../tracker/data";
 import { checkState } from "../../tracker/state";
 import type { MapInfo, TrackerData } from "../../tracker/types";

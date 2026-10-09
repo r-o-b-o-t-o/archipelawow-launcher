@@ -1,4 +1,5 @@
-import { For, Show, splitProps, type JSX, type ParentProps } from "solid-js";
+import { For, type JSX, type ParentProps, Show, splitProps } from "solid-js";
+
 import Icon, { type IconName } from "./Icon";
 
 type ButtonVariant = "primary" | "secondary" | "danger" | "ghost";

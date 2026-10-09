@@ -1,12 +1,13 @@
 import { A } from "@solidjs/router";
-import { createResource, createSignal, For, onMount, Show } from "solid-js";
+import { For, Show, createResource, createSignal, onMount } from "solid-js";
+
 import Icon, { type IconName } from "../components/Icon";
 import PathLengthWarning from "../components/PathLengthWarning";
 import ServerCard, { serverStates } from "../components/ServerCard";
 import TaskPanel from "../components/TaskPanel";
 import Terminal, { clearTerminal } from "../components/Terminal";
 import { Button, Callout, Card, Code, Dot, Field, IconButton, PageHeader, Select, TextInput } from "../components/ui";
-import { api, type ServerName, type TerminalName } from "../lib/api";
+import { type ServerName, type TerminalName, api } from "../lib/api";
 import { isActive, server, servers, task } from "../lib/store";
 import { attempt, toast } from "../lib/toast";
 

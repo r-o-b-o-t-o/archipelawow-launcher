@@ -1,7 +1,9 @@
+import { createEffect, onCleanup, onMount } from "solid-js";
+
 import { FitAddon } from "@xterm/addon-fit";
 import { Terminal as XTerm } from "@xterm/xterm";
-import { createEffect, onCleanup, onMount } from "solid-js";
-import { api, type TerminalName } from "../lib/api";
+
+import { type TerminalName, api } from "../lib/api";
 import { on } from "../lib/bridge";
 import { appInfo } from "../lib/store";
 

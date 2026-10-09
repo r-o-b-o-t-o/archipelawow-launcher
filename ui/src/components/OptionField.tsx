@@ -1,19 +1,20 @@
-import { createSignal, For, Match, Show, Switch as SwitchCase } from "solid-js";
+import { For, Match, Show, Switch as SwitchCase, createSignal } from "solid-js";
+
 import {
-	isRange,
-	isWeighted,
-	pickedKey,
-	RANDOM_KEYS,
-	rangeRandomKey,
-	valueKey,
 	type ChoiceOptionDef,
 	type OptionDef,
 	type OptionValue,
+	RANDOM_KEYS,
 	type RangeOptionDef,
 	type WeightedOptionDef,
+	isRange,
+	isWeighted,
+	pickedKey,
+	rangeRandomKey,
+	valueKey,
 } from "../lib/playerOptions";
 import Icon from "./Icon";
-import { inputBase, Select, Switch, TextInput } from "./ui";
+import { Select, Switch, TextInput, inputBase } from "./ui";
 
 const titleCase = (name: string) => name.replace(/_/g, " ").replace(/^\w/, (c) => c.toUpperCase());
 

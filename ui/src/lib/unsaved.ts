@@ -1,6 +1,7 @@
 // Unsaved edits, which the launcher asks about before its window closes on them.
 import { useBeforeLeave } from "@solidjs/router";
 import { createEffect, onCleanup } from "solid-js";
+
 import { api } from "./api";
 
 const editors = new Set<symbol>();

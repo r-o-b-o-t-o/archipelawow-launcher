@@ -21,6 +21,7 @@
 	},
 	"devDependencies": {
 		"@tailwindcss/vite": "^4.3.3",
+		"@trivago/prettier-plugin-sort-imports": "^6.0.2",
 		"@types/node": "^24.13.3",
 		"prettier": "^3.9.9",
 		"tailwindcss": "^4.3.3",

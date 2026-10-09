@@ -1,5 +1,5 @@
 // The seed's checks, with where they are on the maps, put together from the slot data and the extracts.
-import { asset, FALLBACK_ICON, iconUrl } from "./data";
+import { FALLBACK_ICON, asset, iconUrl } from "./data";
 import type { MapInfo, Position, SlotData, TrackerData } from "./types";
 
 /** Where the side panel lists a check that has no spot on the maps. */

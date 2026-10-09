@@ -1,9 +1,10 @@
 // The tracker's connection, pushed by the launcher, and what follows from it.
 import { createMemo, createRoot, createSignal } from "solid-js";
-import { api, type TrackerItem, type TrackerSeed, type TrackerStatus } from "../lib/api";
+
+import { type TrackerItem, type TrackerSeed, type TrackerStatus, api } from "../lib/api";
 import { inLauncher, on } from "../lib/bridge";
-import { buildChecks, type Check } from "./checks";
-import { evaluate, explainLocation, reachableRegions, type Requirement } from "./logic";
+import { type Check, buildChecks } from "./checks";
+import { type Requirement, evaluate, explainLocation, reachableRegions } from "./logic";
 import type { SlotData, TrackerData } from "./types";
 
 /** Checked, in logic, doable out of logic, out of logic, or unknown for a seed without rules. */

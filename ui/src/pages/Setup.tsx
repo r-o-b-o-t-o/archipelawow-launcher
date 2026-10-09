@@ -1,5 +1,6 @@
 import { useNavigate } from "@solidjs/router";
-import { createResource, createSignal, Show, type ParentProps } from "solid-js";
+import { type ParentProps, Show, createResource, createSignal } from "solid-js";
+
 import ClientDataPanel from "../components/ClientDataPanel";
 import Icon from "../components/Icon";
 import PathLengthWarning from "../components/PathLengthWarning";

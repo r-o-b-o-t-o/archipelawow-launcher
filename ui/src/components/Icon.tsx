@@ -1,6 +1,8 @@
+import { Dynamic } from "solid-js/web";
+
+import Check from "lucide-solid/icons/check";
 import ChevronDown from "lucide-solid/icons/chevron-down";
 import ChevronRight from "lucide-solid/icons/chevron-right";
-import Check from "lucide-solid/icons/check";
 import CircleCheck from "lucide-solid/icons/circle-check";
 import CircleX from "lucide-solid/icons/circle-x";
 import Copy from "lucide-solid/icons/copy";
@@ -37,7 +39,6 @@ import Upload from "lucide-solid/icons/upload";
 import UserPlus from "lucide-solid/icons/user-plus";
 import WandSparkles from "lucide-solid/icons/wand-sparkles";
 import X from "lucide-solid/icons/x";
-import { Dynamic } from "solid-js/web";
 
 // Imported one by one: Vite doesn't pre-bundle lucide-solid, so its index would have the dev server load
 // every icon

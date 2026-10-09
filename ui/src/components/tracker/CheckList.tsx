@@ -1,8 +1,9 @@
-import { createSignal, For, Show } from "solid-js";
+import { For, Show, createSignal } from "solid-js";
+
 import type { Check } from "../../tracker/checks";
 import { FALLBACK_ICON } from "../../tracker/data";
 import type { Requirement } from "../../tracker/logic";
-import { checkState, whyBlocked, type CheckState } from "../../tracker/state";
+import { type CheckState, checkState, whyBlocked } from "../../tracker/state";
 import Icon from "../Icon";
 
 /** The colours of PopTracker: in logic, sequence break, out of logic, checked, plus one for seeds without rules. */
