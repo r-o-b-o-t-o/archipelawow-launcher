@@ -174,6 +174,8 @@ export function Select<T extends string | number>(props: {
 			onChange={(e) => {
 				const option = props.options.find((o) => String(o.value) === e.currentTarget.value);
 				if (option) props.onChange(option.value);
+				// Shows the value again when the change is refused, or only applied after asking
+				e.currentTarget.value = String(props.value);
 			}}
 		>
 			<For each={props.options}>{(option) => <option value={String(option.value)}>{option.label}</option>}</For>
