@@ -51,7 +51,10 @@ def describe(key: str, option, Options) -> dict:
     elif issubclass(option, Options.Choice):
         entry["type"] = "textChoice" if issubclass(option, Options.TextChoice) else "choice"
         entry["default"] = option.name_lookup.get(default, default) if isinstance(default, int) else default
-        entry["choices"] = [{"value": name, "label": option.get_option_name(value)} for value, name in option.name_lookup.items()]
+        # The number too: Archipelago takes it in place of the name, and worlds' presets often use it
+        entry["choices"] = [
+            {"value": name, "label": option.get_option_name(value), "number": value} for value, name in option.name_lookup.items()
+        ]
         if option.aliases:
             entry["aliases"] = {alias: option.name_lookup[value] for alias, value in option.aliases.items()}
     elif issubclass(option, Options.Range):

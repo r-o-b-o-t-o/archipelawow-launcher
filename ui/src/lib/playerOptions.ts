@@ -7,6 +7,8 @@ import schemaJson from "../data/options-schema.json";
 export interface Choice {
 	value: string;
 	label: string;
+	/** A choice option's number, which Archipelago takes in place of the name. */
+	number?: number;
 }
 
 interface OptionBase {
@@ -102,6 +104,7 @@ export function valueKey(option: OptionDef, value: unknown): string {
 		const key = String(value).toLowerCase();
 		return (
 			option.aliases?.[key] ??
+			option.choices.find((c) => String(c.number) === key)?.value ??
 			(option.choices.some((c) => c.value === key) || option.type === "choice" ? key : String(value))
 		);
 	}
