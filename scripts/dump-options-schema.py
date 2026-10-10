@@ -153,6 +153,11 @@ def main() -> None:
         "archipelagoVersion": archipelago_version,
         "groups": build_groups(module, type_hints, Options),
         "presets": to_jsonable(getattr(module, "option_presets", {})),
+        # Picking a race and a class that can't go together fails the generation, unless others are weighted to reroll into
+        "playableCombinations": [
+            [type_hints["character_race"].name_lookup[race], type_hints["character_class"].name_lookup[character_class]]
+            for race, character_class in module.PLAYABLE_COMBINATIONS
+        ],
     }
 
     args.output.parent.mkdir(parents=True, exist_ok=True)

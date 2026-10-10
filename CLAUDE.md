@@ -14,9 +14,11 @@ the layout and development commands.
   connection keys; renaming them needs a matching change on the other side.
 - `archipelawow` — the apworld. `scripts/dump-options-schema.py` turns its newest release's options
   (pre-releases included) into the schema the YAML editor renders; a new option type needs support
-  there and in `OptionField.tsx`. It loads `options.py` alone, so that file can't import the rest of
-  the world. The tracker reads its slot data (`fill_slot_data` in `world.py`), its rules included
-  (`logic_export.py`): `ui/src/tracker/types.ts` holds the shape, change them together.
+  there and in `OptionField.tsx`. It also reads the races and classes that go together
+  (`PLAYABLE_COMBINATIONS`) for Randomize and the editor's checks. It loads `options.py` alone, so
+  that file can't import the rest of the world. The tracker reads its slot data (`fill_slot_data` in
+  `world.py`), its rules included (`logic_export.py`): `ui/src/tracker/types.ts` holds the shape,
+  change them together.
 - `archipelawow-data-extractor` — writes the tracker's maps, positions and icons to `ui/public/tracker`.
   Never hand-edit them: change the extractor and regenerate. Their shape is in `ui/src/tracker/types.ts`.
 

@@ -52,6 +52,8 @@ export interface OptionsSchema {
 	archipelagoVersion: string;
 	groups: { name: string; collapsed: boolean; options: OptionDef[] }[];
 	presets: Record<string, Record<string, unknown>>;
+	/** Every [race, class] pair a character can be created as. */
+	playableCombinations: string[][];
 }
 
 export const schema = schemaJson as OptionsSchema;
@@ -79,8 +81,15 @@ export interface PlayerDoc {
 export const NAME_MAX_LENGTH = 16;
 export const RANDOM_KEYS = ["random", "random-low", "random-high"];
 
-// Archipelago's own options, which a randomized character shouldn't touch
-const RANDOMIZE_SKIPPED = new Set(["progression_balancing", "accessibility", "death_link"]);
+// Archipelago's own options, which a randomized character shouldn't touch, and the race and class,
+// picked together
+const RANDOMIZE_SKIPPED = new Set([
+	"progression_balancing",
+	"accessibility",
+	"death_link",
+	"character_race",
+	"character_class",
+]);
 
 export const isWeighted = (option: OptionDef): option is WeightedOptionDef =>
 	option.type === "toggle" ||
@@ -139,15 +148,22 @@ export function pickedKey(value: OptionValue): string | null {
 	return picked.length === 1 ? picked[0][0] : null;
 }
 
+const randomItem = <T>(items: T[]) => items[Math.floor(Math.random() * items.length)];
+
 export function randomizedDoc(doc: PlayerDoc): PlayerDoc {
 	const values = { ...doc.values };
 	for (const option of allOptions) {
 		if (!isWeighted(option) || RANDOMIZE_SKIPPED.has(option.key)) continue;
 		const key = isRange(option)
 			? valueKey(option, option.min + Math.floor(Math.random() * (option.max - option.min + 1)))
-			: option.choices[Math.floor(Math.random() * option.choices.length)].value;
+			: randomItem(option.choices).value;
 		values[option.key] = { kind: "weights", weights: { [key]: 50 } };
 	}
+	// The class first, so that each is as likely whatever its number of races
+	const characterClass = randomItem([...new Set(schema.playableCombinations.map(([, cls]) => cls))]);
+	const [race] = randomItem(schema.playableCombinations.filter(([, cls]) => cls === characterClass));
+	values.character_race = { kind: "weights", weights: { [race]: 50 } };
+	values.character_class = { kind: "weights", weights: { [characterClass]: 50 } };
 	return { ...doc, values };
 }
 
@@ -190,7 +206,35 @@ export function validate(doc: PlayerDoc): string[] {
 			}
 		}
 	}
+	// The world rerolls a race and a class that can't go together, but only into the other values weighted
+	const races = weightedKeys(doc, "character_race");
+	const classes = weightedKeys(doc, "character_class");
+	if (
+		races.length > 0 &&
+		classes.length > 0 &&
+		!schema.playableCombinations.some(([race, cls]) => races.includes(race) && classes.includes(cls))
+	)
+		problems.push(
+			races.length === 1 && classes.length === 1
+				? `Race and Class: ${withArticle(choiceLabel("character_race", races[0]), "A")} can't be ${withArticle(choiceLabel("character_class", classes[0]), "a")}.`
+				: "Race and Class: none of the races weighted can be any of the classes weighted.",
+		);
 	return problems;
+}
+
+const withArticle = (noun: string, article: "A" | "a") => `${article}${/^[aeiou]/i.test(noun) ? "n" : ""} ${noun}`;
+
+function choiceLabel(key: string, value: string) {
+	const option = allOptions.find((o) => o.key === key) as ChoiceOptionDef;
+	return option.choices.find((c) => c.value === value)?.label ?? value;
+}
+
+function weightedKeys(doc: PlayerDoc, key: string): string[] {
+	const value = doc.values[key];
+	if (value?.kind !== "weights") return [];
+	const keys = Object.keys(value.weights).filter((k) => value.weights[k] > 0);
+	const option = allOptions.find((o) => o.key === key) as ChoiceOptionDef;
+	return keys.includes("random") ? option.choices.map((c) => c.value) : keys;
 }
 
 // ---------------------------------------------------------------------------------------------
