@@ -5,6 +5,7 @@ import { render } from "solid-js/web";
 import App from "./App";
 import "./index.css";
 import { initTooltips } from "./lib/tooltips";
+import ApWorld from "./pages/ApWorld";
 import Dashboard from "./pages/Dashboard";
 import PlayerOptions from "./pages/PlayerOptions";
 import Settings from "./pages/Settings";
@@ -20,6 +21,7 @@ render(
 			<Route path="/" component={Dashboard} />
 			<Route path="/setup" component={Setup} />
 			<Route path="/player-options" component={PlayerOptions} />
+			<Route path="/apworld" component={ApWorld} />
 			<Route path="/tracker" component={Tracker} />
 			<Route path="/settings" component={Settings} />
 		</HashRouter>

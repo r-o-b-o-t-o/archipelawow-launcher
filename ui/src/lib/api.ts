@@ -80,6 +80,22 @@ export interface NetworkStatus {
 	worldServerPort: number;
 }
 
+export interface ApWorldStatus {
+	/** Null when Archipelago isn't installed. Its version is null when found in its default folder only. */
+	archipelago: { path: string; version: string | null } | null;
+	/** The apworld in its custom worlds. Its version is null for apworlds older than their manifest. */
+	installed: { file: string; worldVersion: string | null } | null;
+}
+
+export interface ApWorldRelease {
+	tag: string;
+	prerelease: boolean;
+	publishedAt: string;
+	assetName: string;
+	size: number;
+	url: string;
+}
+
 export interface ClientDataStatus {
 	version: string | null;
 	folders: Record<string, boolean>;
@@ -271,6 +287,11 @@ export const api = {
 		delete: (name: string) => call("players.delete", { name }),
 		import: () => call<string[]>("players.import"),
 		export: (name: string) => call<boolean>("players.export", { name }),
+	},
+	apworld: {
+		getStatus: () => call<ApWorldStatus>("apworld.getStatus"),
+		getReleases: () => call<ApWorldRelease[]>("apworld.getReleases"),
+		install: (tag: string) => call<ApWorldStatus>("apworld.install", { tag }),
 	},
 	config: {
 		list: () => call<string[]>("config.list"),

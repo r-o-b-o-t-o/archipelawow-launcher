@@ -12,6 +12,7 @@ public sealed class AppServices : IDisposable
     public ClientDataService ClientData { get; }
     public PlayerFilesService Players { get; }
     public NetworkService Network { get; }
+    public ApWorldService ApWorld { get; }
     public TrackerService Tracker { get; } = new();
     public LauncherUpdater LauncherUpdater { get; } = new();
     public HttpClient Http { get; }
@@ -34,6 +35,7 @@ public sealed class AppServices : IDisposable
         Repack = new RepackService(paths, Settings, Configs, Http);
         ClientData = new ClientDataService(paths, Settings, Http);
         Players = new PlayerFilesService(paths);
+        ApWorld = new ApWorldService(Http);
     }
 
     public void Dispose()

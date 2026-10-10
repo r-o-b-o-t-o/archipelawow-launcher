@@ -334,6 +334,15 @@ public static partial class BridgeApi
             return true;
         });
 
+        // The apworld, in the Archipelago launcher's custom worlds
+        bridge.Handle("apworld.getStatus", services.ApWorld.GetStatus);
+        bridge.HandleAsync("apworld.getReleases", async () => await services.ApWorld.GetReleasesAsync(CancellationToken.None));
+        bridge.HandleAsync<TagParams>("apworld.install", async p =>
+        {
+            await services.ApWorld.InstallAsync(p.Tag, CancellationToken.None);
+            return services.ApWorld.GetStatus();
+        });
+
         // Configuration files
         bridge.Handle("config.list", services.Configs.List);
         bridge.Handle<NameParams>("config.read", p => services.Configs.ReadText(p.Name));
@@ -392,6 +401,7 @@ public static partial class BridgeApi
     sealed record SettingsPatch(int? MySqlPort, bool? AutoStartServers, bool? TrackerHideChecked);
     sealed record BuildParams(string Build);
     sealed record NetworkParams(RealmAccess Access, string? PublicAddress);
+    sealed record TagParams(string Tag);
     sealed record CreateConfigsParams(bool Overwrite);
     sealed record ExtractParams(string ClientPath, bool GenerateMmaps);
     sealed record PickFolderParams(string? Title, string? InitialDirectory);

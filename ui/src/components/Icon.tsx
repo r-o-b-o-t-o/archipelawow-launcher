@@ -26,6 +26,7 @@ import Package from "lucide-solid/icons/package";
 import Play from "lucide-solid/icons/play";
 import Plug from "lucide-solid/icons/plug";
 import Plus from "lucide-solid/icons/plus";
+import Puzzle from "lucide-solid/icons/puzzle";
 import RefreshCw from "lucide-solid/icons/refresh-cw";
 import Rocket from "lucide-solid/icons/rocket";
 import RotateCw from "lucide-solid/icons/rotate-cw";
@@ -90,6 +91,7 @@ const icons = {
 	lightbulb: Lightbulb,
 	monitor: Monitor,
 	network: Network,
+	puzzle: Puzzle,
 };
 
 export type IconName = keyof typeof icons;

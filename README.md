@@ -44,6 +44,12 @@ time the authserver starts. Over the internet, forward the authserver's and the 
 and 8085) to that address in your router's control panel; the setup links to a checker that tells whether
 they're open from the outside. The other players point their `realmlist.wtf` at the address the setup shows.
 
+### Installing the apworld
+
+To generate and host seeds with Archipelago, the **APWorld** page installs a release of the
+[apworld](https://github.com/r-o-b-o-t-o/archipelawow/releases) in the Archipelago launcher's
+`custom_worlds` folder, replacing the version there.
+
 It runs on 64-bit Windows 10 (1809 or later) and 11. The interface uses the Microsoft Edge WebView2
 Runtime, which comes with Windows 11 and up-to-date Windows 10; the launcher links to its installer
 when it's missing.

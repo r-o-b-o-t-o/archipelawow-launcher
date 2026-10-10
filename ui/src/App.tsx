@@ -83,6 +83,9 @@ function Sidebar() {
 				<NavLink href="/setup" icon="wand">
 					Setup
 				</NavLink>
+				<NavLink href="/apworld" icon="puzzle">
+					APWorld
+				</NavLink>
 				<NavLink href="/player-options" icon="sword">
 					Player options
 				</NavLink>
