@@ -17,6 +17,7 @@ import Globe from "lucide-solid/icons/globe";
 import Info from "lucide-solid/icons/info";
 import Key from "lucide-solid/icons/key";
 import LayoutDashboard from "lucide-solid/icons/layout-dashboard";
+import Lightbulb from "lucide-solid/icons/lightbulb";
 import MapIcon from "lucide-solid/icons/map";
 import Package from "lucide-solid/icons/package";
 import Play from "lucide-solid/icons/play";
@@ -82,6 +83,7 @@ const icons = {
 	plug: Plug,
 	unplug: Unplug,
 	key: Key,
+	lightbulb: Lightbulb,
 };
 
 export type IconName = keyof typeof icons;

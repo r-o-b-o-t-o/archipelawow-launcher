@@ -2,9 +2,11 @@ import { For, Index, Show, createEffect, createMemo, createSignal, on, onCleanup
 
 import { type Check, projectSpot } from "../../tracker/checks";
 import { asset } from "../../tracker/data";
-import { checkState } from "../../tracker/state";
+import { checkHints, checkState } from "../../tracker/state";
 import type { MapInfo, TrackerData } from "../../tracker/types";
-import CheckList, { stateColors } from "./CheckList";
+import CheckList from "./CheckList";
+import { HintBadge } from "./Hints";
+import { stateColors } from "./checkStates";
 
 // Every world map is drawn on the same 1002x668
 const MAP_WIDTH = 1002;
@@ -368,6 +370,11 @@ export default function MapView(props: {
 				{(marker) => {
 					const pending = () => marker().checks.filter((check) => checkState(check.id) !== "checked").length;
 					const screen = () => toScreen(marker().u, marker().v);
+					const hints = () =>
+						marker()
+							.checks.filter((check) => checkState(check.id) !== "checked")
+							.map((check) => checkHints(check.id))
+							.filter((h) => h != null);
 					return (
 						<button
 							type="button"
@@ -382,10 +389,15 @@ export default function MapView(props: {
 								background: markerBackground(marker().checks),
 							}}
 							data-tooltip={marker().checks.length === 1 ? marker().checks[0].name : undefined}
-							onPointerDown={(event) => event.stopPropagation()}
-							onClick={() => setPopup(marker())}
+							onPointerDown={(event) => !marker().aggregate && event.stopPropagation()}
+							onClick={() => !marker().aggregate && setPopup(marker())}
 						>
 							<Show when={pending() > 1 || marker().aggregate}>{pending() || ""}</Show>
+							{/* Hoverable on a marker of a map underneath too, which still takes the clicks */}
+							<HintBadge
+								hints={hints()}
+								class="pointer-events-auto absolute bottom-[calc(100%-6px)] left-[calc(100%-4px)] flex rounded-full border border-black/80 bg-surface-2 p-px text-gold"
+							/>
 						</button>
 					);
 				}}

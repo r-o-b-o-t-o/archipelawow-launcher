@@ -3,25 +3,10 @@ import { For, Show, createSignal } from "solid-js";
 import type { Check } from "../../tracker/checks";
 import { FALLBACK_ICON } from "../../tracker/data";
 import type { Requirement } from "../../tracker/logic";
-import { type CheckState, checkState, whyBlocked } from "../../tracker/state";
+import { type CheckState, checkHints, checkState, itemHints, whyBlocked } from "../../tracker/state";
 import Icon from "../Icon";
-
-/** The colours of PopTracker: in logic, sequence break, out of logic, checked, plus one for seeds without rules. */
-export const stateColors: Record<CheckState, string> = {
-	available: "#22c55e",
-	sequenceBreak: "#facc15",
-	blocked: "#ef4444",
-	checked: "#71717a",
-	unknown: "#38bdf8",
-};
-
-const stateLabels: Record<CheckState, string> = {
-	available: "In logic",
-	sequenceBreak: "Out of logic, but doable",
-	blocked: "Out of logic",
-	checked: "Checked",
-	unknown: "No logic",
-};
+import { HintBadge, itemHintText } from "./Hints";
+import { stateColors, stateLabels } from "./checkStates";
 
 const stateOrder: Record<CheckState, number> = { available: 0, unknown: 1, sequenceBreak: 2, blocked: 3, checked: 4 };
 
@@ -69,6 +54,7 @@ function CheckRow(props: { check: Check }) {
 						<span class="block truncate text-[11px] text-zinc-500">{props.check.note}</span>
 					</Show>
 				</span>
+				<HintBadge hints={state() === "checked" ? [] : [checkHints(props.check.id)].filter((h) => h != null)} />
 				<span
 					class="size-2.5 shrink-0 rounded-full"
 					style={{ background: stateColors[state()] }}
@@ -109,6 +95,16 @@ function Requirements(props: { requirements: Requirement[] }) {
 										? `To reach ${requirement.text}:`
 										: `${requirement.text}:`}
 							</span>
+							<Show when={!requirement.met && itemHints().get(requirement.item ?? "")}>
+								{(hints) => (
+									<span
+										class="flex shrink-0 text-gold"
+										data-tooltip={hints().map(itemHintText).join("\n")}
+									>
+										<Icon name="lightbulb" class="size-3.5" />
+									</span>
+								)}
+							</Show>
 						</div>
 						<Show when={requirement.children}>
 							{(children) => (

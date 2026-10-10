@@ -1,4 +1,4 @@
-import { For, type JSX, Show, createMemo, createSignal } from "solid-js";
+import { For, type JSX, Match, Show, Switch, createMemo, createSignal } from "solid-js";
 
 import { type Check, type SideGroup, levelIcon } from "../../tracker/checks";
 import { FALLBACK_ICON, asset, iconUrl } from "../../tracker/data";
@@ -7,6 +7,7 @@ import { checkRegion, checkState, counts, items, seed, slotData } from "../../tr
 import type { TrackerData } from "../../tracker/types";
 import { ProgressBar } from "../ui";
 import CheckList from "./CheckList";
+import { ItemHints, LocationHints, itemHintsFor, locationHintsFor } from "./Hints";
 import { markerBackground } from "./MapView";
 
 // The tracks of the progressive items, ProgressiveType in the apworld's items/progressive.py
@@ -39,35 +40,62 @@ function Img(props: { src: string; class?: string }) {
 	);
 }
 
+type Tab = "checks" | "items" | "itemHints" | "locationHints";
+
 export default function SidePanel(props: { data: TrackerData; checks: Check[]; hideChecked: boolean }) {
-	const [tab, setTab] = createSignal<"checks" | "items">("checks");
+	const [tab, setTab] = createSignal<Tab>("checks");
+	const icons = createMemo(() => itemIcons(props.data));
+	const checksById = createMemo(() => new Map(props.checks.map((check) => [check.id, check])));
+	const tabLabel = (name: Tab) => {
+		switch (name) {
+			case "checks":
+				return "Checks";
+			case "items":
+				return `Items (${items().filter(Boolean).length})`;
+			case "itemHints":
+				return `Item hints (${itemHintsFor(props.hideChecked).length})`;
+			case "locationHints":
+				return `Location hints (${locationHintsFor(props.hideChecked).length})`;
+		}
+	};
 
 	return (
 		<aside class="flex w-[340px] shrink-0 flex-col border-l border-white/5 bg-surface-1">
 			<Show when={slotData()}>
 				<Summary data={props.data} />
 			</Show>
-			<div class="flex border-b border-white/5 px-3">
-				<For each={["checks", "items"] as const}>
+			<div class="flex border-b border-white/5 px-1.5">
+				<For each={["checks", "items", "itemHints", "locationHints"] as const}>
 					{(name) => (
 						<button
 							type="button"
-							class="border-b-2 px-3 py-2 text-[13px] font-medium capitalize transition-colors"
+							class="border-b-2 px-1.5 py-2 text-[12px] font-medium whitespace-nowrap transition-colors"
 							classList={{
 								"border-gold text-gold": tab() === name,
 								"border-transparent text-zinc-400 hover:text-zinc-200": tab() !== name,
 							}}
 							onClick={() => setTab(name)}
 						>
-							{name === "checks" ? "Checks" : `Items (${items().filter(Boolean).length})`}
+							{tabLabel(name)}
 						</button>
 					)}
 				</For>
 			</div>
 			<div class="min-h-0 flex-1 overflow-y-auto">
-				<Show when={tab() === "checks"} fallback={<ReceivedItems data={props.data} />}>
-					<SideChecks data={props.data} checks={props.checks} hideChecked={props.hideChecked} />
-				</Show>
+				<Switch>
+					<Match when={tab() === "checks"}>
+						<SideChecks data={props.data} checks={props.checks} hideChecked={props.hideChecked} />
+					</Match>
+					<Match when={tab() === "items"}>
+						<ReceivedItems icons={icons()} />
+					</Match>
+					<Match when={tab() === "itemHints"}>
+						<ItemHints hideFound={props.hideChecked} icons={icons()} checks={checksById()} />
+					</Match>
+					<Match when={tab() === "locationHints"}>
+						<LocationHints hideFound={props.hideChecked} checks={checksById()} />
+					</Match>
+				</Switch>
 			</div>
 		</aside>
 	);
@@ -299,29 +327,31 @@ function SideChecks(props: { data: TrackerData; checks: Check[]; hideChecked: bo
 	);
 }
 
+/** The icons of the seed's items, by id. */
+function itemIcons(data: TrackerData) {
+	const slot = slotData();
+	const result = new Map<number, string>();
+	if (!slot) return result;
+	for (const [id, , icon] of slot.items.zones) result.set(id, iconUrl(icon));
+	for (const [id, spell] of slot.items.spells) {
+		const icon = data.spells[spell]?.icon;
+		if (icon) result.set(id, iconUrl(icon));
+	}
+	for (const [id, item] of slot.items.items) {
+		const icon = data.items[item]?.icon;
+		if (icon) result.set(id, iconUrl(icon));
+	}
+	for (const [id, track] of slot.items.progressive)
+		result.set(id, PROGRESSIVE_ICONS[track] ? iconUrl(PROGRESSIVE_ICONS[track]) : FALLBACK_ICON);
+	for (const [id, category] of slot.items.gear)
+		result.set(id, GEAR_ICONS[category] ? iconUrl(GEAR_ICONS[category]) : FALLBACK_ICON);
+	result.set(slot.items.levels, levelIcon(10));
+	result.set(slot.items.money, iconUrl("inv_misc_coin_01"));
+	return result;
+}
+
 /** What the slot received, the latest first. */
-function ReceivedItems(props: { data: TrackerData }) {
-	const icons = createMemo(() => {
-		const slot = slotData();
-		const result = new Map<number, string>();
-		if (!slot) return result;
-		for (const [id, , icon] of slot.items.zones) result.set(id, iconUrl(icon));
-		for (const [id, spell] of slot.items.spells) {
-			const icon = props.data.spells[spell]?.icon;
-			if (icon) result.set(id, iconUrl(icon));
-		}
-		for (const [id, item] of slot.items.items) {
-			const icon = props.data.items[item]?.icon;
-			if (icon) result.set(id, iconUrl(icon));
-		}
-		for (const [id, track] of slot.items.progressive)
-			result.set(id, PROGRESSIVE_ICONS[track] ? iconUrl(PROGRESSIVE_ICONS[track]) : FALLBACK_ICON);
-		for (const [id, category] of slot.items.gear)
-			result.set(id, GEAR_ICONS[category] ? iconUrl(GEAR_ICONS[category]) : FALLBACK_ICON);
-		result.set(slot.items.levels, levelIcon(10));
-		result.set(slot.items.money, iconUrl("inv_misc_coin_01"));
-		return result;
-	});
+function ReceivedItems(props: { icons: ReadonlyMap<number, string> }) {
 	const received = () => [...items()].filter(Boolean).reverse();
 
 	return (
@@ -334,7 +364,7 @@ function ReceivedItems(props: { data: TrackerData }) {
 					{(item) => (
 						<li class="flex items-center gap-2.5 border-b border-white/5 px-4 py-1.5">
 							<Img
-								src={icons().get(item.item) ?? FALLBACK_ICON}
+								src={props.icons.get(item.item) ?? FALLBACK_ICON}
 								class="size-7 shrink-0 rounded border border-black/60"
 							/>
 							<div class="min-w-0 flex-1">

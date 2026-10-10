@@ -116,6 +116,7 @@ input[type="range"] {
 	color: #e4e4e7;
 	font-size: 12px;
 	overflow-wrap: anywhere;
+	white-space: pre-line;
 }
 
 @keyframes indeterminate {

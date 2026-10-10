@@ -55,6 +55,8 @@ export function reachableRegions(logic: Logic, counts: Counts): Set<number> {
 export interface Requirement {
 	kind: "item" | "any" | "all" | "region";
 	text: string;
+	/** The item's name, for an item. */
+	item?: string;
 	met: boolean;
 	children?: Requirement[];
 }
@@ -70,6 +72,7 @@ export function explain(rule: Rule, counts: Counts): Requirement[] {
 	const item = (name: string, count = 1): Requirement => ({
 		kind: "item",
 		text: itemRequirement(name, count),
+		item: name,
 		met: has(counts, name, count),
 	});
 	const anyOf = (children: Requirement[][]): Requirement[] => {
