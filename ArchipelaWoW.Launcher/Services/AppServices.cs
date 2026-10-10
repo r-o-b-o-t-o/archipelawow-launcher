@@ -33,6 +33,14 @@ public sealed class AppServices : IDisposable
         Servers = new ServerManager(paths, Settings, MySql, Configs, Network);
         Tasks = new TaskRunner(paths.LauncherLogsDir);
         Repack = new RepackService(paths, Settings, Configs, Http);
+        try
+        {
+            Repack.MoveOutOfServerBin();
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Log.Error("Could not move the server configuration out of server\\bin", ex);
+        }
         ClientData = new ClientDataService(paths, Settings, Http);
         Players = new PlayerFilesService(paths);
         ApWorld = new ApWorldService(Http);

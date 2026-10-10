@@ -40,9 +40,11 @@ the layout and development commands.
 
 ## Running the servers
 
-- The servers run from `server/bin`, reading `configs/` there; `config-defaults.json` keeps every path
-  relative to it so the folder stays portable.
-- The database updater opens SQL files as `server\bin\..\source\...` and isn't long-path aware: past
+- The servers run from `server`, not `server/bin`: on Windows the core reads `configs/` in its working
+  directory, and `-c` only moves the main file, not the module configs. `config-defaults.json` keeps every path
+  relative to it so the folder stays portable. `RepackService.MoveOutOfServerBin` moves the configs of
+  older installations and releases out of `server/bin/configs`, rebasing their paths.
+- The database updater opens SQL files as `server\source\...` and isn't long-path aware: past
   259 characters they fail to open. The launcher warns (`RepackService.LongestSourcePath`); keep SQL
   file and module names short.
 - The servers create the databases they miss: `ServerManager` sets `AC_DISABLE_INTERACTIVE=1`, without
@@ -75,8 +77,8 @@ the layout and development commands.
 
 - No test suite: run the launcher on a real installation (`subst` a drive letter onto it if its path
   is long), made of:
-  - `server/bin`: a core build with its `configs/`, `libmysql.dll` and the OpenSSL DLLs, `legacy.dll`
-    included.
+  - `server/bin`: a core build with `libmysql.dll` and the OpenSSL DLLs, `legacy.dll` included. The
+    launcher moves the build's `configs/` to `server/configs`.
   - `server/source` and `mysql/{bin,lib,share}`: junctions to an AzerothCore checkout and a MySQL 8.4
     install. Installing or deleting the server from the launcher replaces or removes the junctions,
     not what they point to.

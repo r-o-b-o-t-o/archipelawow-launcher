@@ -261,7 +261,8 @@ public sealed class ServerManager
         }
     }
 
-    ProcessSpec ServerSpec(string name) => new(_paths.ServerExe(name), [], _paths.ServerBin);
+    // On Windows, the core reads its configuration from configs\ in its working directory
+    ProcessSpec ServerSpec(string name) => new(_paths.ServerExe(name), [], _paths.ServerDir);
 
     sealed class StartBlock(ServerManager servers) : IDisposable
     {

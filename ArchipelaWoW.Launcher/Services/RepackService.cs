@@ -27,14 +27,13 @@ public sealed partial class RepackService(AppPaths paths, SettingsStore settings
     public bool IsInstalled => HasServer(paths);
 
     /// <summary>
-    /// Length of the longest SQL update path as worldserver opens it: the full path, through its working
-    /// directory (...\server\bin\..\source\...). The core isn't long path aware, so past MAX_PATH the updates fail.
+    /// Length of the longest SQL update path as worldserver opens it, through its working directory
+    /// (...\server\source\...). The core isn't long path aware, so past MAX_PATH the updates fail.
     /// </summary>
     public int LongestSourcePath => _longestSourcePath ??= !Directory.Exists(paths.SourceDir)
         ? 0
-        : Path.Combine(paths.ServerBin, "..", "source").Length + Directory
-            .EnumerateFiles(paths.SourceDir, "*.sql", SearchOption.AllDirectories)
-            .Select(file => file.Length - paths.SourceDir.Length)
+        : Directory.EnumerateFiles(paths.SourceDir, "*.sql", SearchOption.AllDirectories)
+            .Select(file => file.Length)
             .DefaultIfEmpty(0)
             .Max();
 
@@ -93,11 +92,12 @@ public sealed partial class RepackService(AppPaths paths, SettingsStore settings
             {
                 // An update left from the previous release would confuse the database updater when AzerothCore renames
                 // it. The rest is overwritten, keeping what the servers and the user made: configuration, client data,
-                // logs, databases, and caches such as mod-i-found-your-sword's in server\bin.
+                // logs, databases, and caches such as mod-i-found-your-sword's.
                 Directories.Delete(paths.SourceDir);
                 Directories.Delete(paths.ServerLicensesDir);
                 Directories.MoveInto(Path.Combine(staging, "server"), paths.ServerDir);
                 Directories.MoveInto(Path.Combine(staging, "mysql"), paths.MySqlDir);
+                MoveOutOfServerBin();
             });
 
             // The server is installed: a leftover archive only takes space, and deleting the server clears it
@@ -126,6 +126,39 @@ public sealed partial class RepackService(AppPaths paths, SettingsStore settings
         {
             throw new IOException($"The server is installed, but creating the configuration of its new modules failed: {ex.Message}", ex);
         }
+    }
+
+    /// <summary>
+    /// Moves what the servers kept in server\bin when they ran from there: their configuration, whose paths were
+    /// relative to it, and mod-i-found-your-sword's cache. For installations and server releases older than server\configs.
+    /// </summary>
+    public void MoveOutOfServerBin()
+    {
+        var legacyConfigs = Path.Combine(paths.ServerBin, "configs");
+        if (Directory.Exists(legacyConfigs))
+        {
+            foreach (var file in Directory.GetFiles(legacyConfigs, "*", SearchOption.AllDirectories))
+            {
+                var relative = Path.GetRelativePath(legacyConfigs, file);
+                var target = Path.Combine(paths.ConfigsDir, relative);
+                // Mostly a newer release's .conf.dist
+                if (File.Exists(target))
+                    continue;
+                Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+                File.Move(file, target);
+                // Right away: once moved, a file interrupted before this would be skipped by the next run
+                if (relative.EndsWith(".conf", StringComparison.OrdinalIgnoreCase))
+                    configs.RebasePaths(relative, paths.ServerBin, paths.ServerDir);
+            }
+            Directories.Delete(legacyConfigs);
+            Log.Info($"Moved the server configuration to {paths.ConfigsDir}");
+        }
+
+        var legacyCache = Path.Combine(paths.ServerBin, "ap_datapackage_cache");
+        var cache = Path.Combine(paths.ServerDir, "ap_datapackage_cache");
+        if (Directory.Exists(legacyCache) && !Directory.Exists(cache))
+            Directory.Move(legacyCache, cache);
+        Directories.Delete(legacyCache);
     }
 
     /// <summary>Deletes server\ and mysql\: the server, and its databases, configuration, client data and logs.</summary>

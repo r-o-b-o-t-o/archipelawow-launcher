@@ -108,7 +108,8 @@ after. The portable launcher is only its folder.
 | `Update.exe`, `packages` | The launcher's updater ([Velopack](https://velopack.io)) and the updates it downloaded |
 | `launcher` | The launcher's settings, logs (including the MySQL and tasks consoles) and downloads |
 | `players` | Archipelago player options (YAML) |
-| `server\bin` | authserver, worldserver, dbimport, the client data extractors, and `configs\` |
+| `server\bin` | authserver, worldserver, dbimport and the client data extractors |
+| `server\configs` | The servers' configuration, created by the launcher from the `.conf.dist` files |
 | `server\source` | The SQL files the server builds and updates its databases from |
 | `server\licenses` | The licenses of the software in the server, besides MySQL's, which are in `mysql` |
 | `server\release.json` | What the server was built from: versions and commits |

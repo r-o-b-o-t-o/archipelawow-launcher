@@ -10,7 +10,7 @@ public sealed class AppPaths(string root)
 
     public string ServerDir => Path.Combine(Root, "server");
     public string ServerBin => Path.Combine(ServerDir, "bin");
-    public string ConfigsDir => Path.Combine(ServerBin, "configs");
+    public string ConfigsDir => Path.Combine(ServerDir, "configs");
     public string DataDir => Path.Combine(ServerDir, "data");
     public string LogsDir => Path.Combine(ServerDir, "logs");
     public string SourceDir => Path.Combine(ServerDir, "source");

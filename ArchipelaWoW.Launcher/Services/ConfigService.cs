@@ -98,6 +98,19 @@ public sealed class ConfigService(AppPaths paths, SettingsStore settings)
         }
     }
 
+    /// <summary>Rebases the relative paths the launcher sets in a file from one working directory of the servers to another.</summary>
+    public void RebasePaths(string file, string from, string to)
+    {
+        var values = new Dictionary<string, string>();
+        foreach (var key in (string[])["DataDir", "LogsDir", "SourceDirectory", "MySQLExecutable"])
+        {
+            if (GetValue(file, key) is { Length: > 0 } path && !Path.IsPathRooted(path))
+                values[key] = Quote(Path.GetRelativePath(to, Path.Combine(from, path)).Replace('\\', '/'));
+        }
+        if (values.Count > 0)
+            SetValues(file, values);
+    }
+
     public string ReadText(string file) => File.ReadAllText(FullPath(file));
 
     public void WriteText(string file, string text) => File.WriteAllText(FullPath(file), text);
