@@ -378,7 +378,7 @@ export default function MapView(props: {
 					return (
 						<button
 							type="button"
-							class="absolute flex -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-black/80 text-[10px] leading-none font-bold text-black shadow-[0_0_4px_rgba(0,0,0,0.8)]"
+							class="absolute flex -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-black/80 text-[10px] leading-none font-system font-bold text-black shadow-[0_0_4px_rgba(0,0,0,0.8)]"
 							classList={{
 								"pointer-events-none size-6": marker().aggregate,
 								"size-[18px] hover:scale-125": !marker().aggregate,
@@ -404,7 +404,7 @@ export default function MapView(props: {
 			</Index>
 
 			<Show when={hovered()}>
-				<div class="pointer-events-none absolute inset-x-0 top-10 text-center text-2xl font-semibold text-gold-soft [text-shadow:0_2px_4px_#000,0_0_2px_#000]">
+				<div class="pointer-events-none absolute inset-x-0 top-10 text-center font-display text-2xl text-gold-soft [text-shadow:0_2px_4px_#000,0_0_2px_#000]">
 					{hovered()?.name}
 				</div>
 			</Show>

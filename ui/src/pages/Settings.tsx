@@ -93,7 +93,13 @@ function General() {
 						class="w-48"
 						hint={anyActive() ? "Stop the servers to change it." : undefined}
 					>
-						<TextInput value={port()} onValue={setPort} inputmode="numeric" disabled={anyActive()} />
+						<TextInput
+							value={port()}
+							onValue={setPort}
+							inputmode="numeric"
+							class="w-full font-mono"
+							disabled={anyActive()}
+						/>
 					</Field>
 					<Button
 						disabled={anyActive() || port() === String(settings()?.mySqlPort)}

@@ -71,7 +71,7 @@ function Sidebar() {
 			<div class="flex items-center gap-3 px-5 py-5">
 				<img src="/favicon.svg" alt="" class="size-10" />
 				<div>
-					<div class="font-semibold tracking-wide text-zinc-50">ArchipelaWoW</div>
+					<div class="font-display text-[15px] tracking-wide text-zinc-50">ArchipelaWoW</div>
 					<div class="text-xs text-zinc-500">Launcher</div>
 				</div>
 			</div>
@@ -133,7 +133,7 @@ function NavLink(props: ParentProps<{ href: string; icon: IconName; end?: boolea
 		<A
 			href={props.href}
 			end={props.end}
-			class="flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium transition-colors"
+			class="flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] transition-colors"
 			activeClass="bg-gold/10 text-gold"
 			inactiveClass="text-zinc-400 hover:bg-white/5 hover:text-zinc-100"
 		>

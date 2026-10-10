@@ -184,7 +184,7 @@ export default function PlayerOptions() {
 			<div class="flex min-h-0 flex-1 overflow-hidden">
 				<aside class="flex w-64 shrink-0 flex-col border-r border-white/5 bg-surface-1/50">
 					<div class="flex items-center gap-1 px-3 py-3">
-						<span class="px-1 text-xs font-semibold tracking-wider text-zinc-500 uppercase">Files</span>
+						<span class="px-1 text-xs tracking-wider text-zinc-500 uppercase">Files</span>
 						<div class="ml-auto flex">
 							<IconButton icon="plus" title="New" onClick={startNew} />
 							<IconButton icon="download" title="Import YAML files" onClick={importFiles} />
@@ -235,7 +235,7 @@ export default function PlayerOptions() {
 					<div class="mx-auto flex max-w-5xl flex-col gap-5 p-6">
 						<div class="flex items-center gap-2 text-[13px] text-zinc-400">
 							<Icon name="file" class="size-4" />
-							<span class="font-medium text-zinc-200">{fileName() ?? "New file"}</span>
+							<span class="text-zinc-200">{fileName() ?? "New file"}</span>
 							<Show when={dirty()}>
 								<span class="text-amber-400">(unsaved changes)</span>
 							</Show>
@@ -292,7 +292,7 @@ export default function PlayerOptions() {
 										class="flex w-full items-center gap-2 px-5 py-3 text-left"
 										onClick={() => toggleGroup(group.name)}
 									>
-										<h2 class="font-semibold text-zinc-100">{group.name}</h2>
+										<h2 class="font-display text-zinc-100">{group.name}</h2>
 										<span class="text-xs text-zinc-500">{group.options.length}</span>
 										<Icon
 											name="chevronDown"

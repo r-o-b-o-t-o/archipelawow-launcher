@@ -14,7 +14,7 @@ export default function TaskPanel() {
 					<div class="flex items-center gap-3">
 						<Spinner class="text-gold" />
 						<div class="min-w-0">
-							<div class="font-semibold text-zinc-100">{current().title}</div>
+							<div class="font-display text-zinc-100">{current().title}</div>
 							<div class="truncate text-[13px] text-zinc-400">{current().stage || "Working..."}</div>
 						</div>
 						<Button

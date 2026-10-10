@@ -164,7 +164,7 @@ function Step(props: ParentProps<{ number: number; title: string; done?: boolean
 	return (
 		<section class="flex gap-4 rounded-xl border border-white/5 bg-surface-2 p-5">
 			<div
-				class={`flex size-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${
+				class={`flex size-8 shrink-0 items-center justify-center rounded-full font-display text-sm ${
 					props.done ? "bg-emerald-500/15 text-emerald-300" : "bg-gold/15 text-gold"
 				}`}
 			>
@@ -173,10 +173,10 @@ function Step(props: ParentProps<{ number: number; title: string; done?: boolean
 				</Show>
 			</div>
 			<div class="min-w-0 flex-1">
-				<h2 class="mb-1.5 flex items-center gap-2 font-semibold text-zinc-100">
+				<h2 class="mb-1.5 flex items-center gap-2 font-display text-zinc-100">
 					{props.title}
 					<Show when={props.done}>
-						<span class="text-xs font-normal text-emerald-400">Done</span>
+						<span class="text-xs font-sans text-emerald-400">Done</span>
 					</Show>
 				</h2>
 				{props.children}

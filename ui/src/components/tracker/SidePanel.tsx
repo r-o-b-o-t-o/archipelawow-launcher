@@ -69,7 +69,7 @@ export default function SidePanel(props: { data: TrackerData; checks: Check[]; h
 					{(name) => (
 						<button
 							type="button"
-							class="border-b-2 px-1.5 py-2 text-[12px] font-medium whitespace-nowrap transition-colors"
+							class="border-b-2 px-1.5 py-2 text-[12px] whitespace-nowrap transition-colors"
 							classList={{
 								"border-gold text-gold": tab() === name,
 								"border-transparent text-zinc-400 hover:text-zinc-200": tab() !== name,
@@ -136,7 +136,7 @@ function Summary(props: { data: TrackerData }) {
 					class="size-10 rounded-full border border-black/60"
 				/>
 				<div class="min-w-0">
-					<div class="truncate font-semibold text-zinc-100">{seed()?.playerName}</div>
+					<div class="truncate font-display text-zinc-100">{seed()?.playerName}</div>
 					<div class="truncate text-[13px] text-zinc-400">
 						{props.data.characters.races[race()]?.name} {props.data.characters.classes[characterClass()]},
 						level <span class="text-zinc-200">{level()}</span>
@@ -170,7 +170,7 @@ function Summary(props: { data: TrackerData }) {
 								src={item.icon}
 								class={`size-full rounded border border-black/60 ${item.have === 0 ? "opacity-35 grayscale" : ""}`}
 							/>
-							<span class="absolute right-0.5 bottom-0 text-[11px] font-bold text-white [text-shadow:0_0_2px_#000,0_0_2px_#000]">
+							<span class="absolute right-0.5 bottom-0 text-[11px] font-system font-bold text-white [text-shadow:0_0_2px_#000,0_0_2px_#000]">
 								{item.have}/{item.total}
 							</span>
 						</div>
@@ -288,9 +288,7 @@ function SideChecks(props: { data: TrackerData; checks: Check[]; hideChecked: bo
 	const Section = (sectionProps: { title: string; count: number; children: JSX.Element }) => (
 		<Show when={sectionProps.count > 0}>
 			<section class="border-b border-white/5 px-3 py-3">
-				<h3 class="mb-2 px-1 text-xs font-semibold tracking-wide text-zinc-400 uppercase">
-					{sectionProps.title}
-				</h3>
+				<h3 class="mb-2 px-1 text-xs tracking-wide text-zinc-400 uppercase">{sectionProps.title}</h3>
 				{sectionProps.children}
 			</section>
 		</Show>

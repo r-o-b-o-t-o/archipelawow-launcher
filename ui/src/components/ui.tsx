@@ -6,7 +6,7 @@ import Icon, { type IconName } from "./Icon";
 type ButtonVariant = "primary" | "secondary" | "danger" | "ghost";
 
 const buttonVariants: Record<ButtonVariant, string> = {
-	primary: "bg-gold text-zinc-950 hover:bg-gold-soft font-semibold shadow-sm shadow-gold/20",
+	primary: "bg-gold text-zinc-950 hover:bg-gold-soft shadow-sm shadow-gold/20",
 	secondary: "bg-surface-3 text-zinc-100 hover:bg-surface-4 border border-white/10",
 	danger: "bg-red-500/10 text-red-300 hover:bg-red-500/20 border border-red-500/30",
 	ghost: "text-zinc-300 hover:bg-white/5 hover:text-zinc-100",
@@ -86,7 +86,7 @@ export function Card(
 			<Show when={props.title || props.actions}>
 				<header class="flex items-center gap-2 border-b border-white/5 px-4 py-3">
 					<Show when={props.icon}>{(icon) => <Icon name={icon()} class="size-4 text-gold" />}</Show>
-					<h2 class="font-semibold text-zinc-100">{props.title}</h2>
+					<h2 class="font-display text-zinc-100">{props.title}</h2>
 					<div class="ml-auto flex items-center gap-2">{props.actions}</div>
 				</header>
 			</Show>
@@ -115,9 +115,7 @@ const dots: Record<Tone, string> = {
 
 export function Badge(props: ParentProps<{ tone: Tone; pulse?: boolean }>) {
 	return (
-		<span
-			class={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs font-medium ${tones[props.tone]}`}
-		>
+		<span class={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs ${tones[props.tone]}`}>
 			<Dot tone={props.tone} pulse={props.pulse} />
 			{props.children}
 		</span>
@@ -140,7 +138,7 @@ export const inputClass = `${inputBase} h-9 w-full px-3`;
 export function Field(props: ParentProps<{ label: string; hint?: JSX.Element; class?: string }>) {
 	return (
 		<label class={`flex flex-col gap-1.5 ${props.class ?? ""}`}>
-			<span class="text-[13px] font-medium text-zinc-300">{props.label}</span>
+			<span class="text-[13px] text-zinc-300">{props.label}</span>
 			{props.children}
 			<Show when={props.hint}>
 				<span class="text-xs text-zinc-500">{props.hint}</span>
@@ -249,7 +247,7 @@ export function Modal(
 				class={`flex max-h-full w-full flex-col rounded-xl border border-white/10 bg-surface-2 shadow-2xl ${props.wide ? "max-w-4xl" : "max-w-lg"}`}
 			>
 				<header class="flex items-center border-b border-white/5 px-5 py-3">
-					<h2 class="font-semibold text-zinc-100">{props.title}</h2>
+					<h2 class="font-display text-zinc-100">{props.title}</h2>
 					<IconButton icon="x" title="Close" class="ml-auto" onClick={props.onClose} />
 				</header>
 				<div class="min-h-0 overflow-auto p-5">{props.children}</div>
@@ -279,7 +277,7 @@ export function PageHeader(props: ParentProps<{ title: string; subtitle?: JSX.El
 	return (
 		<header class="flex items-center gap-4 border-b border-white/5 px-8 py-5">
 			<div class="min-w-0">
-				<h1 class="text-xl font-semibold text-zinc-50">{props.title}</h1>
+				<h1 class="font-display text-xl text-zinc-50">{props.title}</h1>
 				<Show when={props.subtitle}>
 					<p class="mt-0.5 text-[13px] text-zinc-400">{props.subtitle}</p>
 				</Show>

@@ -147,7 +147,7 @@ function ConnectionBar() {
 				when={status().status === "connected"}
 				fallback={
 					<form class="flex flex-wrap items-center gap-2" onSubmit={connect}>
-						<span class="mr-1 flex items-center gap-2 text-[13px] font-medium text-zinc-300">
+						<span class="mr-1 flex items-center gap-2 text-[13px] text-zinc-300">
 							<Icon name="plug" class="size-4 text-gold" />
 							Room
 						</span>
@@ -155,10 +155,10 @@ function ConnectionBar() {
 							placeholder="Host, e.g. archipelago.gg"
 							value={host()}
 							onValue={setHost}
-							class="w-56"
+							class="w-56 font-mono placeholder:font-sans"
 						/>
 						<input
-							class={`${inputBase} h-9 w-24 px-3`}
+							class={`${inputBase} h-9 w-24 px-3 font-mono placeholder:font-sans`}
 							type="number"
 							min="1"
 							max="65535"
@@ -191,7 +191,7 @@ function ConnectionBar() {
 				<div class="flex items-center gap-3 text-[13px]">
 					<span class="size-2 rounded-full bg-emerald-400" />
 					<span class="text-zinc-300">
-						Tracking <span class="font-medium text-zinc-100">{seed()?.playerName}</span> on{" "}
+						Tracking <span class="text-zinc-100">{seed()?.playerName}</span> on{" "}
 						<span class="text-zinc-100">
 							{host()}:{port()}
 						</span>

@@ -71,7 +71,7 @@ export default function NetworkPanel(props: { status?: NetworkStatus; onChange: 
 							}`}
 						>
 							<span
-								class={`flex items-center gap-2 text-[13px] font-semibold ${access() === choice.access ? "text-gold" : "text-zinc-100"}`}
+								class={`flex items-center gap-2 font-display text-[13px] ${access() === choice.access ? "text-gold" : "text-zinc-100"}`}
 							>
 								<Icon name={choice.icon} class="size-4" />
 								{choice.label}
@@ -105,7 +105,12 @@ export default function NetworkPanel(props: { status?: NetworkStatus; onChange: 
 						class="w-72"
 						hint="Your public IP address, or a host name pointing to it."
 					>
-						<TextInput value={publicAddress()} onValue={setPublicAddress} placeholder="203.0.113.7" />
+						<TextInput
+							value={publicAddress()}
+							onValue={setPublicAddress}
+							placeholder="203.0.113.7"
+							class="w-full font-mono"
+						/>
 					</Field>
 					<Button
 						icon="globe"

@@ -72,7 +72,7 @@ export default function ClientDataPanel(props: {
 
 			<div class="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] gap-4">
 				<div class="flex flex-col rounded-lg border border-white/10 bg-surface-1 p-4">
-					<div class="flex items-center gap-2 font-semibold text-zinc-100">
+					<div class="flex items-center gap-2 font-display text-zinc-100">
 						<Icon name="download" class="size-4 text-gold" />
 						Download
 					</div>
@@ -115,14 +115,14 @@ export default function ClientDataPanel(props: {
 					</Button>
 				</div>
 
-				<div class="flex flex-col items-center gap-2 text-xs font-semibold text-zinc-500">
+				<div class="flex flex-col items-center gap-2 text-xs text-zinc-500">
 					<div class="w-px flex-1 bg-white/10" />
 					OR
 					<div class="w-px flex-1 bg-white/10" />
 				</div>
 
 				<div class="flex flex-col rounded-lg border border-white/10 bg-surface-1 p-4">
-					<div class="flex items-center gap-2 font-semibold text-zinc-100">
+					<div class="flex items-center gap-2 font-display text-zinc-100">
 						<Icon name="package" class="size-4 text-gold" />
 						Extract from your client
 					</div>

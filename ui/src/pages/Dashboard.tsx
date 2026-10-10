@@ -78,7 +78,7 @@ export default function Dashboard() {
 					<Show when={setup() && !setup()!.serverInstalled}>
 						<Callout tone="amber">
 							The server isn't installed yet.{" "}
-							<A href="/setup" class="font-semibold underline">
+							<A href="/setup" class="underline">
 								Install it
 							</A>
 						</Callout>
@@ -88,7 +88,7 @@ export default function Dashboard() {
 					>
 						<Callout tone="amber">
 							The server isn't set up yet.{" "}
-							<A href="/setup" class="font-semibold underline">
+							<A href="/setup" class="underline">
 								Go to the setup
 							</A>
 						</Callout>
@@ -96,7 +96,7 @@ export default function Dashboard() {
 					<Show when={setup()?.databaseInitialized && setup()?.configsCreated && !setup()?.clientData.ready}>
 						<Callout tone="amber">
 							The client data (maps, dbc...) is missing: the worldserver won't start without it.{" "}
-							<A href="/setup" class="font-semibold underline">
+							<A href="/setup" class="underline">
 								Install it
 							</A>
 						</Callout>
@@ -238,11 +238,17 @@ function ArchipelagoRoom() {
 		<Card title="Archipelago room" icon="globe">
 			<form class="flex flex-col gap-3" onSubmit={save}>
 				<Field label="Server">
-					<TextInput value={host()} onValue={setHost} placeholder="archipelago.gg" />
+					<TextInput value={host()} onValue={setHost} placeholder="archipelago.gg" class="w-full font-mono" />
 				</Field>
 				<div class="grid grid-cols-2 gap-3">
 					<Field label="Port">
-						<TextInput value={port()} onValue={setPort} inputmode="numeric" placeholder="38281" />
+						<TextInput
+							value={port()}
+							onValue={setPort}
+							inputmode="numeric"
+							placeholder="38281"
+							class="w-full font-mono"
+						/>
 					</Field>
 					<Field label="Password">
 						<TextInput value={password()} onValue={setPassword} type="password" placeholder="None" />

@@ -78,7 +78,7 @@ export default function OptionField(props: {
 		<div class="grid grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] gap-6 border-b border-white/5 py-4 last:border-b-0">
 			<div class="min-w-0">
 				<div class="flex items-center gap-2">
-					<span class="font-medium text-zinc-100">{props.option.displayName}</span>
+					<span class="text-zinc-100">{props.option.displayName}</span>
 					<span class="font-mono text-[11px] text-zinc-600">{props.option.key}</span>
 				</div>
 				<Show when={description()}>

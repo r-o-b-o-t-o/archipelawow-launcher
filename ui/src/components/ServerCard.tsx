@@ -44,7 +44,7 @@ export default function ServerCard(props: {
 					<Icon name={props.icon} class="size-5" />
 				</div>
 				<div class="min-w-0 flex-1">
-					<div class="truncate font-semibold text-zinc-100">{props.status.displayName}</div>
+					<div class="truncate font-display text-zinc-100">{props.status.displayName}</div>
 					<div class="mt-1">
 						<Badge tone={state().tone} pulse={state().pulse}>
 							{state().label}

@@ -1,9 +1,15 @@
 @import "tailwindcss";
 @import "@xterm/xterm/css/xterm.css";
 @import "tippy.js/dist/tippy.css";
+@import "@fontsource/faculty-glyphic";
+@import "@fontsource/metamorphous";
 
+/* Both fonts come in a single weight: titles stand out by typeface and colour instead of bold */
 @theme {
-	--font-sans: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+	--font-sans: "Faculty Glyphic", "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+	--font-display: "Metamorphous", "Faculty Glyphic", serif;
+	/* Small numbers over icons, which need a bold to stay legible */
+	--font-system: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
 	--font-mono: "Cascadia Mono", "Cascadia Code", Consolas, monospace;
 
 	--color-surface-0: #0c0e12;
@@ -27,6 +33,7 @@ body {
 	color: #e4e4e7;
 	font-family: var(--font-sans);
 	font-size: 14px;
+	font-synthesis-weight: none;
 	-webkit-font-smoothing: antialiased;
 	user-select: none;
 }
