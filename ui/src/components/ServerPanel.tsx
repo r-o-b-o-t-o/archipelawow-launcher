@@ -1,6 +1,7 @@
 import { Show, createResource, createSignal } from "solid-js";
 
 import { type SetupStatus, api } from "../lib/api";
+import { confirmDialog } from "../lib/dialog";
 import { formatBytes, formatDate } from "../lib/format";
 import { loaded } from "../lib/resource";
 import { isActive, serverChanged, servers, task } from "../lib/store";
@@ -52,10 +53,14 @@ export default function ServerPanel(props: { status: SetupStatus | undefined }) 
 	const install = async () => {
 		if (
 			action() === "Downgrade" &&
-			!confirm(
-				"The latest release is older than the installed server, and may not handle the database updates " +
+			!(await confirmDialog({
+				title: "Downgrade the server",
+				message:
+					"The latest release is older than the installed server, and may not handle the database updates " +
 					"the installed one applied. Install it anyway?",
-			)
+				confirm: "Install",
+				danger: true,
+			}))
 		)
 			return;
 		setBusy("install");
@@ -70,10 +75,14 @@ export default function ServerPanel(props: { status: SetupStatus | undefined }) 
 
 	const remove = async () => {
 		if (
-			!confirm(
-				"Delete the server? This deletes the server programs, the databases (game accounts and characters), " +
-					"the configuration, the client data and the logs. The player options stay.",
-			)
+			!(await confirmDialog({
+				title: "Delete the server",
+				message:
+					"This deletes the server programs, the databases (game accounts and characters), the " +
+					"configuration, the client data and the logs. The player options stay.",
+				confirm: "Delete",
+				danger: true,
+			}))
 		)
 			return;
 		setBusy("delete");

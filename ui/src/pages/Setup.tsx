@@ -9,6 +9,7 @@ import TaskPanel from "../components/TaskPanel";
 import Terminal from "../components/Terminal";
 import { Button, Card, Code, PageHeader } from "../components/ui";
 import { api } from "../lib/api";
+import { confirmDialog } from "../lib/dialog";
 import { serverRevision, task } from "../lib/store";
 import { attempt, toast } from "../lib/toast";
 
@@ -24,7 +25,12 @@ export default function Setup() {
 	const createConfigs = async (overwrite: boolean) => {
 		if (
 			overwrite &&
-			!confirm("Replace every configuration file with a fresh copy? Changes you made to them will be lost.")
+			!(await confirmDialog({
+				title: "Reset the configuration",
+				message: "Replace every configuration file with a fresh copy? Changes you made to them will be lost.",
+				confirm: "Reset",
+				danger: true,
+			}))
 		)
 			return;
 		setBusy("configs");

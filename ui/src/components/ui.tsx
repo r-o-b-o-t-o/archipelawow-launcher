@@ -1,4 +1,4 @@
-import { For, type JSX, type ParentProps, Show, splitProps } from "solid-js";
+import { For, type JSX, type ParentProps, Show, onCleanup, splitProps } from "solid-js";
 
 import Icon, { type IconName } from "./Icon";
 
@@ -231,6 +231,9 @@ export function ProgressBar(props: { value: number | null; class?: string }) {
 export function Modal(
 	props: ParentProps<{ title: string; onClose: () => void; footer?: JSX.Element; wide?: boolean }>,
 ) {
+	const onKeyDown = (event: KeyboardEvent) => event.key === "Escape" && props.onClose();
+	document.addEventListener("keydown", onKeyDown);
+	onCleanup(() => document.removeEventListener("keydown", onKeyDown));
 	return (
 		<div
 			class="fixed inset-0 z-40 flex items-center justify-center bg-black/60 p-8 backdrop-blur-sm"
