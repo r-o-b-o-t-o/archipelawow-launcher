@@ -1,5 +1,5 @@
-import { A, type RouteSectionProps, useNavigate } from "@solidjs/router";
-import { For, type ParentProps, Show, createSignal, onMount } from "solid-js";
+import { A, type RouteSectionProps, useLocation, useNavigate } from "@solidjs/router";
+import { For, type ParentProps, Show, createEffect, createSignal, on, onMount } from "solid-js";
 
 import Icon, { type IconName } from "./components/Icon";
 import { serverStates } from "./components/ServerCard";
@@ -12,6 +12,15 @@ import { dismissToast, errorMessage, toast, toasts } from "./lib/toast";
 
 export default function App(props: RouteSectionProps) {
 	const navigate = useNavigate();
+	const location = useLocation();
+	// A question is about the page it was asked on, which the back button can leave
+	createEffect(
+		on(
+			() => location.pathname,
+			() => answer(null),
+			{ defer: true },
+		),
+	);
 
 	onMount(async () => {
 		try {
@@ -27,30 +36,32 @@ export default function App(props: RouteSectionProps) {
 	});
 
 	return (
-		<div class="flex h-full">
-			<Sidebar />
-			<main class="flex min-w-0 flex-1 flex-col overflow-hidden">
-				<Show when={!inLauncher}>
-					<div class="bg-amber-500/10 px-8 py-2 text-[13px] text-amber-300">
-						This page is meant to run inside the launcher: start it with{" "}
-						<code>--dev-server http://localhost:5173</code>.
+		<>
+			<div class="flex h-full" inert={dialog() !== null}>
+				<Sidebar />
+				<main class="flex min-w-0 flex-1 flex-col overflow-hidden">
+					<Show when={!inLauncher}>
+						<div class="bg-amber-500/10 px-8 py-2 text-[13px] text-amber-300">
+							This page is meant to run inside the launcher: start it with{" "}
+							<code>--dev-server http://localhost:5173</code>.
+						</div>
+					</Show>
+					{props.children}
+				</main>
+				<Toasts />
+				<Show when={shuttingDown()}>
+					<div class="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-black/70 backdrop-blur-sm">
+						<Spinner class="size-8 text-gold" />
+						<p class="text-zinc-200">
+							{task() ? "Stopping the servers and the task in progress..." : "Stopping the servers..."}
+						</p>
 					</div>
 				</Show>
-				{props.children}
-			</main>
-			<Toasts />
+			</div>
 			<Show when={dialog()} keyed>
 				{(current) => <DialogModal dialog={current} />}
 			</Show>
-			<Show when={shuttingDown()}>
-				<div class="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-black/70 backdrop-blur-sm">
-					<Spinner class="size-8 text-gold" />
-					<p class="text-zinc-200">
-						{task() ? "Stopping the servers and the task in progress..." : "Stopping the servers..."}
-					</p>
-				</div>
-			</Show>
-		</div>
+		</>
 	);
 }
 
@@ -171,7 +182,7 @@ function DialogModal(props: { dialog: Dialog }) {
 			ref={form}
 			onSubmit={(event) => {
 				event.preventDefault();
-				answer(prompting ? value() : "");
+				answer(prompting ? value().trim() : "");
 			}}
 		>
 			<Modal
