@@ -63,6 +63,46 @@ pre,
 	background-color: transparent !important;
 }
 
+/* Unlike the classic select, Escape or a click outside closes this one's list without picking the highlighted option */
+select,
+::picker(select) {
+	appearance: base-select;
+}
+
+select {
+	align-items: center;
+}
+
+select::picker-icon {
+	color: #71717a;
+}
+
+::picker(select) {
+	max-height: 320px;
+	margin-top: 4px;
+	padding: 4px;
+	border: 1px solid rgb(255 255 255 / 0.1);
+	border-radius: 8px;
+	background: var(--color-surface-3);
+	box-shadow: 0 8px 24px rgb(0 0 0 / 0.5);
+	color: #e4e4e7;
+}
+
+option {
+	padding: 6px 10px;
+	border-radius: 6px;
+}
+
+option:hover,
+option:focus-visible {
+	background: rgb(255 255 255 / 0.06);
+	outline: none;
+}
+
+option:checked {
+	color: var(--color-gold);
+}
+
 input[type="range"] {
 	accent-color: var(--color-gold);
 }
