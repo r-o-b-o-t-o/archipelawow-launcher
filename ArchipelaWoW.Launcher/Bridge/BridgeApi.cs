@@ -36,6 +36,7 @@ public static partial class BridgeApi
         tracker.SeedChanged += seed => bridge.Emit("tracker.seed", seed);
         tracker.ItemsReceived += items => bridge.Emit("tracker.items", items);
         tracker.LocationsChecked += ids => bridge.Emit("tracker.checked", ids);
+        tracker.HintsChanged += hints => bridge.Emit("tracker.hints", hints);
 
         // App
         bridge.Handle("app.getInfo", () => new

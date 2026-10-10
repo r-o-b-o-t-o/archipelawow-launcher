@@ -137,15 +137,37 @@ export interface TrackerItem {
 	playerName: string;
 }
 
+/** Found once its location is checked. The others are set by the players. */
+export type HintStatus = "unspecified" | "noPriority" | "avoid" | "priority" | "found";
+
+/** A hint of the room for an item of the slot's, or for a location of its world. */
+export interface TrackerHint {
+	item: number;
+	itemName: string;
+	location: number;
+	locationName: string;
+	receivingPlayer: number;
+	receivingPlayerName: string;
+	findingPlayer: number;
+	findingPlayerName: string;
+	/** Archipelago's ItemFlags: 1 progression, 2 useful, 4 trap. */
+	flags: number;
+	status: HintStatus;
+	/** The entrance leading to the location, in a world whose entrances are shuffled. */
+	entrance: string | null;
+}
+
 /** The seed the tracker is connected to. Its slot data is read in tracker/types.ts. */
 export interface TrackerSeed {
 	playerName: string;
+	slot: number;
 	slotData: unknown;
 	itemNames: Record<string, string>;
 	/** The slot's locations, by id. */
 	locations: Record<string, string>;
 	checked: number[];
 	items: TrackerItem[];
+	hints: TrackerHint[];
 }
 
 export const api = {

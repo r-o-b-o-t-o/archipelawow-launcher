@@ -16,14 +16,31 @@ public enum TrackerStatus
 
 public sealed record TrackerItem(int Index, long Item, string Name, string LocationName, int Player, string PlayerName);
 
+/// <summary>A hint of the room for an item of the slot's, or for a location of its world.</summary>
+public sealed record TrackerHint(
+    long Item,
+    string ItemName,
+    long Location,
+    string LocationName,
+    int ReceivingPlayer,
+    string ReceivingPlayerName,
+    int FindingPlayer,
+    string FindingPlayerName,
+    // The ItemFlags as their number: the JSON converter would write them as a string of names
+    int Flags,
+    HintStatus Status,
+    string? Entrance);
+
 /// <summary>What the tracker knows of the seed it's connected to, sent to the page whole when it asks.</summary>
 public sealed record TrackerSeed(
     string PlayerName,
+    int Slot,
     JsonNode? SlotData,
     Dictionary<long, string> ItemNames,
     Dictionary<long, string> Locations,
     List<long> Checked,
-    List<TrackerItem> Items);
+    List<TrackerItem> Items,
+    List<TrackerHint> Hints);
 
 /// <summary>
 /// The tracker's connection to an Archipelago room. It joins a slot as a tracker, alongside the game, and
@@ -46,6 +63,7 @@ public sealed class TrackerService : IDisposable
     public event Action<TrackerSeed>? SeedChanged;
     public event Action<List<TrackerItem>>? ItemsReceived;
     public event Action<List<long>>? LocationsChecked;
+    public event Action<List<TrackerHint>>? HintsChanged;
 
     public TrackerSeed? Seed
     {
@@ -57,7 +75,7 @@ public sealed class TrackerService : IDisposable
     }
 
     // The seed's lists grow as the room sends more, while the page reads a copy on another thread
-    static TrackerSeed Snapshot(TrackerSeed seed) => seed with { Checked = [.. seed.Checked], Items = [.. seed.Items] };
+    static TrackerSeed Snapshot(TrackerSeed seed) => seed with { Checked = [.. seed.Checked], Items = [.. seed.Items], Hints = [.. seed.Hints] };
 
     public async Task ConnectAsync(string host, int port, string slot, string? password)
     {
@@ -131,6 +149,22 @@ public sealed class TrackerService : IDisposable
                 LocationsChecked?.Invoke([.. ids]);
             }
         };
+        // The room sends the whole list each time, the hints it has at first included
+        Hint[] hints = [];
+        session.Hints.TrackHints(update =>
+        {
+            lock (_lock)
+            {
+                if (_session != session)
+                    return;
+                hints = update;
+                if (_seed == null)
+                    return;
+                _seed.Hints.Clear();
+                _seed.Hints.AddRange(update.Select(hint => ToTrackerHint(session, hint)));
+                HintsChanged?.Invoke([.. _seed.Hints]);
+            }
+        });
         session.Socket.SocketClosed += reason => Fail(session, "The connection to the room was lost.");
         // A room that goes away without closing the connection shows up as an error
         session.Socket.ErrorReceived += (exception, message) =>
@@ -147,11 +181,13 @@ public sealed class TrackerService : IDisposable
             var locationNames = gameData.LocationLookup.ToDictionary(pair => pair.Value, pair => pair.Key);
             _seed = new TrackerSeed(
                 session.Players.ActivePlayer.Name,
+                session.Players.ActivePlayer.Slot,
                 JsonNode.Parse(JsonConvert.SerializeObject(success.SlotData)),
                 gameData.ItemLookup.ToDictionary(pair => pair.Value, pair => pair.Key),
                 session.Locations.AllLocations.ToDictionary(id => id, id => locationNames.GetValueOrDefault(id, id.ToString())),
                 [.. session.Locations.AllLocationsChecked],
-                [.. session.Items.AllItemsReceived.Select(ToTrackerItem)]);
+                [.. session.Items.AllItemsReceived.Select(ToTrackerItem)],
+                [.. hints.Select(hint => ToTrackerHint(session, hint))]);
             Status = TrackerStatus.Connected;
             Error = null;
             StatusChanged?.Invoke();
@@ -189,6 +225,26 @@ public sealed class TrackerService : IDisposable
         item.LocationDisplayName,
         item.Player.Slot,
         item.Player.Name);
+
+    // The item is named in the game of the player receiving it, the location in the game of the one finding it
+    static TrackerHint ToTrackerHint(ArchipelagoSession session, Hint hint)
+    {
+        var receiving = session.Players.GetPlayerInfo(hint.ReceivingPlayer);
+        var finding = session.Players.GetPlayerInfo(hint.FindingPlayer);
+        return new TrackerHint(
+            hint.ItemId,
+            session.Items.GetItemName(hint.ItemId, receiving?.Game) ?? $"Item {hint.ItemId}",
+            hint.LocationId,
+            session.Locations.GetLocationNameFromId(hint.LocationId, finding?.Game) ?? $"Location {hint.LocationId}",
+            hint.ReceivingPlayer,
+            receiving?.Name ?? $"Player {hint.ReceivingPlayer}",
+            hint.FindingPlayer,
+            finding?.Name ?? $"Player {hint.FindingPlayer}",
+            (int)hint.ItemFlags,
+            // A room older than hint statuses only says whether it's found
+            hint.Found ? HintStatus.Found : hint.Status,
+            string.IsNullOrEmpty(hint.Entrance) ? null : hint.Entrance);
+    }
 
     public void Disconnect()
     {
