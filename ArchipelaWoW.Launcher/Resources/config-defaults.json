@@ -65,5 +65,8 @@
     "Transmogrification.AllowMixedWeaponTypes": 1,
     "Transmogrification.AllowMixedWeaponHandedness": 1,
     "Transmogrification.AllowFishingPoles": 1
+  },
+  "modules/SoloLfg.conf": {
+    "SoloLFG.FixedXP": 0
   }
 }
