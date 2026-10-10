@@ -43,7 +43,7 @@ public static partial class BridgeApi
         {
             Version = Version(),
             paths.Root,
-            InstalledBySetup = services.LauncherUpdater.IsInstalledBySetup,
+            services.LauncherUpdater.Installation,
             WindowsBuild = Environment.OSVersion.Version.Build,
         });
         bridge.Handle<TargetParams>("app.openPath", p =>

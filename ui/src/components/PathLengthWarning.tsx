@@ -13,7 +13,7 @@ export default function PathLengthWarning(props: { status: SetupStatus | undefin
 				{props.status!.sourcePathLimit} characters and needs {props.status!.sourcePathLength} here, so it fails
 				to set up or update the database.{" "}
 				<Show
-					when={appInfo()?.installedBySetup}
+					when={appInfo()?.installation === "setup"}
 					fallback={
 						<>
 							Move the whole folder closer to the root of a drive, e.g. <Code>C:\Games\ArchipelaWoW</Code>

@@ -11,6 +11,11 @@ namespace ArchipelaWoW.Launcher.Services;
 public sealed record LauncherUpdate(bool Supported, string? Version, bool Downloaded);
 
 /// <summary>
+/// How the launcher was installed. <see cref="Development"/>: Velopack didn't install it, as when run from a build.
+/// </summary>
+public enum LauncherInstallation { Setup, Portable, Development }
+
+/// <summary>
 /// Updates the launcher from its GitHub releases with Velopack, when the setup installed it or it was extracted from the
 /// portable archive. Velopack replaces current\ (the launcher), Update.exe and the exe that starts the launcher, and
 /// keeps its downloads in packages\. It leaves the server, the settings and the player options alone.
@@ -31,8 +36,11 @@ public sealed class LauncherUpdater
 
     public bool IsSupported => _manager.IsInstalled;
 
-    /// <summary>Whether the setup installed the launcher, which then keeps its data in a set folder.</summary>
-    public bool IsInstalledBySetup => _manager.IsInstalled && !_manager.IsPortable;
+    /// <summary>How the launcher was installed, which decides where it keeps its data: see <see cref="DefaultRoot"/>.</summary>
+    public LauncherInstallation Installation =>
+        !_manager.IsInstalled ? LauncherInstallation.Development
+        : _manager.IsPortable ? LauncherInstallation.Portable
+        : LauncherInstallation.Setup;
 
     /// <summary>Whether quitting restarts the launcher into the downloaded update.</summary>
     public bool RestartOnExit { get; set; }

@@ -2,7 +2,7 @@ import { For, Show, createEffect, createResource, createSignal, on, onMount } fr
 
 import TaskPanel from "../components/TaskPanel";
 import { Button, Card, Code, Field, PageHeader, Select, Switch, TextInput, inputBase } from "../components/ui";
-import { type FolderTarget, type SetupStatus, api } from "../lib/api";
+import { type AppInfo, type FolderTarget, type SetupStatus, api } from "../lib/api";
 import { formatDate } from "../lib/format";
 import { schema } from "../lib/playerOptions";
 import {
@@ -17,6 +17,12 @@ import {
 } from "../lib/store";
 import { attempt, toast } from "../lib/toast";
 import { confirmDiscard, guardUnsaved } from "../lib/unsaved";
+
+const installations: Record<AppInfo["installation"], string> = {
+	setup: "installed by the setup",
+	portable: "from the portable archive",
+	development: "development build",
+};
 
 const folders: { target: FolderTarget; label: string }[] = [
 	{ target: "root", label: "Installation" },
@@ -132,14 +138,16 @@ function Launcher() {
 	return (
 		<Card title="Launcher" icon="rocket">
 			<div class="flex flex-col gap-3 text-[13px]">
-				<span class="text-zinc-200">Version {appInfo()?.version}</span>
+				<Show when={appInfo()}>
+					{(info) => (
+						<span class="text-zinc-200">
+							Version {info().version}, {installations[info().installation]}
+						</span>
+					)}
+				</Show>
 				<Show
 					when={launcherUpdate()?.supported !== false}
-					fallback={
-						<p class="text-xs text-zinc-500">
-							Only a launcher installed by the setup or the portable archive of a release updates itself.
-						</p>
-					}
+					fallback={<p class="text-xs text-zinc-500">A development build doesn't update itself.</p>}
 				>
 					<p class="text-xs text-zinc-500">{status()}</p>
 					<Show when={launcherUpdate()?.version}>

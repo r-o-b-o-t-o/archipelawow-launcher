@@ -37,8 +37,8 @@ export interface ServerManifest {
 export interface AppInfo {
 	version: string;
 	root: string;
-	/** Whether the setup installed the launcher, which then keeps its data in %LocalAppData%\ArchipelaWoW. */
-	installedBySetup: boolean;
+	/** The setup's launcher keeps its data in %LocalAppData%\ArchipelaWoW. "development": not from a release. */
+	installation: "setup" | "portable" | "development";
 	windowsBuild: number;
 }
 
