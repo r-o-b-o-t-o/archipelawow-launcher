@@ -4,6 +4,7 @@ import Icon from "../components/Icon";
 import OptionField from "../components/OptionField";
 import { Button, Callout, Code, Field, IconButton, Modal, PageHeader, Select, TextInput } from "../components/ui";
 import { api } from "../lib/api";
+import { confirmDialog, promptDialog } from "../lib/dialog";
 import {
 	NAME_MAX_LENGTH,
 	type OptionValue,
@@ -17,7 +18,7 @@ import {
 	validate,
 } from "../lib/playerOptions";
 import { attempt, errorMessage, toast } from "../lib/toast";
-import { guardUnsaved } from "../lib/unsaved";
+import { confirmDiscard, guardUnsaved } from "../lib/unsaved";
 
 const fileNameFor = (slotName: string) => `${slotName.replace(/[<>:"/\\|?*{}]/g, "").trim() || "Player"}.yaml`;
 
@@ -41,11 +42,11 @@ export default function PlayerOptions() {
 	};
 	const setValue = (key: string, value: OptionValue) =>
 		edit((d) => ({ ...d, values: { ...d.values, [key]: value } }));
-	const confirmDiscard = () => !dirty() || confirm("Discard the unsaved changes?");
+	const mayDiscard = async () => !dirty() || (await confirmDiscard());
 	guardUnsaved(dirty);
 
 	const open = async (name: string) => {
-		if (name === fileName() || !confirmDiscard()) return;
+		if (name === fileName() || !(await mayDiscard())) return;
 		try {
 			setDoc(parsePlayerYaml(await api.players.read(name)));
 			setFileName(name);
@@ -55,8 +56,8 @@ export default function PlayerOptions() {
 		}
 	};
 
-	const startNew = () => {
-		if (!confirmDiscard()) return;
+	const startNew = async () => {
+		if (!(await mayDiscard())) return;
 		setDoc(defaultDoc());
 		setFileName(null);
 		setDirty(false);
@@ -69,7 +70,17 @@ export default function PlayerOptions() {
 		}
 		const target = name ?? fileNameFor(doc().name);
 		const taken = files()?.some((f) => f.name.toLowerCase() === target.toLowerCase());
-		if (target !== fileName() && taken && !confirm(`${target} already exists. Replace it?`)) return false;
+		if (
+			target !== fileName() &&
+			taken &&
+			!(await confirmDialog({
+				title: "Replace the file",
+				message: `${target} already exists. Replace it?`,
+				confirm: "Replace",
+				danger: true,
+			}))
+		)
+			return false;
 		if ((await attempt(() => api.players.write(target, yaml()))) === undefined) return false;
 		setFileName(target);
 		setDirty(false);
@@ -79,13 +90,26 @@ export default function PlayerOptions() {
 	};
 
 	const saveAs = async () => {
-		const name = prompt("File name", fileName() ?? fileNameFor(doc().name));
+		const name = await promptDialog({
+			title: "Save as",
+			message: "File name",
+			confirm: "Save",
+			value: fileName() ?? fileNameFor(doc().name),
+		});
 		if (!name) return;
 		await save(/\.ya?ml$/i.test(name) ? name : `${name}.yaml`);
 	};
 
 	const remove = async (name: string) => {
-		if (!confirm(`Delete ${name}?`)) return;
+		if (
+			!(await confirmDialog({
+				title: "Delete the file",
+				message: `Delete ${name}?`,
+				confirm: "Delete",
+				danger: true,
+			}))
+		)
+			return;
 		if ((await attempt(() => api.players.delete(name))) === undefined) return;
 		if (name === fileName()) {
 			setDoc(defaultDoc());

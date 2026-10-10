@@ -16,7 +16,7 @@ import {
 	task,
 } from "../lib/store";
 import { attempt, toast } from "../lib/toast";
-import { guardUnsaved } from "../lib/unsaved";
+import { confirmDiscard, guardUnsaved } from "../lib/unsaved";
 
 const folders: { target: FolderTarget; label: string }[] = [
 	{ target: "root", label: "Installation" },
@@ -207,7 +207,7 @@ function ConfigEditor() {
 					<Select
 						class="w-64"
 						value={file() ?? ""}
-						onChange={(name) => (!dirty() || confirm("Discard the unsaved changes?")) && setFile(name)}
+						onChange={async (name) => (!dirty() || (await confirmDiscard())) && setFile(name)}
 						options={(files() ?? []).map((f) => ({ value: f, label: f }))}
 					/>
 				</Show>

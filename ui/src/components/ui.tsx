@@ -1,4 +1,4 @@
-import { For, type JSX, type ParentProps, Show, splitProps } from "solid-js";
+import { For, type JSX, type ParentProps, Show, onCleanup, splitProps } from "solid-js";
 
 import Icon, { type IconName } from "./Icon";
 
@@ -174,6 +174,8 @@ export function Select<T extends string | number>(props: {
 			onChange={(e) => {
 				const option = props.options.find((o) => String(o.value) === e.currentTarget.value);
 				if (option) props.onChange(option.value);
+				// Shows the value again when the change is refused, or only applied after asking
+				e.currentTarget.value = String(props.value);
 			}}
 		>
 			<For each={props.options}>{(option) => <option value={String(option.value)}>{option.label}</option>}</For>
@@ -231,14 +233,19 @@ export function ProgressBar(props: { value: number | null; class?: string }) {
 export function Modal(
 	props: ParentProps<{ title: string; onClose: () => void; footer?: JSX.Element; wide?: boolean }>,
 ) {
+	const onKeyDown = (event: KeyboardEvent) => event.key === "Escape" && props.onClose();
+	document.addEventListener("keydown", onKeyDown);
+	onCleanup(() => document.removeEventListener("keydown", onKeyDown));
+	// A click that only ends on the backdrop, from selecting text inside, doesn't close it
+	let pressedBackdrop = false;
 	return (
 		<div
 			class="fixed inset-0 z-40 flex items-center justify-center bg-black/60 p-8 backdrop-blur-sm"
-			onClick={() => props.onClose()}
+			onMouseDown={(e) => (pressedBackdrop = e.target === e.currentTarget)}
+			onClick={(e) => pressedBackdrop && e.target === e.currentTarget && props.onClose()}
 		>
 			<div
 				class={`flex max-h-full w-full flex-col rounded-xl border border-white/10 bg-surface-2 shadow-2xl ${props.wide ? "max-w-4xl" : "max-w-lg"}`}
-				onClick={(e) => e.stopPropagation()}
 			>
 				<header class="flex items-center border-b border-white/5 px-5 py-3">
 					<h2 class="font-semibold text-zinc-100">{props.title}</h2>

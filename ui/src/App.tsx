@@ -1,16 +1,26 @@
-import { A, type RouteSectionProps, useNavigate } from "@solidjs/router";
-import { For, type ParentProps, Show, onMount } from "solid-js";
+import { A, type RouteSectionProps, useLocation, useNavigate } from "@solidjs/router";
+import { For, type ParentProps, Show, createEffect, createSignal, on, onMount } from "solid-js";
 
 import Icon, { type IconName } from "./components/Icon";
 import { serverStates } from "./components/ServerCard";
-import { Dot, Spinner } from "./components/ui";
+import { Button, Dot, Modal, Spinner, TextInput } from "./components/ui";
 import { api } from "./lib/api";
 import { inLauncher } from "./lib/bridge";
+import { type Dialog, answer, dialog } from "./lib/dialog";
 import { appInfo, initStore, launcherUpdate, servers, shuttingDown, task } from "./lib/store";
 import { dismissToast, errorMessage, toast, toasts } from "./lib/toast";
 
 export default function App(props: RouteSectionProps) {
 	const navigate = useNavigate();
+	const location = useLocation();
+	// A question is about the page it was asked on, which the back button can leave
+	createEffect(
+		on(
+			() => location.pathname,
+			() => answer(null),
+			{ defer: true },
+		),
+	);
 
 	onMount(async () => {
 		try {
@@ -26,27 +36,32 @@ export default function App(props: RouteSectionProps) {
 	});
 
 	return (
-		<div class="flex h-full">
-			<Sidebar />
-			<main class="flex min-w-0 flex-1 flex-col overflow-hidden">
-				<Show when={!inLauncher}>
-					<div class="bg-amber-500/10 px-8 py-2 text-[13px] text-amber-300">
-						This page is meant to run inside the launcher: start it with{" "}
-						<code>--dev-server http://localhost:5173</code>.
+		<>
+			<div class="flex h-full" inert={dialog() !== null}>
+				<Sidebar />
+				<main class="flex min-w-0 flex-1 flex-col overflow-hidden">
+					<Show when={!inLauncher}>
+						<div class="bg-amber-500/10 px-8 py-2 text-[13px] text-amber-300">
+							This page is meant to run inside the launcher: start it with{" "}
+							<code>--dev-server http://localhost:5173</code>.
+						</div>
+					</Show>
+					{props.children}
+				</main>
+				<Toasts />
+				<Show when={shuttingDown()}>
+					<div class="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-black/70 backdrop-blur-sm">
+						<Spinner class="size-8 text-gold" />
+						<p class="text-zinc-200">
+							{task() ? "Stopping the servers and the task in progress..." : "Stopping the servers..."}
+						</p>
 					</div>
 				</Show>
-				{props.children}
-			</main>
-			<Toasts />
-			<Show when={shuttingDown()}>
-				<div class="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-black/70 backdrop-blur-sm">
-					<Spinner class="size-8 text-gold" />
-					<p class="text-zinc-200">
-						{task() ? "Stopping the servers and the task in progress..." : "Stopping the servers..."}
-					</p>
-				</div>
+			</div>
+			<Show when={dialog()} keyed>
+				{(current) => <DialogModal dialog={current} />}
 			</Show>
-		</div>
+		</>
 	);
 }
 
@@ -146,5 +161,57 @@ function Toasts() {
 				)}
 			</For>
 		</div>
+	);
+}
+
+function DialogModal(props: { dialog: Dialog }) {
+	const [value, setValue] = createSignal(props.dialog.value ?? "");
+	const prompting = props.dialog.value !== undefined;
+	let form!: HTMLFormElement;
+	// As the webview's own dialogs do, Enter agrees and Escape cancels
+	onMount(() => {
+		const input = form.querySelector("input");
+		if (input) {
+			input.focus();
+			input.select();
+		} else form.querySelector<HTMLButtonElement>("button[type=submit]")?.focus();
+	});
+
+	return (
+		<form
+			ref={form}
+			onSubmit={(event) => {
+				event.preventDefault();
+				answer(prompting ? value().trim() : "");
+			}}
+		>
+			<Modal
+				title={props.dialog.title}
+				onClose={() => answer(null)}
+				footer={
+					<>
+						<Button onClick={() => answer(null)}>Cancel</Button>
+						<Button
+							type="submit"
+							variant={props.dialog.danger ? "danger" : "primary"}
+							disabled={prompting && !value().trim()}
+						>
+							{props.dialog.confirm}
+						</Button>
+					</>
+				}
+			>
+				<Show when={props.dialog.message}>
+					<p class="text-[13px] text-zinc-300">{props.dialog.message}</p>
+				</Show>
+				<Show when={prompting}>
+					<TextInput
+						value={value()}
+						onValue={setValue}
+						class={`w-full ${props.dialog.message ? "mt-3" : ""}`}
+					/>
+				</Show>
+			</Modal>
+		</form>
 	);
 }

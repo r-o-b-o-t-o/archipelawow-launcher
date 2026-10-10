@@ -3,6 +3,7 @@ import { useBeforeLeave } from "@solidjs/router";
 import { createEffect, onCleanup } from "solid-js";
 
 import { api } from "./api";
+import { confirmDialog } from "./dialog";
 
 const editors = new Set<symbol>();
 
@@ -14,12 +15,22 @@ function track(editor: symbol, dirty: boolean) {
 	if (after !== before) api.app.setUnsavedChanges(after).catch(() => {});
 }
 
+export const confirmDiscard = () =>
+	confirmDialog({
+		title: "Unsaved changes",
+		message: "Discard the unsaved changes?",
+		confirm: "Discard",
+		danger: true,
+	});
+
 /** Asks before leaving the page or quitting while `dirty` is true. */
 export function guardUnsaved(dirty: () => boolean) {
 	const editor = Symbol();
 	createEffect(() => track(editor, dirty()));
 	onCleanup(() => track(editor, false));
 	useBeforeLeave((event) => {
-		if (dirty() && !event.defaultPrevented && !confirm("Discard the unsaved changes?")) event.preventDefault();
+		if (!dirty() || event.defaultPrevented) return;
+		event.preventDefault();
+		confirmDiscard().then((discard) => discard && event.retry(true));
 	});
 }
