@@ -3,6 +3,7 @@ import { type ParentProps, Show, createResource, createSignal } from "solid-js";
 
 import ClientDataPanel from "../components/ClientDataPanel";
 import Icon from "../components/Icon";
+import NetworkPanel from "../components/NetworkPanel";
 import PathLengthWarning from "../components/PathLengthWarning";
 import ServerPanel from "../components/ServerPanel";
 import TaskPanel from "../components/TaskPanel";
@@ -16,6 +17,7 @@ import { attempt, toast } from "../lib/toast";
 export default function Setup() {
 	const navigate = useNavigate();
 	const [status, { refetch }] = createResource(serverRevision, api.setup.getStatus);
+	const [network, { mutate: setNetwork }] = createResource(serverRevision, api.network.getStatus);
 	const [busy, setBusy] = createSignal<"database" | "configs" | "start" | null>(null);
 
 	const installed = () => status()?.serverInstalled ?? false;
@@ -134,6 +136,13 @@ export default function Setup() {
 							client. Download them, or extract them from your own client.
 						</p>
 						<ClientDataPanel serverInstalled={installed()} onChange={() => refetch()} />
+					</Step>
+
+					<Step number={5} title="Playing with friends" done={network()?.access != null}>
+						<p class="mb-4 text-[13px] text-zinc-400">
+							Choose who can join your realm. Optional: by default, only this computer can.
+						</p>
+						<NetworkPanel status={network()} onChange={setNetwork} />
 					</Step>
 
 					<TaskPanel />

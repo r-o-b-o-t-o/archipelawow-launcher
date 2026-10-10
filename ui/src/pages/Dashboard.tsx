@@ -6,7 +6,19 @@ import PathLengthWarning from "../components/PathLengthWarning";
 import ServerCard, { serverStates } from "../components/ServerCard";
 import TaskPanel from "../components/TaskPanel";
 import Terminal, { clearTerminal } from "../components/Terminal";
-import { Button, Callout, Card, Code, Dot, Field, IconButton, PageHeader, Select, TextInput } from "../components/ui";
+import {
+	Button,
+	Callout,
+	Card,
+	Code,
+	CopyLine,
+	Dot,
+	Field,
+	IconButton,
+	PageHeader,
+	Select,
+	TextInput,
+} from "../components/ui";
 import { type ServerName, type TerminalName, api } from "../lib/api";
 import { isActive, server, servers, task } from "../lib/store";
 import { attempt, toast } from "../lib/toast";
@@ -313,21 +325,13 @@ function CreateAccount(props: { onCreated: () => void }) {
 }
 
 function ConnectClient() {
-	const realmlist = "set realmlist 127.0.0.1";
 	return (
 		<Card title="Play" icon="sword">
 			<p class="text-[13px] text-zinc-400">
 				Point your World of Warcraft 3.3.5a client at this server: in its <Code>Data\enUS</Code> (or your
 				locale) folder, make <Code>realmlist.wtf</Code> read:
 			</p>
-			<div class="mt-3 flex items-center gap-2 rounded-lg border border-white/10 bg-surface-1 py-1 pr-1 pl-3">
-				<code class="flex-1 font-mono text-[13px] text-zinc-200">{realmlist}</code>
-				<IconButton
-					icon="copy"
-					title="Copy"
-					onClick={() => navigator.clipboard.writeText(realmlist).then(() => toast("Copied.", "success"))}
-				/>
-			</div>
+			<CopyLine text="set realmlist 127.0.0.1" class="mt-3" />
 		</Card>
 	);
 }

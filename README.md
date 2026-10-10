@@ -36,6 +36,14 @@ The player options editor and the tracker work without the server.
 
 To only make player options or track a seed, skip the setup and open **Player options** or **Tracker**.
 
+### Playing with friends
+
+The last step of the setup chooses who can join the realm: this computer only, the computers on its local
+network, or friends over the internet. The launcher finds the computer's address on the local network each
+time the authserver starts. Over the internet, forward the authserver's and the worldserver's TCP ports (3724
+and 8085) to that address in your router's control panel; the setup links to a checker that tells whether
+they're open from the outside. The other players point their `realmlist.wtf` at the address the setup shows.
+
 It runs on 64-bit Windows 10 (1809 or later) and 11. The interface uses the Microsoft Edge WebView2
 Runtime, which comes with Windows 11 and up-to-date Windows 10; the launcher links to its installer
 when it's missing.

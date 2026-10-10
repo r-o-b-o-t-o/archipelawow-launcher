@@ -11,6 +11,7 @@ public sealed class ServerManager
     readonly AppPaths _paths;
     readonly MySqlService _mySql;
     readonly ConfigService _configs;
+    readonly NetworkService _network;
     // Per server, cancelled and replaced by its stop: a start still waiting for MySQL, or for the other of the
     // authserver and worldserver, would otherwise start its server once the stop is done, which closing the window
     // then leaves running. Once shutting down, MySQL's stays cancelled, and with it every start, as they all need it.
@@ -34,11 +35,13 @@ public sealed class ServerManager
 
     string? _startBlockedReason;
 
-    public ServerManager(AppPaths paths, SettingsStore settings, MySqlService mySql, ConfigService configs)
+    public ServerManager(AppPaths paths, SettingsStore settings, MySqlService mySql, ConfigService configs,
+        NetworkService network)
     {
         _paths = paths;
         _mySql = mySql;
         _configs = configs;
+        _network = network;
 
         // The servers inherit it: they create the databases they miss instead of asking about it on
         // their console and waiting for an answer
@@ -163,6 +166,18 @@ public sealed class ServerManager
     {
         await process.WaitUntilSettledAsync();
         LeaveLaunchGate();
+        // Once running, the authserver has created its database, which it doesn't have before its first start. This
+        // computer's address on the network may have changed since the last.
+        if (process != AuthServer || AuthServer.State != ServerState.Running)
+            return;
+        try
+        {
+            await _network.ApplyAsync();
+        }
+        catch (Exception ex)
+        {
+            Log.Error("Could not set the realm's addresses", ex);
+        }
     }
 
     void LeaveLaunchGate()

@@ -11,6 +11,7 @@ public sealed class AppServices : IDisposable
     public RepackService Repack { get; }
     public ClientDataService ClientData { get; }
     public PlayerFilesService Players { get; }
+    public NetworkService Network { get; }
     public TrackerService Tracker { get; } = new();
     public LauncherUpdater LauncherUpdater { get; } = new();
     public HttpClient Http { get; }
@@ -27,7 +28,8 @@ public sealed class AppServices : IDisposable
 
         Configs = new ConfigService(paths, Settings);
         MySql = new MySqlService(paths, Settings);
-        Servers = new ServerManager(paths, Settings, MySql, Configs);
+        Network = new NetworkService(Settings, MySql, Configs, Http);
+        Servers = new ServerManager(paths, Settings, MySql, Configs, Network);
         Tasks = new TaskRunner(paths.LauncherLogsDir);
         Repack = new RepackService(paths, Settings, Configs, Http);
         ClientData = new ClientDataService(paths, Settings, Http);

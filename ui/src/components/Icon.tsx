@@ -14,11 +14,14 @@ import Eye from "lucide-solid/icons/eye";
 import FileText from "lucide-solid/icons/file-text";
 import Folder from "lucide-solid/icons/folder";
 import Globe from "lucide-solid/icons/globe";
+import GlobeLock from "lucide-solid/icons/globe-lock";
 import Info from "lucide-solid/icons/info";
 import Key from "lucide-solid/icons/key";
 import LayoutDashboard from "lucide-solid/icons/layout-dashboard";
 import Lightbulb from "lucide-solid/icons/lightbulb";
 import MapIcon from "lucide-solid/icons/map";
+import Monitor from "lucide-solid/icons/monitor";
+import Network from "lucide-solid/icons/network";
 import Package from "lucide-solid/icons/package";
 import Play from "lucide-solid/icons/play";
 import Plug from "lucide-solid/icons/plug";
@@ -69,6 +72,7 @@ const icons = {
 	database: Database,
 	userPlus: UserPlus,
 	globe: Globe,
+	globeLock: GlobeLock,
 	scale: Scale,
 	chevronDown: ChevronDown,
 	info: Info,
@@ -84,6 +88,8 @@ const icons = {
 	unplug: Unplug,
 	key: Key,
 	lightbulb: Lightbulb,
+	monitor: Monitor,
+	network: Network,
 };
 
 export type IconName = keyof typeof icons;

@@ -127,6 +127,15 @@ public static partial class BridgeApi
         });
         bridge.Handle<CreateConfigsParams>("setup.createConfigs", p => services.Configs.CreateConfigs(p.Overwrite));
 
+        // Playing with friends
+        bridge.Handle("network.getStatus", services.Network.GetStatus);
+        bridge.HandleAsync<NetworkParams>("network.set", async p =>
+        {
+            await services.Network.SetAsync(p.Access, p.PublicAddress);
+            return services.Network.GetStatus();
+        });
+        bridge.HandleAsync("network.findPublicAddress", async () => await services.Network.FindPublicAddressAsync());
+
         // Client data
         bridge.Handle("clientData.getStatus", services.ClientData.GetStatus);
         bridge.HandleAsync("clientData.getLatestRelease", async () => await services.ClientData.GetLatestReleaseAsync(CancellationToken.None));
@@ -382,6 +391,7 @@ public static partial class BridgeApi
     sealed record UnsavedChangesParams(bool Unsaved);
     sealed record SettingsPatch(int? MySqlPort, bool? AutoStartServers, bool? TrackerHideChecked);
     sealed record BuildParams(string Build);
+    sealed record NetworkParams(RealmAccess Access, string? PublicAddress);
     sealed record CreateConfigsParams(bool Overwrite);
     sealed record ExtractParams(string ClientPath, bool GenerateMmaps);
     sealed record PickFolderParams(string? Title, string? InitialDirectory);

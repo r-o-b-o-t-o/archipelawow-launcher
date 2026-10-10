@@ -1,4 +1,6 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
+using ArchipelaWoW.Launcher.Services;
 
 namespace ArchipelaWoW.Launcher;
 
@@ -12,6 +14,14 @@ public sealed class LauncherSettings
     public string? ClientDataVersion { get; set; }
     public string? WowClientPath { get; set; }
     public TrackerSettings Tracker { get; set; } = new();
+    public NetworkSettings Network { get; set; } = new();
+}
+
+/// <summary>Who can join the realm. Until it's chosen, the launcher leaves the realm's addresses as they are.</summary>
+public sealed class NetworkSettings
+{
+    public RealmAccess? Access { get; set; }
+    public string? PublicAddress { get; set; }
 }
 
 /// <summary>The room the tracker last connected to, and how it shows the checks.</summary>
@@ -26,7 +36,11 @@ public sealed class TrackerSettings
 
 public sealed class SettingsStore(string file)
 {
-    public static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web) { WriteIndented = true };
+    public static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
+    {
+        WriteIndented = true,
+        Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) },
+    };
 
     public LauncherSettings Current { get; private set; } = new();
 

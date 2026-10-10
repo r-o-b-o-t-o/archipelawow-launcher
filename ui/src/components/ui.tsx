@@ -1,5 +1,6 @@
 import { For, type JSX, type ParentProps, Show, onCleanup, splitProps } from "solid-js";
 
+import { toast } from "../lib/toast";
 import Icon, { type IconName } from "./Icon";
 
 type ButtonVariant = "primary" | "secondary" | "danger" | "ghost";
@@ -290,4 +291,20 @@ export function PageHeader(props: ParentProps<{ title: string; subtitle?: JSX.El
 
 export function Code(props: ParentProps) {
 	return <code class="rounded bg-surface-4 px-1.5 py-0.5 font-mono text-[12px] text-zinc-200">{props.children}</code>;
+}
+
+/** A line to copy, such as a command. */
+export function CopyLine(props: { text: string; class?: string }) {
+	return (
+		<div
+			class={`flex items-center gap-2 rounded-lg border border-white/10 bg-surface-1 py-1 pr-1 pl-3 ${props.class ?? ""}`}
+		>
+			<code class="flex-1 font-mono text-[13px] text-zinc-200">{props.text}</code>
+			<IconButton
+				icon="copy"
+				title="Copy"
+				onClick={() => navigator.clipboard.writeText(props.text).then(() => toast("Copied.", "success"))}
+			/>
+		</div>
+	);
 }

@@ -68,6 +68,18 @@ export interface TrackerSettings {
 	hideChecked: boolean;
 }
 
+export type RealmAccess = "local" | "lan" | "internet";
+
+export interface NetworkStatus {
+	/** Null until chosen: the realm's addresses are left as they are. */
+	access: RealmAccess | null;
+	publicAddress: string | null;
+	/** This computer on its local network, null when it's on none. */
+	lan: { address: string; subnetMask: string } | null;
+	authServerPort: number;
+	worldServerPort: number;
+}
+
 export interface ClientDataStatus {
 	version: string | null;
 	folders: Record<string, boolean>;
@@ -196,6 +208,12 @@ export const api = {
 		getLatestRelease: () => call<RepackRelease>("repack.getLatestRelease"),
 		install: (build: string) => call<SetupStatus>("repack.install", { build }),
 		delete: () => call<SetupStatus>("repack.delete"),
+	},
+	network: {
+		getStatus: () => call<NetworkStatus>("network.getStatus"),
+		set: (access: RealmAccess, publicAddress: string | null) =>
+			call<NetworkStatus>("network.set", { access, publicAddress }),
+		findPublicAddress: () => call<string>("network.findPublicAddress"),
 	},
 	clientData: {
 		getStatus: () => call<ClientDataStatus>("clientData.getStatus"),
