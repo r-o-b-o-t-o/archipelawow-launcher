@@ -4,7 +4,7 @@ import { createMemo, createRoot, createSignal } from "solid-js";
 import { type TrackerHint, type TrackerItem, type TrackerSeed, type TrackerStatus, api } from "../lib/api";
 import { inLauncher, on } from "../lib/bridge";
 import { type Check, buildChecks } from "./checks";
-import { type Requirement, evaluate, explain, explainLocation, reachableRegions } from "./logic";
+import { LEVEL_UP, type Requirement, evaluate, explain, explainLocation, reachableRegions } from "./logic";
 import type { SlotData, TrackerData } from "./types";
 
 /** Checked, in logic, doable out of logic, out of logic, or unknown for a seed without rules. */
@@ -83,6 +83,9 @@ const derived = createRoot(() => {
 		return result;
 	});
 
+	/** The character's level: Level Up counts are the levels past the one it starts at. */
+	const level = createMemo(() => (counts().get(LEVEL_UP) ?? 0) + 1);
+
 	const reachable = createMemo(() => {
 		const logic = slotData()?.logic;
 		return logic ? reachableRegions(logic, counts()) : null;
@@ -90,15 +93,33 @@ const derived = createRoot(() => {
 
 	// The level brackets also ask for the class's abilities and the riding ranks, which pace the seed rather
 	// than make its checks doable: with them all, the regions a check can be done in out of logic
-	const reachableOutOfLogic = createMemo(() => {
+	const pacedCounts = createMemo(() => {
 		const slot = slotData();
-		if (!slot?.logic) return null;
+		if (!slot) return null;
 		const names = seed()!.itemNames;
 		const paced = new Map(counts());
 		for (const [id] of slot.items.spells) paced.set(names[id], 1);
 		for (const [id, track, steps] of slot.items.progressive)
 			if (track === RIDING_TRACK) paced.set(names[id], steps.length);
-		return reachableRegions(slot.logic, paced);
+		return paced;
+	});
+	const reachableOutOfLogic = createMemo(() => {
+		const logic = slotData()?.logic;
+		const paced = pacedCounts();
+		return logic && paced ? reachableRegions(logic, paced) : null;
+	});
+
+	// The seed only expects a quest from its recommended level on, but the character can take it on as soon as
+	// the quest log shows it orange: with every level too, for the quests that only wait on levels
+	const anyLevelCounts = createMemo(() => {
+		const slot = slotData();
+		const paced = pacedCounts();
+		return slot && paced ? new Map(paced).set(LEVEL_UP, slot.maxlevel - 1) : null;
+	});
+	const reachableAnyLevel = createMemo(() => {
+		const logic = slotData()?.logic;
+		const anyLevel = anyLevelCounts();
+		return logic && anyLevel ? reachableRegions(logic, anyLevel) : null;
 	});
 
 	// Most quests share their rule with others, so each rule is evaluated once
@@ -119,16 +140,33 @@ const derived = createRoot(() => {
 		const done = checked();
 		const regions = reachable();
 		const regionsOutOfLogic = reachableOutOfLogic();
+		const regionsAnyLevel = reachableAnyLevel();
 		const results = ruleResults();
-		const stateOf = (id: number): CheckState => {
-			const entry = locationLogic().get(id);
-			if (done.has(id)) return "checked";
-			if (!regions || !regionsOutOfLogic || !entry) return "unknown";
-			if (!results[entry.rule]) return "blocked";
-			if (regions.has(entry.region)) return "available";
-			return regionsOutOfLogic.has(entry.region) ? "sequenceBreak" : "blocked";
+		const logic = slotData()?.logic;
+		const anyLevel = anyLevelCounts();
+		const anyLevelResults = new Map<number, boolean>();
+		const holdsAtAnyLevel = (rule: number) => {
+			if (!anyLevelResults.has(rule)) anyLevelResults.set(rule, evaluate(logic!.rules[rule], anyLevel!));
+			return anyLevelResults.get(rule)!;
 		};
-		return new Map(checks().map((check) => [check.id, stateOf(check.id)]));
+		const stateOf = (check: Check): CheckState => {
+			const entry = locationLogic().get(check.id);
+			if (done.has(check.id)) return "checked";
+			if (!regions || !regionsOutOfLogic || !regionsAnyLevel || !entry) return "unknown";
+			if (results[entry.rule]) {
+				if (regions.has(entry.region)) return "available";
+				if (regionsOutOfLogic.has(entry.region)) return "sequenceBreak";
+			}
+			if (
+				check.doableLevel != null &&
+				level() >= check.doableLevel &&
+				regionsAnyLevel.has(entry.region) &&
+				holdsAtAnyLevel(entry.rule)
+			)
+				return "sequenceBreak";
+			return "blocked";
+		};
+		return new Map(checks().map((check) => [check.id, stateOf(check)]));
 	});
 
 	/** The hints not found yet for the slot's items, by name. */
@@ -172,7 +210,7 @@ const derived = createRoot(() => {
 		return result;
 	});
 
-	return { slotData, counts, reachable, locationLogic, checks, states, itemHints, checkHints };
+	return { slotData, counts, level, reachable, locationLogic, checks, states, itemHints, checkHints };
 });
 
 export interface CheckHints {
@@ -189,7 +227,7 @@ function unmetItems(requirements: Requirement[]): string[] {
 	);
 }
 
-export const { slotData, counts, checks, itemHints } = derived;
+export const { slotData, counts, level, checks, itemHints } = derived;
 
 export const checkHints = (id: number) => derived.checkHints().get(id);
 

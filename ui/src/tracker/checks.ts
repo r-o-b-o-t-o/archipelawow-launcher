@@ -21,6 +21,8 @@ export interface Check {
 	group?: SideGroup;
 	/** The level a spell is trained at, or the level reached. */
 	level?: number;
+	/** The level a quest can be done from in-game. */
+	doableLevel?: number;
 	/** The SkillLine.dbc id of a skill check. */
 	skill?: number;
 	note?: string;
@@ -71,6 +73,7 @@ export function buildChecks(data: TrackerData, slot: SlotData, names: Record<str
 			icon: QUEST_ICON,
 			spot: where,
 			group: where ? undefined : "quests",
+			doableLevel: quest?.doableLevel,
 			note:
 				giver && quest?.atEnder
 					? "Started by an item, turned in here"

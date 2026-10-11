@@ -61,9 +61,11 @@ export interface Requirement {
 	children?: Requirement[];
 }
 
+export const LEVEL_UP = "Level Up";
+
 /** How an item reads in a requirement: Level Up counts are the character's level, minus the one it starts at. */
 function itemRequirement(item: string, count: number): string {
-	if (item === "Level Up") return `Level ${count + 1}`;
+	if (item === LEVEL_UP) return `Level ${count + 1}`;
 	return count > 1 ? `${item} ×${count}` : item;
 }
 

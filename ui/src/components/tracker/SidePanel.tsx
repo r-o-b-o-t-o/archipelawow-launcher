@@ -3,7 +3,7 @@ import { For, type JSX, Match, Show, Switch, createMemo, createSignal } from "so
 import { type Check, type SideGroup, levelIcon } from "../../tracker/checks";
 import { FALLBACK_ICON, asset, iconUrl } from "../../tracker/data";
 import { explain } from "../../tracker/logic";
-import { checkRegion, checkState, counts, items, seed, slotData } from "../../tracker/state";
+import { checkRegion, checkState, counts, items, level, seed, slotData } from "../../tracker/state";
 import type { TrackerData } from "../../tracker/types";
 import { ProgressBar } from "../ui";
 import CheckList from "./CheckList";
@@ -106,7 +106,6 @@ function Summary(props: { data: TrackerData }) {
 	const slot = () => slotData()!;
 	const race = () => slot().options.character_race;
 	const characterClass = () => slot().options.character_class;
-	const level = () => (counts().get("Level Up") ?? 0) + 1;
 
 	const goal = createMemo(() => {
 		const logic = slot().logic;

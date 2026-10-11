@@ -94,7 +94,8 @@ export interface MapInfo {
 
 export interface TrackerData {
 	maps: MapInfo[];
-	quests: Record<string, { givers?: Position[]; atEnder?: boolean; map?: number }>;
+	/** `doableLevel`: the level the quest can be done from in-game. */
+	quests: Record<string, { givers?: Position[]; atEnder?: boolean; map?: number; doableLevel: number }>;
 	flightpaths: Record<string, { position: Position }>;
 	dungeons: Record<string, { entrances: Position[]; encounters: number[] }>;
 	/** By Achievement_Criteria.dbc id: the middle of the subzone, and its achievement's icon. */
