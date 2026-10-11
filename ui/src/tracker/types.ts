@@ -94,7 +94,7 @@ export interface MapInfo {
 
 export interface TrackerData {
 	maps: MapInfo[];
-	/** `doableLevel`: the level the quest can be done from in-game. */
+	/** `doableLevel`: the level the quest and the quests before it can be done from in-game. */
 	quests: Record<string, { givers?: Position[]; atEnder?: boolean; map?: number; doableLevel: number }>;
 	flightpaths: Record<string, { position: Position }>;
 	dungeons: Record<string, { entrances: Position[]; encounters: number[] }>;

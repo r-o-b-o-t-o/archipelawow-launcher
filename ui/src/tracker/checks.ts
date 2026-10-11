@@ -21,7 +21,7 @@ export interface Check {
 	group?: SideGroup;
 	/** The level a spell is trained at, or the level reached. */
 	level?: number;
-	/** The level a quest can be done from in-game. */
+	/** The level a quest and the quests before it can be done from in-game. */
 	doableLevel?: number;
 	/** The SkillLine.dbc id of a skill check. */
 	skill?: number;

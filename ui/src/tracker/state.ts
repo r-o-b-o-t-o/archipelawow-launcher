@@ -110,7 +110,8 @@ const derived = createRoot(() => {
 	});
 
 	// The seed only expects a quest from its recommended level on, but the character can take it on as soon as
-	// the quest log shows it orange: with every level too, for the quests that only wait on levels
+	// the quest log shows it and the quests before it orange: with every level too, for the quests that only wait on
+	// levels
 	const anyLevelCounts = createMemo(() => {
 		const slot = slotData();
 		const paced = pacedCounts();
