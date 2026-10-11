@@ -116,15 +116,17 @@ function Summary(props: { data: TrackerData }) {
 	});
 
 	const progressive = () =>
-		slot().items.progressive.map(([id, track, steps]) => {
-			const name = seed()?.itemNames[id] ?? `Item ${id}`;
-			return {
-				name,
-				icon: PROGRESSIVE_ICONS[track] ? iconUrl(PROGRESSIVE_ICONS[track]) : FALLBACK_ICON,
-				have: counts().get(name) ?? 0,
-				total: steps.length,
-			};
-		});
+		slot()
+			.items.progressive.filter(([, , steps]) => steps.length > 0) // A track with no steps is still present in the slot data
+			.map(([id, track, steps]) => {
+				const name = seed()?.itemNames[id] ?? `Item ${id}`;
+				return {
+					name,
+					icon: PROGRESSIVE_ICONS[track] ? iconUrl(PROGRESSIVE_ICONS[track]) : FALLBACK_ICON,
+					have: counts().get(name) ?? 0,
+					total: steps.length,
+				};
+			});
 
 	return (
 		<section class="flex flex-col gap-3 border-b border-white/5 p-4">
