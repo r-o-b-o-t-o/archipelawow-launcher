@@ -64,6 +64,8 @@ export interface SlotData {
 		progressive: [number, number, number[], number[]][];
 		/** Item, spell id, required level, taught spells. */
 		spells: [number, number, number, number[]][];
+		/** The items unlocking Archipelago Stone menus. Missing from seeds generated before the apworld had them. */
+		stone?: { teleport_to_friend: number };
 	};
 	/** The id of the achievement the goal is named after. */
 	goal: number;

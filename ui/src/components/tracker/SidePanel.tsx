@@ -344,6 +344,7 @@ function itemIcons(data: TrackerData) {
 		result.set(id, GEAR_ICONS[category] ? iconUrl(GEAR_ICONS[category]) : FALLBACK_ICON);
 	result.set(slot.items.levels, levelIcon(10));
 	result.set(slot.items.money, iconUrl("inv_misc_coin_01"));
+	if (slot.items.stone) result.set(slot.items.stone.teleport_to_friend, iconUrl("achievement_reputation_01"));
 	return result;
 }
 
