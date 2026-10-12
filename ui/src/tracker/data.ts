@@ -18,6 +18,7 @@ export function loadTrackerData(): Promise<TrackerData> {
 		"maps",
 		"quests",
 		"flightpaths",
+		"leaders",
 		"dungeons",
 		"explorations",
 		"spells",

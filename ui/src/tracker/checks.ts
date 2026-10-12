@@ -21,7 +21,10 @@ export interface Check {
 	group?: SideGroup;
 	/** The level a spell is trained at, or the level reached. */
 	level?: number;
-	/** The level a quest and the quests before it can be done from in-game. */
+	/**
+	 * The level the check can be done from in-game when the seed expects it later: a quest's and the quests before it,
+	 * or 1 for a faction leader.
+	 */
 	doableLevel?: number;
 	/** The SkillLine.dbc id of a skill check. */
 	skill?: number;
@@ -90,6 +93,19 @@ export function buildChecks(data: TrackerData, slot: SlotData, names: Record<str
 			name: name(id),
 			icon: FLIGHT_ICON,
 			spot: flightPath && spot(flightPath.position),
+		});
+	}
+
+	for (const [creature, id] of slot.locations.leaders ?? []) {
+		const leader = data.leaders[creature];
+		checks.push({
+			id,
+			name: name(id),
+			icon: leader?.icon ? iconUrl(leader.icon) : FALLBACK_ICON,
+			spot: leader && spot(leader.position),
+			group: leader ? undefined : "achievements",
+			// The seed expects the capitals from level 5, but any character can walk there from level 1
+			doableLevel: 1,
 		});
 	}
 

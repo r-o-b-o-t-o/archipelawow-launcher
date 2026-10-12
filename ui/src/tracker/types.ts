@@ -43,6 +43,8 @@ export interface SlotData {
 		/** By Achievement_Criteria.dbc id. Missing from seeds generated before the apworld had exploration checks. */
 		explorations?: LocationPairs;
 		flightpaths: LocationPairs;
+		/** By creature entry. Missing from seeds generated before the apworld had faction leader checks. */
+		leaders?: LocationPairs;
 		levels: LocationPairs;
 		quests: LocationPairs;
 		/** SkillLine.dbc id, skill value, location id. Missing from seeds generated before the apworld had skill checks. */
@@ -99,6 +101,8 @@ export interface TrackerData {
 	/** `doableLevel`: the level the quest and the quests before it can be done from in-game. */
 	quests: Record<string, { givers?: Position[]; atEnder?: boolean; map?: number; doableLevel: number }>;
 	flightpaths: Record<string, { position: Position }>;
+	/** By creature entry: where the faction leader stands, and the icon of the achievement for killing them. */
+	leaders: Record<string, { position: Position; icon?: string }>;
 	dungeons: Record<string, { entrances: Position[]; encounters: number[] }>;
 	/** By Achievement_Criteria.dbc id: the middle of the subzone, and its achievement's icon. */
 	explorations: Record<string, { position: Position; icon?: string }>;
