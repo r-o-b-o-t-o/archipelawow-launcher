@@ -68,6 +68,17 @@ export interface SlotData {
 		spells: [number, number, number, number[]][];
 		/** The items unlocking Archipelago Stone menus. Missing from seeds generated before the apworld had them. */
 		stone?: { teleport_to_friend: number };
+		/**
+		 * The heirlooms of a kind, each with the WoW item it becomes for a melee and for a caster character, and the
+		 * weapon with how many slots it fills and the weapons to fill them from. Missing from seeds generated before the
+		 * apworld sent heirlooms by kind.
+		 */
+		heirlooms?: {
+			shoulders: [number, number, number];
+			chest: [number, number, number];
+			trinket: [number, number, number];
+			weapon: [number, number, number[]];
+		};
 	};
 	/** The id of the achievement the goal is named after. */
 	goal: number;

@@ -347,6 +347,14 @@ function itemIcons(data: TrackerData) {
 	result.set(slot.items.levels, levelIcon(10));
 	result.set(slot.items.money, iconUrl("inv_misc_coin_01"));
 	if (slot.items.stone) result.set(slot.items.stone.teleport_to_friend, iconUrl("achievement_reputation_01"));
+	if (slot.items.heirlooms) {
+		// Whichever piece the player ends up with, the melee one or the first weapon stands for it
+		const { shoulders, chest, trinket, weapon } = slot.items.heirlooms;
+		for (const [id, item] of [shoulders, chest, trinket, [weapon[0], weapon[2][0]]]) {
+			const icon = data.items[item]?.icon;
+			if (icon) result.set(id, iconUrl(icon));
+		}
+	}
 	return result;
 }
 
