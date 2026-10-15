@@ -84,6 +84,11 @@ export interface SlotData {
 		 * seeds generated before the apworld had world buffs.
 		 */
 		world_buffs?: [number, number[], number[]];
+		/**
+		 * The trap items, by the key the module knows each one by. Missing from seeds generated before the apworld had
+		 * traps.
+		 */
+		traps?: Record<string, number>;
 	};
 	/** The id of the achievement the goal is named after. */
 	goal: number;

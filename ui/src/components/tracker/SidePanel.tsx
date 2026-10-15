@@ -22,6 +22,18 @@ const PROGRESSIVE_ICONS: Record<number, string> = {
 // GearCategory in the apworld's items/gear.py
 const GEAR_ICONS: Record<number, string> = { 1: "inv_sword_04", 2: "inv_chest_chain_05", 3: "inv_jewelry_ring_03" };
 
+// TRAPS in the apworld's options.py. The aura's icon for the traps that apply one.
+const TRAP_ICONS: Record<string, string> = {
+	dazed: "spell_frost_stun",
+	shackle: "spell_nature_slow",
+	sheep: "spell_nature_polymorph",
+	poison: "spell_nature_corrosivebreath",
+	teleport: "spell_arcane_blink",
+	ambush: "ability_ambush",
+	disarm: "ability_warrior_disarm",
+	bombs: "inv_misc_bomb_01",
+};
+
 /** The bracket of a level, as the apworld's regions.get_region_by_level files it: 01-05 up to level 5. */
 const bracketOf = (level: number) => Math.min(15, Math.max(0, Math.ceil(level / 5) - 1));
 /** A bracket's name: the seed's region, or worked out the same way for a seed without rules. */
@@ -352,6 +364,8 @@ function itemIcons(data: TrackerData) {
 	if (slot.items.stone) result.set(slot.items.stone.teleport_to_friend, iconUrl("achievement_reputation_01"));
 	// Rallying Cry of the Dragonslayer's
 	if (slot.items.world_buffs) result.set(slot.items.world_buffs[0], iconUrl("inv_misc_head_dragon_01"));
+	for (const [key, id] of Object.entries(slot.items.traps ?? {}))
+		result.set(id, TRAP_ICONS[key] ? iconUrl(TRAP_ICONS[key]) : FALLBACK_ICON);
 	if (slot.items.heirlooms) {
 		// Whichever piece the player ends up with, the melee one or the first weapon stands for it
 		const { shoulders, chest, trinket, weapon } = slot.items.heirlooms;
