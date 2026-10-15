@@ -350,6 +350,8 @@ function itemIcons(data: TrackerData) {
 	result.set(slot.items.levels, levelIcon(10));
 	result.set(slot.items.money, iconUrl("inv_misc_coin_01"));
 	if (slot.items.stone) result.set(slot.items.stone.teleport_to_friend, iconUrl("achievement_reputation_01"));
+	// Rallying Cry of the Dragonslayer's
+	if (slot.items.world_buffs) result.set(slot.items.world_buffs[0], iconUrl("inv_misc_head_dragon_01"));
 	if (slot.items.heirlooms) {
 		// Whichever piece the player ends up with, the melee one or the first weapon stands for it
 		const { shoulders, chest, trinket, weapon } = slot.items.heirlooms;

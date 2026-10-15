@@ -79,6 +79,11 @@ export interface SlotData {
 			trinket: [number, number, number];
 			weapon: [number, number, number[]];
 		};
+		/**
+		 * The Random World Buff item, and the spells it draws from for a melee and for a caster character. Missing from
+		 * seeds generated before the apworld had world buffs.
+		 */
+		world_buffs?: [number, number[], number[]];
 	};
 	/** The id of the achievement the goal is named after. */
 	goal: number;
