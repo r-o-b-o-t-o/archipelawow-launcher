@@ -40,7 +40,9 @@ public sealed record TrackerSeed(
     Dictionary<long, string> Locations,
     List<long> Checked,
     List<TrackerItem> Items,
-    List<TrackerHint> Hints);
+    List<TrackerHint> Hints,
+    // The character's, 0 male or 1 female, which the game writes to the slot's data storage when it connects
+    int? Gender);
 
 /// <summary>
 /// The tracker's connection to an Archipelago room. It joins a slot as a tracker, alongside the game, and
@@ -64,6 +66,7 @@ public sealed class TrackerService : IDisposable
     public event Action<List<TrackerItem>>? ItemsReceived;
     public event Action<List<long>>? LocationsChecked;
     public event Action<List<TrackerHint>>? HintsChanged;
+    public event Action<int?>? GenderChanged;
 
     public TrackerSeed? Seed
     {
@@ -165,6 +168,24 @@ public sealed class TrackerService : IDisposable
                 HintsChanged?.Invoke([.. _seed.Hints]);
             }
         });
+        int? gender = null;
+        void SetGender(int? value)
+        {
+            lock (_lock)
+            {
+                if (_session != session || gender == value)
+                    return;
+                gender = value;
+                if (_seed == null)
+                    return;
+                _seed = _seed with { Gender = value };
+                GenderChanged?.Invoke(value);
+            }
+        }
+        // Watched as well as read: the game may connect and write it after the tracker has read the value
+        var genderKey = session.DataStorage[Scope.Slot, "gender"];
+        genderKey.OnValueChanged += (_, value, _) => SetGender(value.ToObject<int?>());
+        _ = genderKey.GetAsync().ContinueWith(task => SetGender(task.Result.ToObject<int?>()), TaskContinuationOptions.OnlyOnRanToCompletion);
         session.Socket.SocketClosed += reason => Fail(session, "The connection to the room was lost.");
         // A room that goes away without closing the connection shows up as an error
         session.Socket.ErrorReceived += (exception, message) =>
@@ -187,7 +208,8 @@ public sealed class TrackerService : IDisposable
                 session.Locations.AllLocations.ToDictionary(id => id, id => locationNames.GetValueOrDefault(id, id.ToString())),
                 [.. session.Locations.AllLocationsChecked],
                 [.. session.Items.AllItemsReceived.Select(ToTrackerItem)],
-                [.. hints.Select(hint => ToTrackerHint(session, hint))]);
+                [.. hints.Select(hint => ToTrackerHint(session, hint))],
+                gender);
             Status = TrackerStatus.Connected;
             Error = null;
             StatusChanged?.Invoke();

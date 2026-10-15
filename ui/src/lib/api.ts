@@ -196,6 +196,8 @@ export interface TrackerSeed {
 	checked: number[];
 	items: TrackerItem[];
 	hints: TrackerHint[];
+	/** The character's, 0 male or 1 female, once the game has connected to the slot. */
+	gender: number | null;
 }
 
 export const api = {

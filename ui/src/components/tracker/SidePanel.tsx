@@ -3,7 +3,7 @@ import { For, type JSX, Match, Show, Switch, createMemo, createSignal } from "so
 import { type Check, type SideGroup, levelIcon } from "../../tracker/checks";
 import { FALLBACK_ICON, asset, iconUrl } from "../../tracker/data";
 import { explain } from "../../tracker/logic";
-import { checkRegion, checkState, counts, items, level, seed, slotData } from "../../tracker/state";
+import { checkRegion, checkState, counts, gender, items, level, seed, slotData } from "../../tracker/state";
 import type { TrackerData } from "../../tracker/types";
 import { ProgressBar } from "../ui";
 import CheckList from "./CheckList";
@@ -131,7 +131,10 @@ function Summary(props: { data: TrackerData }) {
 	return (
 		<section class="flex flex-col gap-3 border-b border-white/5 p-4">
 			<div class="flex items-center gap-3">
-				<Img src={asset(`ui/race_${race()}.webp`)} class="size-10 rounded-full border border-black/60" />
+				<Img
+					src={asset(`ui/race_${race()}_${gender() === 1 ? "female" : "male"}.webp`)}
+					class="size-10 rounded-full border border-black/60"
+				/>
 				<Img
 					src={asset(`ui/class_${characterClass()}.webp`)}
 					class="size-10 rounded-full border border-black/60"

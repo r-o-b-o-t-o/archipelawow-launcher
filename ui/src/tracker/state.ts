@@ -18,9 +18,10 @@ const [seed, setSeed] = createSignal<TrackerSeed | null>(null);
 const [items, setItems] = createSignal<TrackerItem[]>([]);
 const [checked, setChecked] = createSignal<ReadonlySet<number>>(new Set());
 const [hints, setHints] = createSignal<TrackerHint[]>([]);
+const [gender, setGender] = createSignal<number | null>(null);
 const [data, setData] = createSignal<TrackerData | null>(null);
 
-export { hints, items, seed, setData, status };
+export { gender, hints, items, seed, setData, status };
 
 let initialized: Promise<void> | undefined;
 
@@ -43,6 +44,7 @@ export function initTracker() {
 		);
 		on<number[]>("tracker.checked", (ids) => setChecked((current) => new Set([...current, ...ids])));
 		on<TrackerHint[]>("tracker.hints", (next) => setHints((current) => keepUnchanged(current, next)));
+		on<number | null>("tracker.gender", setGender);
 		const [currentStatus, currentSeed] = await Promise.all([api.tracker.getStatus(), api.tracker.getSeed()]);
 		setStatus(currentStatus);
 		applySeed(currentSeed);
@@ -69,6 +71,7 @@ function applySeed(value: TrackerSeed | null) {
 	setItems(value?.items ?? []);
 	setChecked(new Set(value?.checked ?? []));
 	setHints(value?.hints ?? []);
+	setGender(value?.gender ?? null);
 }
 
 const derived = createRoot(() => {
