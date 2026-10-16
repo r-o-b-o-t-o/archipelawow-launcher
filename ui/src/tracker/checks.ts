@@ -3,7 +3,7 @@ import { FALLBACK_ICON, asset, iconUrl } from "./data";
 import type { MapInfo, Position, SlotData, TrackerData } from "./types";
 
 /** Where the side panel lists a check that has no spot on the maps. */
-export type SideGroup = "spells" | "levels" | "skills" | "achievements" | "quests";
+export type SideGroup = "spells" | "levels" | "skills" | "shop" | "achievements" | "quests";
 
 interface Spot {
 	/** The map's id. */
@@ -19,7 +19,7 @@ export interface Check {
 	icon: string;
 	spot?: Spot;
 	group?: SideGroup;
-	/** The level a spell is trained at, or the level reached. */
+	/** The level a spell is trained at, the level reached, or the level a shop item goes on sale at. */
 	level?: number;
 	/**
 	 * The level the check can be done from in-game when the seed expects it later: a quest's and the quests before it,
@@ -32,6 +32,7 @@ export interface Check {
 }
 
 const QUEST_ICON = asset("ui/quest.webp");
+export const SHOP_ICON = iconUrl("inv_misc_coin_02");
 const FLIGHT_ICON = asset("ui/flightmaster.webp");
 /** World Explorer's, for a subzone the extracts don't know. */
 const EXPLORATION_ICON = iconUrl("inv_misc_map02");
@@ -158,6 +159,9 @@ export function buildChecks(data: TrackerData, slot: SlotData, names: Record<str
 
 	for (const [level, id] of slot.locations.levels)
 		checks.push({ id, name: name(id), icon: levelIcon(level), group: "levels", level });
+
+	for (const [level, id] of slot.locations.shop ?? [])
+		checks.push({ id, name: name(id), icon: SHOP_ICON, group: "shop", level });
 
 	for (const [skill, , id] of slot.locations.skills ?? []) {
 		const icon = data.skills[skill]?.icon;

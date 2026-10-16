@@ -47,6 +47,8 @@ export interface SlotData {
 		leaders?: LocationPairs;
 		levels: LocationPairs;
 		quests: LocationPairs;
+		/** By the level the item's tier goes on sale at. Missing from seeds generated before the apworld had the Stone Shop. */
+		shop?: LocationPairs;
 		/** SkillLine.dbc id, skill value, location id. Missing from seeds generated before the apworld had skill checks. */
 		skills?: [number, number, number][];
 		spells: LocationPairs;

@@ -1,6 +1,6 @@
 import { For, type JSX, Match, Show, Switch, createMemo, createSignal } from "solid-js";
 
-import { type Check, type SideGroup, levelIcon } from "../../tracker/checks";
+import { type Check, SHOP_ICON, type SideGroup, levelIcon } from "../../tracker/checks";
 import { FALLBACK_ICON, asset, iconUrl } from "../../tracker/data";
 import { explain } from "../../tracker/logic";
 import { checkRegion, checkState, counts, gender, items, level, seed, slotData } from "../../tracker/state";
@@ -207,8 +207,8 @@ interface Tile {
 }
 
 /**
- * The checks with no spot on the maps: class training and level ups by bracket, skills by skill, achievements,
- * unplaced quests.
+ * The checks with no spot on the maps: class training, level ups and the Stone Shop by bracket, skills by skill,
+ * achievements, unplaced quests.
  */
 function SideChecks(props: { data: TrackerData; checks: Check[]; hideChecked: boolean }) {
 	const [selected, setSelected] = createSignal<string | null>(null);
@@ -323,6 +323,9 @@ function SideChecks(props: { data: TrackerData; checks: Check[]; hideChecked: bo
 			</Section>
 			<Section title="Skills" count={visible(group("skills")).length}>
 				<TileGrid name="skills" tiles={skillTiles()} />
+			</Section>
+			<Section title="Stone Shop" count={visible(group("shop")).length}>
+				<TileGrid name="shop" tiles={bracketTiles("shop", () => SHOP_ICON)} />
 			</Section>
 			<Section title="Achievements" count={visible(group("achievements")).length}>
 				<div class="rounded-lg border border-white/5 bg-surface-2">
