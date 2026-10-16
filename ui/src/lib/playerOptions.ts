@@ -36,7 +36,8 @@ export type OptionDef =
 			specialValues?: { name: string; value: number }[];
 	  })
 	| (OptionBase & { type: "freeText"; default: string })
-	| (OptionBase & { type: "list" | "set" | "dict" | "counter" | "other"; default: unknown });
+	| (OptionBase & { type: "counter"; default: unknown; min?: number; max?: number })
+	| (OptionBase & { type: "list" | "set" | "dict" | "other"; default: unknown });
 
 export type WeightedOptionDef = Extract<
 	OptionDef,
@@ -44,6 +45,7 @@ export type WeightedOptionDef = Extract<
 >;
 export type ChoiceOptionDef = Extract<OptionDef, { type: "choice" | "textChoice" }>;
 export type RangeOptionDef = Extract<OptionDef, { type: "range" | "namedRange" }>;
+export type CounterOptionDef = Extract<OptionDef, { type: "counter" }>;
 
 export interface OptionsSchema {
 	game: string;
@@ -66,6 +68,8 @@ export const allOptions = schema.groups.flatMap((group) => group.options);
 export type OptionValue =
 	| { kind: "weights"; weights: Record<string, number> }
 	| { kind: "text"; text: string }
+	/** A number for each key of a counter option with a known set of keys, such as the trap weights. */
+	| { kind: "counter"; counts: Record<string, number> }
 	| { kind: "yaml"; yaml: string };
 
 export interface PlayerDoc {
@@ -103,6 +107,16 @@ export const isRange = (option: OptionDef): option is RangeOptionDef =>
 
 export const rangeRandomKey = (option: RangeOptionDef) => `random-range-${option.min}-${option.max}`;
 
+/** A counter whose keys are known, edited as a number for each; the others, item counts, are left to YAML. */
+export const isKeyedCounter = (option: OptionDef): option is CounterOptionDef =>
+	option.type === "counter" && !!option.validKeys?.length;
+
+/** A keyed counter's keys: the default's first, in the apworld's order, then the rest of the valid keys. */
+export function counterKeys(option: CounterOptionDef): string[] {
+	const keys = Object.keys((option.default ?? {}) as Record<string, number>);
+	return [...keys, ...(option.validKeys ?? []).filter((key) => !keys.includes(key))];
+}
+
 /** The YAML key a plain value of an option is written as. */
 export function valueKey(option: OptionDef, value: unknown): string {
 	if (option.type === "toggle") {
@@ -128,6 +142,7 @@ export function valueKey(option: OptionDef, value: unknown): string {
 export function defaultValue(option: OptionDef): OptionValue {
 	if (isWeighted(option)) return { kind: "weights", weights: { [valueKey(option, option.default)]: 50 } };
 	if (option.type === "freeText") return { kind: "text", text: String(option.default ?? "") };
+	if (isKeyedCounter(option)) return { kind: "counter", counts: { ...(option.default as Record<string, number>) } };
 	return { kind: "yaml", yaml: toYamlValue(option.default ?? []) };
 }
 
@@ -197,6 +212,17 @@ export function validate(doc: PlayerDoc): string[] {
 					)
 						problems.push(`${option.displayName}: ${number} is outside ${option.min}-${option.max}.`);
 				}
+			}
+		} else if (value?.kind === "counter" && isKeyedCounter(option)) {
+			for (const [key, count] of Object.entries(value.counts)) {
+				if (!option.validKeys!.includes(key))
+					problems.push(`${option.displayName}: ${key} isn't one of its keys.`);
+				else if (!Number.isInteger(count))
+					problems.push(`${option.displayName}: ${key} must be a whole number.`);
+				else if (option.min !== undefined && count < option.min)
+					problems.push(`${option.displayName}: ${key} can't be lower than ${option.min}.`);
+				else if (option.max !== undefined && count > option.max)
+					problems.push(`${option.displayName}: ${key} can't be higher than ${option.max}.`);
 			}
 		} else if (value?.kind === "yaml") {
 			try {
@@ -287,6 +313,12 @@ function readValue(option: OptionDef, raw: unknown): OptionValue {
 		return { kind: "weights", weights };
 	}
 	if (option.type === "freeText") return { kind: "text", text: String(raw ?? "") };
+	// Anything but a mapping, such as a random roll, stays YAML. Archipelago counts a key left out as 0.
+	if (isKeyedCounter(option) && raw !== null && typeof raw === "object" && !Array.isArray(raw)) {
+		const counts: Record<string, number> = Object.fromEntries(counterKeys(option).map((key) => [key, 0]));
+		for (const [key, count] of Object.entries(raw as Record<string, unknown>)) counts[key] = Number(count);
+		return { kind: "counter", counts };
+	}
 	return { kind: "yaml", yaml: toYamlValue(raw) };
 }
 
@@ -344,6 +376,12 @@ function commentLines(option: OptionDef): string[] {
 
 function valueLines(option: OptionDef, value: OptionValue): string[] {
 	if (value.kind === "text") return [yamlScalar(value.text)];
+	if (value.kind === "counter") {
+		// Every key, like the weighted options, so the file is easy to tweak by hand
+		const keys = counterKeys(option as CounterOptionDef);
+		for (const key of Object.keys(value.counts)) if (!keys.includes(key)) keys.push(key);
+		return keys.map((key) => `${yamlScalar(key)}: ${value.counts[key] ?? 0}`);
+	}
 	if (value.kind === "yaml") {
 		const text = value.yaml.trim() || "[]";
 		return text.split("\n");

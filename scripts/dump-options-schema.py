@@ -71,6 +71,10 @@ def describe(key: str, option, Options) -> dict:
     elif issubclass(option, Options.OptionCounter):
         entry["type"] = "counter"
         entry["default"] = to_jsonable(default)
+        if option.min is not None:
+            entry["min"] = option.min
+        if option.max is not None:
+            entry["max"] = option.max
     elif issubclass(option, Options.OptionDict):
         entry["type"] = "dict"
         entry["default"] = to_jsonable(default)

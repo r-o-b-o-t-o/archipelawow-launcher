@@ -2,11 +2,13 @@ import { For, Match, Show, Switch as SwitchCase, createSignal } from "solid-js";
 
 import {
 	type ChoiceOptionDef,
+	type CounterOptionDef,
 	type OptionDef,
 	type OptionValue,
 	RANDOM_KEYS,
 	type RangeOptionDef,
 	type WeightedOptionDef,
+	counterKeys,
 	isRange,
 	isWeighted,
 	pickedKey,
@@ -138,6 +140,13 @@ export default function OptionField(props: {
 								onValue={(text) => props.onChange({ kind: "text", text })}
 							/>
 						</Match>
+						<Match when={props.value.kind === "counter"}>
+							<CounterEditor
+								option={props.option as CounterOptionDef}
+								counts={props.value.kind === "counter" ? props.value.counts : {}}
+								onChange={(counts) => props.onChange({ kind: "counter", counts })}
+							/>
+						</Match>
 						<Match when={props.value.kind === "yaml"}>
 							<textarea
 								class={`${inputBase} min-h-9 w-full resize-y px-3 py-2 font-mono text-[12px]`}
@@ -229,6 +238,56 @@ function RangeInput(props: { option: RangeOptionDef; value: string; onChange: (k
 					</For>
 				</div>
 			</Show>
+		</div>
+	);
+}
+
+/** A number for each key of a counter, with each one's share of the total, for counters used as weights. */
+function CounterEditor(props: {
+	option: CounterOptionDef;
+	counts: Record<string, number>;
+	onChange: (counts: Record<string, number>) => void;
+}) {
+	const keys = () => {
+		const known = counterKeys(props.option);
+		return [...known, ...Object.keys(props.counts).filter((key) => !known.includes(key))];
+	};
+	const total = () => Object.values(props.counts).reduce((sum, count) => sum + Math.max(0, count), 0);
+	const clamp = (count: number) =>
+		Math.min(props.option.max ?? Infinity, Math.max(props.option.min ?? -Infinity, Math.round(count)));
+
+	return (
+		<div class="rounded-lg border border-white/10 bg-surface-1 p-2">
+			<For each={keys()}>
+				{(key) => {
+					const count = () => props.counts[key] ?? 0;
+					return (
+						<div class="flex items-center gap-3 rounded px-2 py-1 hover:bg-white/[0.03]">
+							<span
+								class={`min-w-0 flex-1 truncate text-[13px] ${count() > 0 ? "text-zinc-100" : "text-zinc-500"}`}
+							>
+								{key}
+							</span>
+							<span class="w-10 text-right text-xs text-zinc-500 tabular-nums">
+								{total() > 0 && count() > 0 ? `${Math.round((count() / total()) * 100)}%` : ""}
+							</span>
+							<input
+								type="number"
+								min={props.option.min}
+								max={props.option.max}
+								class={`${inputBase} h-7 w-20 px-2 text-[13px] tabular-nums`}
+								value={count()}
+								onChange={(e) =>
+									props.onChange({
+										...props.counts,
+										[key]: clamp(e.currentTarget.valueAsNumber || 0),
+									})
+								}
+							/>
+						</div>
+					);
+				}}
+			</For>
 		</div>
 	);
 }
