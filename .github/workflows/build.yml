@@ -4,8 +4,9 @@ name: Build
 
 on:
   push:
+    # Every branch, but not the version tags: the release workflow builds them
     branches:
-      - master
+      - '**'
   pull_request:
     branches:
       - master
