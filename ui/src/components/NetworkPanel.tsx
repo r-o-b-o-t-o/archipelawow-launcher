@@ -150,7 +150,7 @@ function Instructions(props: { status: NetworkStatus }) {
 		<div class="flex flex-col gap-3 border-t border-white/5 pt-4 text-[13px] text-zinc-400">
 			<div>
 				<p>
-					The other players make the <Code>realmlist.wtf</Code> of their client read:
+					The other players replace the contents of the <Code>realmlist.wtf</Code> of their client with:
 				</p>
 				<CopyLine text={`set realmlist ${address()}`} class="mt-2" />
 				<p class="mt-2 text-xs text-zinc-500">

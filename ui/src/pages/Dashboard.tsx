@@ -335,7 +335,7 @@ function ConnectClient() {
 		<Card title="Play" icon="sword">
 			<p class="text-[13px] text-zinc-400">
 				Point your World of Warcraft 3.3.5a client at this server: in its <Code>Data\enUS</Code> (or your
-				locale) folder, make <Code>realmlist.wtf</Code> read:
+				locale) folder, replace the contents of <Code>realmlist.wtf</Code> with:
 			</p>
 			<CopyLine text="set realmlist 127.0.0.1" class="mt-3" />
 		</Card>
