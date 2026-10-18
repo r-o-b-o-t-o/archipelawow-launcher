@@ -271,7 +271,7 @@ function CreateAccount(props: { onCreated: () => void }) {
 	const [password, setPassword] = createSignal("");
 	const [gmLevel, setGmLevel] = createSignal(0);
 	const [creating, setCreating] = createSignal(false);
-	const running = () => server("worldserver")?.state === "running";
+	const running = () => server("mysql")?.state === "running";
 
 	const create = async (event: SubmitEvent) => {
 		event.preventDefault();
@@ -288,7 +288,7 @@ function CreateAccount(props: { onCreated: () => void }) {
 		<Card title="Game account" icon="userPlus">
 			<form class="flex flex-col gap-3" onSubmit={create}>
 				<Field label="Account name">
-					<TextInput value={username()} onValue={setUsername} maxLength={20} disabled={!running()} />
+					<TextInput value={username()} onValue={setUsername} maxLength={17} disabled={!running()} />
 				</Field>
 				<Field label="Password">
 					<TextInput
@@ -323,7 +323,7 @@ function CreateAccount(props: { onCreated: () => void }) {
 					Create account
 				</Button>
 				<Show when={!running()}>
-					<p class="text-xs text-zinc-500">Start the worldserver to create accounts.</p>
+					<p class="text-xs text-zinc-500">Start MySQL to create accounts.</p>
 				</Show>
 			</form>
 		</Card>

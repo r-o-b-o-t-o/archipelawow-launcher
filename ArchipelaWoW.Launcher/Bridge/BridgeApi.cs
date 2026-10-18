@@ -233,26 +233,21 @@ public static partial class BridgeApi
         bridge.HandleAsync<AccountParams>("accounts.create", async p =>
         {
             if (!AccountNameRegex().IsMatch(p.Username))
-                throw new ArgumentException("Account names are 1 to 20 letters and digits.");
+                throw new ArgumentException("Account names are 1 to 17 letters and digits.");
             if (!PasswordRegex().IsMatch(p.Password))
                 throw new ArgumentException("Passwords are 1 to 16 characters, without spaces.");
-            EnsureWorldServerRunning(servers);
+            if (p.GmLevel is < 0 or > 3)
+                throw new ArgumentException("Unknown access level.");
+            if (servers.MySql.State != ServerState.Running)
+                throw new InvalidOperationException("Start MySQL first.");
             var loginDatabase = services.Configs.GetDatabaseName("worldserver.conf", "LoginDatabaseInfo")
                 ?? throw new InvalidOperationException("worldserver.conf has no LoginDatabaseInfo.");
+            if (!await services.MySql.TableExistsAsync(loginDatabase, "account"))
+                throw new InvalidOperationException("Start the servers once first: they create the login database.");
             if (await services.Accounts.FindAsync(loginDatabase, p.Username) != null)
                 throw new ArgumentException($"There is already an account named {p.Username}.");
 
-            SendWorldCommand(servers, $"account create {p.Username} {p.Password}");
-            // The worldserver adds the account in the background, and set gmlevel doesn't check that it
-            // exists: it would give the access level to account 0
-            for (var attempt = 1; await services.Accounts.FindAsync(loginDatabase, p.Username) == null; attempt++)
-            {
-                if (attempt == 20)
-                    throw new InvalidOperationException($"The worldserver didn't create {p.Username}, see its output.");
-                await Task.Delay(250);
-            }
-            if (p.GmLevel is > 0 and <= 3)
-                SendWorldCommand(servers, $"account set gmlevel {p.Username} {p.GmLevel} -1");
+            await services.Accounts.CreateAsync(loginDatabase, p.Username, p.Password, p.GmLevel);
             return null;
         });
 
@@ -370,15 +365,10 @@ public static partial class BridgeApi
     static object ServerStatuses(ServerManager servers) =>
         servers.All.Select(p => new { p.Name, p.DisplayName, p.State, p.Pid, p.StartedAt, p.ExitCode }).ToList();
 
-    static void EnsureWorldServerRunning(ServerManager servers)
+    static void SendWorldCommand(ServerManager servers, string command)
     {
         if (servers.WorldServer.State != ServerState.Running)
             throw new InvalidOperationException("Start the worldserver first.");
-    }
-
-    static void SendWorldCommand(ServerManager servers, string command)
-    {
-        EnsureWorldServerRunning(servers);
         // Enter, as a console key press
         servers.WorldServer.Input(command + "\r");
     }
@@ -389,7 +379,8 @@ public static partial class BridgeApi
         return version.Split('+')[0];
     }
 
-    [GeneratedRegex("^[A-Za-z0-9]{1,20}$")]
+    // AzerothCore's MAX_ACCOUNT_STR
+    [GeneratedRegex("^[A-Za-z0-9]{1,17}$")]
     private static partial Regex AccountNameRegex();
 
     [GeneratedRegex(@"^\S{1,16}$")]

@@ -5,8 +5,8 @@ using System.Text;
 namespace ArchipelaWoW.Launcher.Services;
 
 /// <summary>
-/// Game accounts, written to the login database directly: this works before the worldserver has ever started. Names
-/// and passwords must be safe to put in a query.
+/// Game accounts, written to the login database directly: the worldserver doesn't need to run. Names must be safe to
+/// put in a query.
 /// </summary>
 public sealed class AccountService(MySqlService mySql)
 {
@@ -19,15 +19,24 @@ public sealed class AccountService(MySqlService mySql)
     public async Task<string?> FindAsync(string loginDatabase, string username) =>
         MySqlService.NullIfEmpty(await mySql.QueryAsync($"SELECT id FROM `{loginDatabase}`.account WHERE username = '{username}'"));
 
+    /// <summary>Creates an account, as the worldserver's account create and account set gmlevel commands would.</summary>
+    /// <param name="gmLevel">0 for a player, up to 3 for an administrator, on every realm.</param>
     /// <returns>The new account's id.</returns>
-    public async Task<string> CreateAsync(string loginDatabase, string username, string password)
+    public async Task<string> CreateAsync(string loginDatabase, string username, string password, int gmLevel = 0)
     {
         // As the worldserver stores them
         username = username.ToUpperInvariant();
         var salt = RandomNumberGenerator.GetBytes(32);
-        await mySql.QueryAsync($"INSERT INTO `{loginDatabase}`.account (username, salt, verifier) " +
-            $"VALUES ('{username}', X'{Convert.ToHexString(salt)}', X'{Convert.ToHexString(Verifier(username, password, salt))}')");
-        return await FindAsync(loginDatabase, username) ?? throw new InvalidOperationException($"Creating the {username} account failed.");
+        // The client stops at the first statement that fails, and the transaction rolls back as it disconnects
+        var sql = "START TRANSACTION; " +
+            $"INSERT INTO `{loginDatabase}`.account (username, salt, verifier) " +
+            $"VALUES ('{username}', X'{Convert.ToHexString(salt)}', X'{Convert.ToHexString(Verifier(username, password, salt))}'); " +
+            "SET @account = LAST_INSERT_ID(); " +
+            // Its character count on each realm, shown in the realm list
+            $"INSERT INTO `{loginDatabase}`.realmcharacters (realmid, acctid, numchars) SELECT id, @account, 0 FROM `{loginDatabase}`.realmlist; " +
+            (gmLevel > 0 ? $"INSERT INTO `{loginDatabase}`.account_access (id, gmlevel, RealmID) VALUES (@account, {gmLevel}, -1); " : "") +
+            "COMMIT; SELECT @account";
+        return MySqlService.NullIfEmpty(await mySql.QueryAsync(sql)) ?? throw new InvalidOperationException($"Creating the {username} account failed.");
     }
 
     // As AzerothCore checks it: v = g^H(salt | H(USERNAME:PASSWORD)) mod N, little-endian
