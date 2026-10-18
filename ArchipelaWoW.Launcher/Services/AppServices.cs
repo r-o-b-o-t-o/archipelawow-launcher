@@ -6,6 +6,8 @@ public sealed class AppServices : IDisposable
     public SettingsStore Settings { get; }
     public ConfigService Configs { get; }
     public MySqlService MySql { get; }
+    public AccountService Accounts { get; }
+    public CharacterService Characters { get; }
     public ServerManager Servers { get; }
     public TaskRunner Tasks { get; }
     public RepackService Repack { get; }
@@ -30,7 +32,10 @@ public sealed class AppServices : IDisposable
         Configs = new ConfigService(paths, Settings);
         MySql = new MySqlService(paths, Settings);
         Network = new NetworkService(Settings, MySql, Configs, Http);
-        Servers = new ServerManager(paths, Settings, MySql, Configs, Network);
+        Accounts = new AccountService(MySql);
+        Characters = new CharacterService(MySql);
+        Servers = new ServerManager(paths, Settings, MySql, Configs, Network,
+            new AuctionHouseBotService(paths, Configs, MySql, Accounts, Characters));
         Tasks = new TaskRunner(paths.LauncherLogsDir);
         Repack = new RepackService(paths, Settings, Configs, Http);
         try

@@ -47,9 +47,9 @@ public sealed class MySqlService(AppPaths paths, SettingsStore settings)
         }
     }
 
-    /// <summary>Whether the login database has an account of that name, which must be safe to put in a query.</summary>
-    public async Task<bool> AccountExistsAsync(string loginDatabase, string username) =>
-        (await QueryAsync($"SELECT COUNT(*) FROM `{loginDatabase}`.account WHERE username = '{username}'")).Trim() != "0";
+    /// <summary>Whether a database has a table, both of which must be safe to put in a query.</summary>
+    public async Task<bool> TableExistsAsync(string database, string table) =>
+        (await QueryAsync($"SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = '{database}' AND table_name = '{table}'")).Trim() != "0";
 
     /// <summary>
     /// Clears the version mismatch flag that a worldserver sets on its realm while it starts, and leaves
@@ -119,13 +119,17 @@ public sealed class MySqlService(AppPaths paths, SettingsStore settings)
         settings.Update(s => s.DatabaseInitialized = true);
     }
 
-    async Task<string> QueryAsync(string sql)
+    /// <summary>Runs SQL, which must be safe to put on the command line, and returns its rows tab-separated.</summary>
+    public async Task<string> QueryAsync(string sql)
     {
         var (exitCode, output, errors) = await RunClientAsync("mysql", "--batch", "--skip-column-names", $"--execute={sql}");
         if (exitCode != 0)
             throw new InvalidOperationException($"The database query failed: {errors.Trim()}");
         return output;
     }
+
+    /// <summary>The single value a query returned, or null when it returned no row.</summary>
+    public static string? NullIfEmpty(string output) => output.Trim() is { Length: > 0 } value ? value : null;
 
     async Task<(int ExitCode, string Output, string Errors)> RunClientAsync(string tool, params string[] arguments)
     {

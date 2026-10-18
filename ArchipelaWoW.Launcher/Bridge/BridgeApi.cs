@@ -239,13 +239,13 @@ public static partial class BridgeApi
             EnsureWorldServerRunning(servers);
             var loginDatabase = services.Configs.GetDatabaseName("worldserver.conf", "LoginDatabaseInfo")
                 ?? throw new InvalidOperationException("worldserver.conf has no LoginDatabaseInfo.");
-            if (await services.MySql.AccountExistsAsync(loginDatabase, p.Username))
+            if (await services.Accounts.FindAsync(loginDatabase, p.Username) != null)
                 throw new ArgumentException($"There is already an account named {p.Username}.");
 
             SendWorldCommand(servers, $"account create {p.Username} {p.Password}");
             // The worldserver adds the account in the background, and set gmlevel doesn't check that it
             // exists: it would give the access level to account 0
-            for (var attempt = 1; !await services.MySql.AccountExistsAsync(loginDatabase, p.Username); attempt++)
+            for (var attempt = 1; await services.Accounts.FindAsync(loginDatabase, p.Username) == null; attempt++)
             {
                 if (attempt == 20)
                     throw new InvalidOperationException($"The worldserver didn't create {p.Username}, see its output.");

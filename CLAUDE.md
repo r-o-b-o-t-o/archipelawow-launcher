@@ -58,6 +58,11 @@ the layout and development commands.
   databases until it's started, or for good if it dies while starting; with none left, the authserver
   exits. `ServerManager` clears the version mismatch flag before starting the authserver, and
   `UpdateUptimeInterval` has a running worldserver clear the offline flag within a minute.
+- mod-ah-bot-plus trades as the character of `AuctionHouseBot.GUIDs`: before each worldserver start,
+  `AuctionHouseBotService` creates the `AHBOT` account and its `Auctionbot` character if they're missing
+  (`AccountService` and `CharacterService` write them in SQL), and sets the key. Never while the
+  worldserver runs: it hands out character GUIDs from the highest it found when it started. Before its
+  first start, the character database doesn't exist yet: dbimport creates every database first.
 - The servers run under ConPTY: on a pipe the CRT block-buffers their output.
 - ConPTY rewrites the last character of a wrapped line after moving the cursor, doubling it in the
   escape-stripped logs of `launcher/logs`: known, cosmetic.

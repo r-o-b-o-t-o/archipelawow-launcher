@@ -12,6 +12,7 @@ public sealed class ServerManager
     readonly MySqlService _mySql;
     readonly ConfigService _configs;
     readonly NetworkService _network;
+    readonly AuctionHouseBotService _auctionHouseBot;
     // Per server, cancelled and replaced by its stop: a start still waiting for MySQL, or for the other of the
     // authserver and worldserver, would otherwise start its server once the stop is done, which closing the window
     // then leaves running. Once shutting down, MySQL's stays cancelled, and with it every start, as they all need it.
@@ -36,12 +37,13 @@ public sealed class ServerManager
     string? _startBlockedReason;
 
     public ServerManager(AppPaths paths, SettingsStore settings, MySqlService mySql, ConfigService configs,
-        NetworkService network)
+        NetworkService network, AuctionHouseBotService auctionHouseBot)
     {
         _paths = paths;
         _mySql = mySql;
         _configs = configs;
         _network = network;
+        _auctionHouseBot = auctionHouseBot;
 
         // The servers inherit it: they create the databases they miss instead of asking about it on
         // their console and waiting for an answer
@@ -151,6 +153,8 @@ public sealed class ServerManager
             if (process == AuthServer && !AuthServer.IsActive &&
                 _configs.GetDatabaseName("authserver.conf", "LoginDatabaseInfo") is { } loginDatabase)
                 await _mySql.ClearRealmVersionMismatchAsync(loginDatabase);
+            if (process == WorldServer && !WorldServer.IsActive)
+                await SetUpAuctionHouseBotAsync(token);
             token.ThrowIfCancellationRequested();
             process.Start();
         }
@@ -160,6 +164,21 @@ public sealed class ServerManager
             throw;
         }
         _ = LeaveLaunchGateOnceSettledAsync(process);
+    }
+
+    // Within the launch gate, as it may create the login database. Playing doesn't need the bot: the worldserver
+    // starts without it.
+    async Task SetUpAuctionHouseBotAsync(CancellationToken token)
+    {
+        try
+        {
+            await _auctionHouseBot.EnsureAsync(WorldServer.Terminal, token);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            WorldServer.Terminal.WriteNotice($"Could not set up the auction house bot: {ex.Message}");
+            Log.Error("Could not set up the auction house bot", ex);
+        }
     }
 
     async Task LeaveLaunchGateOnceSettledAsync(ManagedProcess process)

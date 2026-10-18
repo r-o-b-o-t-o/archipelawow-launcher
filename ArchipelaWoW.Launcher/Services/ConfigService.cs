@@ -11,6 +11,8 @@ public sealed class ConfigService(AppPaths paths, SettingsStore settings)
 {
     public bool ConfigsExist => File.Exists(FullPath("authserver.conf")) && File.Exists(FullPath("worldserver.conf"));
 
+    public bool Exists(string file) => File.Exists(FullPath(file));
+
     public IReadOnlyList<string> List() => Directory.Exists(paths.ConfigsDir)
         ? Directory.EnumerateFiles(paths.ConfigsDir, "*.conf", SearchOption.AllDirectories).Select(Relative).Order().ToList()
         : [];

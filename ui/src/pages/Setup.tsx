@@ -80,8 +80,8 @@ export default function Setup() {
 
 					<Step number={2} title="Database" done={status()?.databaseInitialized}>
 						<p class="text-[13px] text-zinc-400">
-							Creates the MySQL data files and the <Code>acore</Code> user the servers log in with. They
-							create their databases the first time they start. MySQL is only reachable from this
+							Creates the MySQL data files and the <Code>acore</Code> user the servers log in with. The
+							databases are created the first time the servers start. MySQL is only reachable from this
 							computer.
 						</p>
 						<Show when={!status()?.databaseInitialized}>
