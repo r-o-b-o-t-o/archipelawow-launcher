@@ -32,7 +32,8 @@
     "AllowTwoSide.Interaction.Channel": 1,
     "AllowTwoSide.Interaction.Group": 1,
     "AllowTwoSide.Interaction.Guild": 1,
-    "AllowTwoSide.Interaction.Auction": 1
+    "AllowTwoSide.Interaction.Auction": 1,
+    "Rate.Auction.Deposit": 0.1
   },
   "dbimport.conf": {
     "LogsDir": "logs",
@@ -65,6 +66,20 @@
     "Transmogrification.AllowMixedWeaponTypes": 1,
     "Transmogrification.AllowMixedWeaponHandedness": 1,
     "Transmogrification.AllowFishingPoles": 1
+  },
+  // The launcher sets AuctionHouseBot.GUIDs before the worldserver starts (AuctionHouseBotService).
+  // AllowTwoSide.Interaction.Auction makes every auction house the neutral one: the bot then only stocks
+  // that one and ignores the Alliance and Horde counts.
+  "modules/mod_ahbot.conf": {
+    "AuctionHouseBot.EnableSeller": true,
+    "AuctionHouseBot.Buyer.Enabled": true,
+    "AuctionHouseBot.Alliance.MinItems": 0,
+    "AuctionHouseBot.Alliance.MaxItems": 0,
+    "AuctionHouseBot.Horde.MinItems": 0,
+    "AuctionHouseBot.Horde.MaxItems": 0,
+    "AuctionHouseBot.Neutral.MinItems": 50000,
+    "AuctionHouseBot.Neutral.MaxItems": 50000,
+    "AuctionHouseBot.ItemsPerCycle": 500
   },
   "modules/SoloLfg.conf": {
     "SoloLFG.FixedXP": 0
