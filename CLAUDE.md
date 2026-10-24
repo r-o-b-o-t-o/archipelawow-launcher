@@ -96,7 +96,9 @@ the layout and development commands.
   `Generate.py`.
 - Check tracker changes against a seed hosted with `MultiServer.py --disable_save`. A script connecting
   as the slot's game and sending `LocationChecks` gives it items and checks. Check logic changes against
-  Archipelago's: the locations it finds reachable for a set of items must match the tracker's exactly.
+  Archipelago's: the locations it finds reachable for a set of items must match the tracker's exactly,
+  except that the tracker opens a level bracket once the character reaches its level, whatever else
+  Archipelago asks for it.
 - Check launcher update changes on a portable build updating from a local feed
   (`ARCHIPELAWOW_UPDATE_FEED`, see the README), not on a setup install: it adds shortcuts and an
   installed app.

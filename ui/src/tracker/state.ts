@@ -10,9 +10,6 @@ import type { SlotData, TrackerData } from "./types";
 /** Checked, in logic, doable out of logic, out of logic, or unknown for a seed without rules. */
 export type CheckState = "checked" | "available" | "sequenceBreak" | "blocked" | "unknown";
 
-// ProgressiveType.RIDING in the apworld's items/progressive.py
-const RIDING_TRACK = 5;
-
 const [status, setStatus] = createSignal<TrackerStatus>({ status: "disconnected", error: null });
 const [seed, setSeed] = createSignal<TrackerSeed | null>(null);
 const [items, setItems] = createSignal<TrackerItem[]>([]);
@@ -94,36 +91,12 @@ const derived = createRoot(() => {
 		return logic ? reachableRegions(logic, counts()) : null;
 	});
 
-	// The level brackets also ask for the class's abilities and the riding ranks, which pace the seed rather
-	// than make its checks doable: with them all, the regions a check can be done in out of logic
-	const pacedCounts = createMemo(() => {
-		const slot = slotData();
-		if (!slot) return null;
-		const names = seed()!.itemNames;
-		const paced = new Map(counts());
-		for (const [id] of slot.items.spells) paced.set(names[id], 1);
-		for (const [id, track, steps] of slot.items.progressive)
-			if (track === RIDING_TRACK) paced.set(names[id], steps.length);
-		return paced;
-	});
-	const reachableOutOfLogic = createMemo(() => {
-		const logic = slotData()?.logic;
-		const paced = pacedCounts();
-		return logic && paced ? reachableRegions(logic, paced) : null;
-	});
-
 	// The seed only expects a quest from its recommended level on, but the character can take it on as soon as
-	// the quest log shows it and the quests before it orange: with every level too, for the quests that only wait on
-	// levels
+	// the quest log shows it and the quests before it orange: with every level, for the quests that only wait on
+	// levels. That opens every level bracket up to the level cap, so only the check's own rule is left to hold.
 	const anyLevelCounts = createMemo(() => {
 		const slot = slotData();
-		const paced = pacedCounts();
-		return slot && paced ? new Map(paced).set(LEVEL_UP, slot.maxlevel - 1) : null;
-	});
-	const reachableAnyLevel = createMemo(() => {
-		const logic = slotData()?.logic;
-		const anyLevel = anyLevelCounts();
-		return logic && anyLevel ? reachableRegions(logic, anyLevel) : null;
+		return slot ? new Map(counts()).set(LEVEL_UP, slot.maxlevel - 1) : null;
 	});
 
 	// Most quests share their rule with others, so each rule is evaluated once
@@ -143,8 +116,6 @@ const derived = createRoot(() => {
 	const states = createMemo(() => {
 		const done = checked();
 		const regions = reachable();
-		const regionsOutOfLogic = reachableOutOfLogic();
-		const regionsAnyLevel = reachableAnyLevel();
 		const results = ruleResults();
 		const logic = slotData()?.logic;
 		const anyLevel = anyLevelCounts();
@@ -156,17 +127,9 @@ const derived = createRoot(() => {
 		const stateOf = (check: Check): CheckState => {
 			const entry = locationLogic().get(check.id);
 			if (done.has(check.id)) return "checked";
-			if (!regions || !regionsOutOfLogic || !regionsAnyLevel || !entry) return "unknown";
-			if (results[entry.rule]) {
-				if (regions.has(entry.region)) return "available";
-				if (regionsOutOfLogic.has(entry.region)) return "sequenceBreak";
-			}
-			if (
-				check.doableLevel != null &&
-				level() >= check.doableLevel &&
-				regionsAnyLevel.has(entry.region) &&
-				holdsAtAnyLevel(entry.rule)
-			)
+			if (!regions || !entry) return "unknown";
+			if (results[entry.rule] && regions.has(entry.region)) return "available";
+			if (check.doableLevel != null && level() >= check.doableLevel && holdsAtAnyLevel(entry.rule))
 				return "sequenceBreak";
 			return "blocked";
 		};

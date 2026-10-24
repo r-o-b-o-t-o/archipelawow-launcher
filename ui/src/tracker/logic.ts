@@ -1,11 +1,14 @@
 // Evaluates the rules a seed carries in its slot data, the way Archipelago does: a location is in logic when
-// its region can be reached from the origin through entrances whose rules hold, and its own rule holds.
+// its region can be reached from the origin through entrances whose rules hold, and its own rule holds. The level
+// brackets are the exception: they open once the character reaches their level (see isOpen).
 import type { Logic, Rule } from "./types";
 
 /** How many of each item the slot has received, by name. */
 type Counts = ReadonlyMap<string, number>;
 
 const has = (counts: Counts, item: string, count = 1) => (counts.get(item) ?? 0) >= count;
+
+export const LEVEL_UP = "Level Up";
 
 export function evaluate(rule: Rule, counts: Counts): boolean {
 	switch (rule.rule) {
@@ -33,13 +36,39 @@ export function evaluate(rule: Rule, counts: Counts): boolean {
 	}
 }
 
+/** The Level Up count a rule asks for among the requirements that must all hold, if any. */
+function levelUpsOf(rule: Rule): number | undefined {
+	switch (rule.rule) {
+		case "Has":
+			return rule.item_name === LEVEL_UP ? rule.count : undefined;
+		case "HasAllCounts":
+			return rule.item_counts.find(([item]) => item === LEVEL_UP)?.[1];
+		case "And": {
+			const counts = rule.children.map(levelUpsOf).filter((count) => count != null);
+			return counts.length > 0 ? Math.max(...counts) : undefined;
+		}
+		default:
+			return undefined;
+	}
+}
+
+/**
+ * Whether an entrance is open. The apworld's entrances all lead into a level bracket and also ask for its zones, the
+ * class's abilities and the riding ranks, which pace the seed rather than keep the character out: unlike Archipelago,
+ * the tracker opens one once the character reaches its level.
+ */
+function isOpen(rule: Rule, counts: Counts): boolean {
+	const levelUps = levelUpsOf(rule);
+	return levelUps != null ? has(counts, LEVEL_UP, levelUps) : evaluate(rule, counts);
+}
+
 /** The regions the slot can reach. */
 export function reachableRegions(logic: Logic, counts: Counts): Set<number> {
 	const reachable = new Set([logic.origin]);
 	for (let changed = true; changed;) {
 		changed = false;
 		for (const [from, to, rule] of logic.entrances) {
-			if (reachable.has(from) && !reachable.has(to) && evaluate(logic.rules[rule], counts)) {
+			if (reachable.has(from) && !reachable.has(to) && isOpen(logic.rules[rule], counts)) {
 				reachable.add(to);
 				changed = true;
 			}
@@ -60,8 +89,6 @@ export interface Requirement {
 	met: boolean;
 	children?: Requirement[];
 }
-
-export const LEVEL_UP = "Level Up";
 
 /** How an item reads in a requirement: Level Up counts are the character's level, minus the one it starts at. */
 function itemRequirement(item: string, count: number): string {
@@ -143,11 +170,17 @@ export function explainLocation(logic: Logic, location: number, counts: Counts, 
 
 	const regions = path
 		.filter(([id]) => !reachable.has(id))
-		.map(([id, entrance]): Requirement => ({
-			kind: "region",
-			text: logic.regions[id],
-			met: false,
-			children: explain(logic.rules[entrance], counts),
-		}));
+		.map(([id, entrance]): Requirement => {
+			const levelUps = levelUpsOf(logic.rules[entrance]);
+			return {
+				kind: "region",
+				text: logic.regions[id],
+				met: false,
+				children:
+					levelUps != null
+						? explain({ rule: "Has", item_name: LEVEL_UP, count: levelUps }, counts)
+						: explain(logic.rules[entrance], counts),
+			};
+		});
 	return [...regions, ...explain(logic.rules[rule], counts)];
 }
