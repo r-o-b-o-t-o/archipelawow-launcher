@@ -91,9 +91,10 @@ const derived = createRoot(() => {
 		return logic ? reachableRegions(logic, counts()) : null;
 	});
 
-	// The seed only expects a quest from its recommended level on, but the character can take it on as soon as
-	// the quest log shows it and the quests before it orange: with every level, for the quests that only wait on
-	// levels. That opens every level bracket up to the level cap, so only the check's own rule is left to hold.
+	// The seed only expects a check from its level on, but the character can take some on earlier (Check.doableLevel):
+	// a quest as soon as the quest log shows it and the quests before it orange, a faction leader, a flight path or a
+	// subzone to explore as soon as it holds their zones. Hence every level, for the checks that only wait on levels:
+	// that opens every level bracket up to the level cap, so only the check's own rule is left to hold.
 	const anyLevelCounts = createMemo(() => {
 		const slot = slotData();
 		return slot ? new Map(counts()).set(LEVEL_UP, slot.maxlevel - 1) : null;

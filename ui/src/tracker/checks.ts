@@ -23,7 +23,8 @@ export interface Check {
 	level?: number;
 	/**
 	 * The level the check can be done from in-game when the seed expects it later: a quest's and the quests before it,
-	 * or 1 for a faction leader.
+	 * or 1 for a faction leader, a flight path or a subzone to explore, which any character holding their zones can
+	 * reach.
 	 */
 	doableLevel?: number;
 	/** The SkillLine.dbc id of a skill check. */
@@ -94,6 +95,7 @@ export function buildChecks(data: TrackerData, slot: SlotData, names: Record<str
 			name: name(id),
 			icon: FLIGHT_ICON,
 			spot: flightPath && spot(flightPath.position),
+			doableLevel: 1,
 		});
 	}
 
@@ -142,6 +144,7 @@ export function buildChecks(data: TrackerData, slot: SlotData, names: Record<str
 			icon: exploration?.icon ? iconUrl(exploration.icon) : EXPLORATION_ICON,
 			spot: exploration && spot(exploration.position),
 			group: exploration ? undefined : "achievements",
+			doableLevel: 1,
 		});
 	}
 
