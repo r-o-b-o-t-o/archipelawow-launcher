@@ -46,6 +46,28 @@ function isSimpleKey(option: WeightedOptionDef, key: string | null) {
 	return true;
 }
 
+/** The bold and inline code of a reStructuredText docstring, which Archipelago's core options use. */
+function RichText(props: { text: string }) {
+	// split() leaves the captured markup at the odd indices
+	return (
+		<>
+			{props.text
+				.split(/(\*\*.+?\*\*|``.+?``)/)
+				.map((part, i) =>
+					i % 2 === 0 ? (
+						part
+					) : part.startsWith("**") ? (
+						<strong class="font-semibold text-zinc-300">{part.slice(2, -2)}</strong>
+					) : (
+						<code class="rounded bg-white/5 px-1 font-mono text-[12px] text-zinc-300">
+							{part.slice(2, -2)}
+						</code>
+					),
+				)}
+		</>
+	);
+}
+
 export default function OptionField(props: {
 	option: OptionDef;
 	value: OptionValue;
@@ -75,6 +97,7 @@ export default function OptionField(props: {
 	const description = () => props.option.description.trim();
 	const firstLine = () => description().split("\n")[0];
 	const hasMore = () => description().includes("\n");
+	const shownDescription = () => (expanded() ? description() : firstLine());
 
 	return (
 		<div class="grid grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] gap-6 border-b border-white/5 py-4 last:border-b-0">
@@ -85,7 +108,9 @@ export default function OptionField(props: {
 				</div>
 				<Show when={description()}>
 					<p class="mt-1 text-[13px] whitespace-pre-line text-zinc-400">
-						{expanded() ? description() : firstLine()}
+						<Show when={props.option.richText} fallback={shownDescription()}>
+							<RichText text={shownDescription()} />
+						</Show>
 					</p>
 					<Show when={hasMore()}>
 						<button
