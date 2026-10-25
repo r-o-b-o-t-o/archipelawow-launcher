@@ -23,8 +23,8 @@ export interface Check {
 	level?: number;
 	/**
 	 * The level the check can be done from in-game when the seed expects it later: a quest's and the quests before it,
-	 * or 1 for a faction leader, a flight path or a subzone to explore, which any character holding their zones can
-	 * reach.
+	 * the Dungeon Finder's for a dungeon's achievement or bosses, or 1 for a faction leader, a flight path or a subzone
+	 * to explore, which any character holding their zones can reach.
 	 */
 	doableLevel?: number;
 	/** The SkillLine.dbc id of a skill check. */
@@ -63,6 +63,7 @@ export function buildChecks(data: TrackerData, slot: SlotData, names: Record<str
 		const position = data.dungeons[mapId]?.entrances[0];
 		return position ? spot(position) : undefined;
 	};
+	const dungeonLevel = (mapId: number | undefined) => (mapId != null ? data.dungeons[mapId]?.minLevel : undefined);
 
 	const checks: Check[] = [];
 
@@ -121,6 +122,7 @@ export function buildChecks(data: TrackerData, slot: SlotData, names: Record<str
 			icon: achievement?.icon ? iconUrl(achievement.icon) : FALLBACK_ICON,
 			spot: where,
 			group: where ? undefined : "achievements",
+			doableLevel: dungeonLevel(achievement?.map),
 		});
 	}
 
@@ -133,6 +135,7 @@ export function buildChecks(data: TrackerData, slot: SlotData, names: Record<str
 			icon: (mapId != null && dungeonIcons.get(mapId)) || FALLBACK_ICON,
 			spot: where,
 			group: where ? undefined : "achievements",
+			doableLevel: dungeonLevel(mapId),
 		});
 	}
 

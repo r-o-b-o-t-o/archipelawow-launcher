@@ -126,7 +126,11 @@ export interface TrackerData {
 	flightpaths: Record<string, { position: Position }>;
 	/** By creature entry: where the faction leader stands, and the icon of the achievement for killing them. */
 	leaders: Record<string, { position: Position; icon?: string }>;
-	dungeons: Record<string, { entrances: Position[]; encounters: number[] }>;
+	/**
+	 * By Map.dbc id. `minLevel`: the level the Dungeon Finder lets a character in from, the lowest of its wings', for the
+	 * dungeons it lists.
+	 */
+	dungeons: Record<string, { entrances: Position[]; encounters: number[]; minLevel?: number }>;
 	/** By Achievement_Criteria.dbc id: the middle of the subzone, and its achievement's icon. */
 	explorations: Record<string, { position: Position; icon?: string }>;
 	spells: Record<string, { icon: string }>;

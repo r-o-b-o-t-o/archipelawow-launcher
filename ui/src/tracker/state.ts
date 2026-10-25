@@ -92,8 +92,9 @@ const derived = createRoot(() => {
 	});
 
 	// The seed only expects a check from its level on, but the character can take some on earlier (Check.doableLevel):
-	// a quest as soon as the quest log shows it and the quests before it orange, a faction leader, a flight path or a
-	// subzone to explore as soon as it holds their zones. Hence every level, for the checks that only wait on levels:
+	// a quest as soon as the quest log shows it and the quests before it orange, a dungeon's achievement and bosses as
+	// soon as the Dungeon Finder lets it in, a faction leader, a flight path or a subzone to explore as soon as it holds
+	// their zones. Hence every level, for the checks that only wait on levels:
 	// that opens every level bracket up to the level cap, so only the check's own rule is left to hold.
 	const anyLevelCounts = createMemo(() => {
 		const slot = slotData();
