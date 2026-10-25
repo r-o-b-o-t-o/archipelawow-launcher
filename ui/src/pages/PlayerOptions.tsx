@@ -1,10 +1,10 @@
-import { For, Show, createMemo, createResource, createSignal } from "solid-js";
+import { For, Show, createMemo, createResource, createSignal, onCleanup } from "solid-js";
 
 import Icon from "../components/Icon";
 import OptionField from "../components/OptionField";
 import { Button, Callout, Code, Field, IconButton, Modal, PageHeader, Select, TextInput } from "../components/ui";
 import { api } from "../lib/api";
-import { confirmDialog, promptDialog } from "../lib/dialog";
+import { confirmDialog, dialog, promptDialog } from "../lib/dialog";
 import {
 	NAME_MAX_LENGTH,
 	type OptionValue,
@@ -131,6 +131,33 @@ export default function PlayerOptions() {
 		if (await attempt(() => api.players.export(fileName()!))) toast("Exported.", "success");
 	};
 
+	// Lower case, upper case with Shift
+	const shortcuts: Record<string, () => unknown> = {
+		s: () => save(),
+		S: saveAs,
+		o: importFiles,
+		e: exportFile,
+		n: startNew,
+	};
+	const onKeyDown = (event: KeyboardEvent) => {
+		// Ctrl+Alt is also AltGr, which types characters such as €
+		if (!event.ctrlKey || event.altKey || event.metaKey) return;
+		const action = shortcuts[event.shiftKey ? event.key.toUpperCase() : event.key.toLowerCase()];
+		if (!action) return;
+		// Over the webview's own, such as Ctrl+S saving the page
+		event.preventDefault();
+		if (event.repeat || dialog()) return;
+		// Number fields only pass their value on when they lose focus
+		const field = document.activeElement;
+		if (field instanceof HTMLInputElement) {
+			field.blur();
+			field.focus();
+		}
+		action();
+	};
+	document.addEventListener("keydown", onKeyDown);
+	onCleanup(() => document.removeEventListener("keydown", onKeyDown));
+
 	const toggleGroup = (name: string) => {
 		const next = new Set(collapsed());
 		if (next.has(name)) next.delete(name);
@@ -173,10 +200,10 @@ export default function PlayerOptions() {
 				<Button icon="eye" onClick={() => setPreviewing(true)}>
 					Preview
 				</Button>
-				<Button icon="upload" onClick={exportFile}>
+				<Button icon="upload" title="Export (Ctrl+E)" onClick={exportFile}>
 					Export
 				</Button>
-				<Button variant="primary" icon="save" onClick={() => save()}>
+				<Button variant="primary" icon="save" title="Save (Ctrl+S)" onClick={() => save()}>
 					Save
 				</Button>
 			</PageHeader>
@@ -186,8 +213,8 @@ export default function PlayerOptions() {
 					<div class="flex items-center gap-1 px-3 py-3">
 						<span class="px-1 text-xs tracking-wider text-zinc-500 uppercase">Files</span>
 						<div class="ml-auto flex">
-							<IconButton icon="plus" title="New" onClick={startNew} />
-							<IconButton icon="download" title="Import YAML files" onClick={importFiles} />
+							<IconButton icon="plus" title="New (Ctrl+N)" onClick={startNew} />
+							<IconButton icon="download" title="Import YAML files (Ctrl+O)" onClick={importFiles} />
 							<IconButton
 								icon="folder"
 								title="Open the players folder"
@@ -243,6 +270,7 @@ export default function PlayerOptions() {
 								<button
 									type="button"
 									class="ml-auto text-xs text-zinc-500 hover:text-zinc-300"
+									data-tooltip="Ctrl+Shift+S"
 									onClick={saveAs}
 								>
 									Save as...

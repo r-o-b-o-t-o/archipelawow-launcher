@@ -61,11 +61,12 @@ The portable launcher's folder can be moved: it keeps working from its new place
 The **Tracker** joins your slot in the Archipelago room, next to your game, and shows the seed's checks on
 the world maps: green in logic, red out of logic, grey once checked (hidden by default). Yellow checks are
 out of logic but doable: quests the character is already high enough level to take in-game though the seed
-only expects them later, and faction leaders, which any character can walk to. A level bracket counts as
-reached once the character reaches its level, even though Archipelago also asks for its zones, class
-abilities and riding ranks. A marker holding checks of several colours is split between them. Enter the
-room's host and port, your slot name and the room's password if it has one; with the server installed, the
-tracker starts from the room the server connects to.
+only expects them later, and faction leaders, flight paths and subzones to explore, which any character
+can reach once it holds their zones. A level bracket counts as reached once the character reaches its
+level, even though Archipelago also asks for its zones, class abilities and riding ranks. A marker holding
+checks of several colours is split between them. Enter the room's host and port, your slot name and the
+room's password if it has one; with the server installed, the tracker starts from the room the server
+connects to.
 
 - Drag to move a map, use the wheel to zoom, left click a zone to open it and right click to go back up.
   A zone's map also opens the zones around it, where they show at its edges.
