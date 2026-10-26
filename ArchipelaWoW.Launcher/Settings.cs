@@ -13,6 +13,8 @@ public sealed class LauncherSettings
     /// <summary>Release tag of the downloaded client data, or "extracted".</summary>
     public string? ClientDataVersion { get; set; }
     public string? WowClientPath { get; set; }
+    /// <summary>The interface's zoom, which WebView2 would otherwise reset on every launch.</summary>
+    public double ZoomFactor { get; set; } = 1;
     public TrackerSettings Tracker { get; set; } = new();
     public NetworkSettings Network { get; set; } = new();
 }

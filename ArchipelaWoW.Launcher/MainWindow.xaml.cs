@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Windows;
+using System.Windows.Input;
 using System.Windows.Interop;
 using ArchipelaWoW.Launcher.Bridge;
 using ArchipelaWoW.Launcher.Services;
@@ -48,6 +49,25 @@ public partial class MainWindow : Window
             webView.Settings.AreDevToolsEnabled =
                 _devServer != null || Environment.GetEnvironmentVariable("ARCHIPELAWOW_DEVTOOLS") == "1";
             webView.ContextMenuRequested += OnContextMenuRequested;
+
+            var settings = _services.Settings;
+            WebView.ZoomFactor = settings.Current.ZoomFactor;
+            WebView.ZoomFactorChanged += (_, _) =>
+            {
+                if (WebView.ZoomFactor != settings.Current.ZoomFactor)
+                    settings.Update(s => s.ZoomFactor = WebView.ZoomFactor);
+            };
+            // Ctrl+0 would return to the zoom restored above, which WebView2 takes as its default
+            WebView.PreviewKeyDown += (_, args) =>
+            {
+                if (Keyboard.Modifiers == ModifierKeys.Control && args.Key is Key.D0 or Key.NumPad0)
+                {
+                    args.Handled = true;
+                    WebView.ZoomFactor = 1;
+                    // Zooming from code doesn't raise ZoomFactorChanged
+                    settings.Update(s => s.ZoomFactor = 1);
+                }
+            };
 
             // Anything that isn't the launcher's own page opens in the user's browser
             var origin = _devServer ?? UiContent.Origin;
