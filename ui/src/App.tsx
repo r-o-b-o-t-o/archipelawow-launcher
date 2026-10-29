@@ -97,7 +97,20 @@ function Sidebar() {
 				</NavLink>
 			</div>
 
-			<div class="mt-auto flex flex-col gap-2 border-t border-white/5 px-5 py-4">
+			<div class="mt-auto flex flex-col gap-1 px-3 pb-3">
+				<div class="px-3 pb-1 text-[11px] tracking-wider text-zinc-600 uppercase">Community</div>
+				<ExternalLink href="https://discord.gg/Nu4X9gmGDR" icon="messages">
+					Archipelago Discord
+				</ExternalLink>
+				<ExternalLink
+					href="https://discord.com/channels/1345801058609270794/1436315171969568859"
+					icon="lifeBuoy"
+				>
+					Support channel
+				</ExternalLink>
+			</div>
+
+			<div class="flex flex-col gap-2 border-t border-white/5 px-5 py-4">
 				<For each={servers()}>
 					{(server) => (
 						<div class="flex items-center gap-2 text-[13px]">
@@ -140,6 +153,21 @@ function NavLink(props: ParentProps<{ href: string; icon: IconName; end?: boolea
 			<Icon name={props.icon} class="size-4" />
 			{props.children}
 		</A>
+	);
+}
+
+// The launcher opens it in the default browser
+function ExternalLink(props: ParentProps<{ href: string; icon: IconName }>) {
+	return (
+		<a
+			href={props.href}
+			target="_blank"
+			class="group flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] text-zinc-400 transition-colors hover:bg-white/5 hover:text-zinc-100"
+		>
+			<Icon name={props.icon} class="size-4" />
+			{props.children}
+			<Icon name="external" class="ml-auto size-3.5 text-zinc-600 group-hover:text-zinc-400" />
+		</a>
 	);
 }
 

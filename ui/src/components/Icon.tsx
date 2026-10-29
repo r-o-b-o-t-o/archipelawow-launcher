@@ -1,5 +1,6 @@
 import { Dynamic } from "solid-js/web";
 
+import ArrowUpRight from "lucide-solid/icons/arrow-up-right";
 import Check from "lucide-solid/icons/check";
 import ChevronDown from "lucide-solid/icons/chevron-down";
 import ChevronRight from "lucide-solid/icons/chevron-right";
@@ -18,8 +19,10 @@ import GlobeLock from "lucide-solid/icons/globe-lock";
 import Info from "lucide-solid/icons/info";
 import Key from "lucide-solid/icons/key";
 import LayoutDashboard from "lucide-solid/icons/layout-dashboard";
+import LifeBuoy from "lucide-solid/icons/life-buoy";
 import Lightbulb from "lucide-solid/icons/lightbulb";
 import MapIcon from "lucide-solid/icons/map";
+import MessagesSquare from "lucide-solid/icons/messages-square";
 import Monitor from "lucide-solid/icons/monitor";
 import Network from "lucide-solid/icons/network";
 import Package from "lucide-solid/icons/package";
@@ -92,6 +95,9 @@ const icons = {
 	monitor: Monitor,
 	network: Network,
 	puzzle: Puzzle,
+	messages: MessagesSquare,
+	lifeBuoy: LifeBuoy,
+	external: ArrowUpRight,
 };
 
 export type IconName = keyof typeof icons;
