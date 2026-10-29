@@ -108,6 +108,9 @@ function Sidebar() {
 				>
 					Support channel
 				</ExternalLink>
+				<ExternalLink href="https://github.com/r-o-b-o-t-o/archipelawow/issues/new" icon="bug">
+					Report an issue
+				</ExternalLink>
 			</div>
 
 			<div class="flex flex-col gap-2 border-t border-white/5 px-5 py-4">

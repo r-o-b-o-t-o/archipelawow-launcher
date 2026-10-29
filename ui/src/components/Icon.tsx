@@ -1,6 +1,7 @@
 import { Dynamic } from "solid-js/web";
 
 import ArrowUpRight from "lucide-solid/icons/arrow-up-right";
+import Bug from "lucide-solid/icons/bug";
 import Check from "lucide-solid/icons/check";
 import ChevronDown from "lucide-solid/icons/chevron-down";
 import ChevronRight from "lucide-solid/icons/chevron-right";
@@ -98,6 +99,7 @@ const icons = {
 	messages: MessagesSquare,
 	lifeBuoy: LifeBuoy,
 	external: ArrowUpRight,
+	bug: Bug,
 };
 
 export type IconName = keyof typeof icons;
