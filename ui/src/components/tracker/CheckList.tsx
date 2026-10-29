@@ -3,7 +3,7 @@ import { For, Show, createSignal } from "solid-js";
 import type { Check } from "../../tracker/checks";
 import { FALLBACK_ICON } from "../../tracker/data";
 import type { Requirement } from "../../tracker/logic";
-import { type CheckState, checkHints, checkState, itemHints, whyBlocked } from "../../tracker/state";
+import { type CheckState, checkHints, checkState, counts, itemHints, whyBlocked } from "../../tracker/state";
 import Icon from "../Icon";
 import { HintBadge, itemHintText } from "./Hints";
 import { stateColors, stateLabels } from "./checkStates";
@@ -54,6 +54,18 @@ function CheckRow(props: { check: Check }) {
 						<span class="block truncate text-[11px] text-zinc-500">{props.check.note}</span>
 					</Show>
 				</span>
+				<For each={state() === "checked" ? [] : props.check.abilities}>
+					{(ability) => (
+						<img
+							src={ability.icon}
+							alt=""
+							class="size-4 shrink-0 rounded-sm border border-black/60"
+							classList={{ "opacity-40 grayscale": !counts().has(ability.name) }}
+							data-tooltip={`Requires ${ability.name}`}
+							onError={(e) => (e.currentTarget.src = FALLBACK_ICON)}
+						/>
+					)}
+				</For>
 				<HintBadge hints={state() === "checked" ? [] : [checkHints(props.check.id)].filter((h) => h != null)} />
 				<span
 					class="size-2.5 shrink-0 rounded-full"

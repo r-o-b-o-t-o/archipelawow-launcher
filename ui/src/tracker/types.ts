@@ -121,8 +121,14 @@ export interface MapInfo {
 
 export interface TrackerData {
 	maps: MapInfo[];
-	/** `doableLevel`: the level the quest and the quests before it can be done from in-game. */
-	quests: Record<string, { givers?: Position[]; atEnder?: boolean; map?: number; doableLevel: number }>;
+	/**
+	 * `doableLevel`: the level the quest and the quests before it can be done from in-game. `requiredSpells`: the class
+	 * abilities the quest and the quests before it take, by spell id, as keyed in `spells`.
+	 */
+	quests: Record<
+		string,
+		{ givers?: Position[]; atEnder?: boolean; map?: number; doableLevel: number; requiredSpells?: number[] }
+	>;
 	flightpaths: Record<string, { position: Position }>;
 	/** By creature entry: where the faction leader stands, and the icon of the achievement for killing them. */
 	leaders: Record<string, { position: Position; icon?: string }>;

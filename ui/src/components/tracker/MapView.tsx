@@ -43,6 +43,12 @@ export function markerBackground(checks: Check[]) {
 	return `conic-gradient(${left.map((state, i) => `${stateColors[state]} ${i * slice}% ${(i + 1) * slice}%`).join(", ")})`;
 }
 
+/** A lone check's name, and the abilities it takes until it's checked. */
+const markerTooltip = (check: Check) => {
+	const abilities = checkState(check.id) === "checked" ? [] : (check.abilities ?? []);
+	return [check.name, ...abilities.map((ability) => `Requires ${ability.name}`)].join("\n");
+};
+
 /**
  * A world map as the game shows it: the pointer lights up the maps it opens, left click opens one and right
  * click goes back up. Dragging pans, the wheel zooms.
@@ -388,7 +394,7 @@ export default function MapView(props: {
 								top: `${screen()[1]}px`,
 								background: markerBackground(marker().checks),
 							}}
-							data-tooltip={marker().checks.length === 1 ? marker().checks[0].name : undefined}
+							data-tooltip={marker().checks.length === 1 ? markerTooltip(marker().checks[0]) : undefined}
 							onPointerDown={(event) => !marker().aggregate && event.stopPropagation()}
 							onClick={() => !marker().aggregate && setPopup(marker())}
 						>

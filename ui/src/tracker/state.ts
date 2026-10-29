@@ -112,7 +112,7 @@ const derived = createRoot(() => {
 	const checks = createMemo<Check[]>(() => {
 		const current = slotData();
 		const tracker = data();
-		return current && tracker ? buildChecks(tracker, current, seed()!.locations) : [];
+		return current && tracker ? buildChecks(tracker, current, seed()!.locations, seed()!.itemNames) : [];
 	});
 
 	const states = createMemo(() => {

@@ -30,6 +30,8 @@ export interface Check {
 	/** The SkillLine.dbc id of a skill check. */
 	skill?: number;
 	note?: string;
+	/** The class abilities a quest takes, as the items that teach them. */
+	abilities?: { name: string; icon: string }[];
 }
 
 const QUEST_ICON = asset("ui/quest.webp");
@@ -41,9 +43,23 @@ const EXPLORATION_ICON = iconUrl("inv_misc_map02");
 /** The icon of the level achievement at or above a level: Level 10 for levels 2 to 10. */
 export const levelIcon = (level: number) => iconUrl(`achievement_level_${Math.min(80, Math.ceil(level / 10) * 10)}`);
 
-export function buildChecks(data: TrackerData, slot: SlotData, names: Record<string, string>): Check[] {
+export function buildChecks(
+	data: TrackerData,
+	slot: SlotData,
+	names: Record<string, string>,
+	itemNames: Record<string, string>,
+): Check[] {
 	const side = data.characters.races[slot.options.character_race]?.side;
 	const name = (id: number) => names[id] ?? `Location ${id}`;
+	const spellItems = new Map(slot.items.spells.map(([item, spell, level]) => [spell, { item, level }]));
+	const ability = (spell: number) => {
+		const item = spellItems.get(spell)?.item;
+		const icon = data.spells[spell]?.icon;
+		return {
+			name: (item != null && itemNames[item]) || `Spell ${spell}`,
+			icon: icon ? iconUrl(icon) : FALLBACK_ICON,
+		};
+	};
 	const spot = (position: Position): Spot => ({ map: position[0], x: position[1], y: position[2] });
 	const mapsById = new Map(data.maps.map((map) => [map.id, map]));
 	const center = (mapId: number): Spot | undefined => {
@@ -80,6 +96,7 @@ export function buildChecks(data: TrackerData, slot: SlotData, names: Record<str
 			spot: where,
 			group: where ? undefined : "quests",
 			doableLevel: quest?.doableLevel,
+			abilities: quest?.requiredSpells?.map(ability),
 			note:
 				giver && quest?.atEnder
 					? "Started by an item, turned in here"
@@ -151,7 +168,6 @@ export function buildChecks(data: TrackerData, slot: SlotData, names: Record<str
 		});
 	}
 
-	const spellLevels = new Map(slot.items.spells.map(([, spell, level]) => [spell, level]));
 	for (const [spell, id] of slot.locations.spells) {
 		const icon = data.spells[spell]?.icon;
 		checks.push({
@@ -159,7 +175,7 @@ export function buildChecks(data: TrackerData, slot: SlotData, names: Record<str
 			name: name(id),
 			icon: icon ? iconUrl(icon) : FALLBACK_ICON,
 			group: "spells",
-			level: spellLevels.get(spell),
+			level: spellItems.get(spell)?.level,
 		});
 	}
 
