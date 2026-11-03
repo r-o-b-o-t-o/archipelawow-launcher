@@ -62,6 +62,8 @@ export async function checkServerUpdate() {
 	}
 }
 
+const updateCheckInterval = 30 * 60 * 1000;
+
 export async function initStore() {
 	if (!inLauncher) return;
 	on<ServerStatus[]>("servers.changed", setServers);
@@ -71,7 +73,12 @@ export async function initStore() {
 	setAppInfo(info);
 	setServers(list);
 	setTask(current);
-	// Not awaited: GitHub may take a while to answer
-	void checkLauncherUpdate();
-	void checkServerUpdate();
+	// Not awaited: GitHub may take a while to answer. Looked up again for the releases published while the launcher stays
+	// open.
+	const checkUpdates = () => {
+		void checkLauncherUpdate();
+		void checkServerUpdate();
+	};
+	checkUpdates();
+	setInterval(checkUpdates, updateCheckInterval);
 }

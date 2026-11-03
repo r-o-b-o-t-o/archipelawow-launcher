@@ -13,7 +13,8 @@ public static class GitHub
     public const string RateLimitedMessage = "GitHub refuses more lookups for now, try again in an hour.";
 
     // GitHub answers 60 lookups an hour without signing in, and each visit to the setup makes two, to the settings three
-    // with LauncherUpdater's, to the APWorld page one
+    // with LauncherUpdater's, to the APWorld page one. The UI also looks for server and launcher updates every 30
+    // minutes.
     static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(10);
     static readonly ConcurrentDictionary<string, (DateTimeOffset At, GitHubRelease Release)> LatestReleases = new();
     static readonly ConcurrentDictionary<string, (DateTimeOffset At, IReadOnlyList<GitHubRelease> Releases)> AllReleases = new();
