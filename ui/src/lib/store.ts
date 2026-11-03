@@ -13,10 +13,18 @@ const [shuttingDown, setShuttingDown] = createSignal(false);
 const [serverRevision, setServerRevision] = createSignal(1);
 const [launcherUpdate, setLauncherUpdate] = createSignal<LauncherUpdate | null>(null);
 const [launcherUpdateError, setLauncherUpdateError] = createSignal<string | null>(null);
+// The latest server release's version while the installed server is older, null otherwise
+const [serverUpdate, setServerUpdate] = createSignal<string | null>(null);
 
-export { appInfo, launcherUpdate, launcherUpdateError, serverRevision, servers, shuttingDown, task };
+export { appInfo, launcherUpdate, launcherUpdateError, serverRevision, serverUpdate, servers, shuttingDown, task };
 
-export const serverChanged = () => setServerRevision((revision) => revision + 1);
+export const serverChanged = () => {
+	setServerRevision((revision) => revision + 1);
+	void checkServerUpdate();
+};
+
+// Release versions are numbers joined by dots, e.g. 2026.10.6.12: compared number by number
+export const compareVersions = (a: string, b: string) => a.localeCompare(b, "en", { numeric: true });
 
 export const server = (name: ServerName) => servers().find((s) => s.name === name);
 
@@ -33,6 +41,27 @@ export async function checkLauncherUpdate() {
 	}
 }
 
+/**
+ * Compares the installed server with the latest archipelawow-repack release, which the launcher caches for 10 minutes.
+ * An installed server of unknown version counts as outdated, as on the setup page.
+ */
+export async function checkServerUpdate() {
+	try {
+		const status = await api.setup.getStatus();
+		if (!status.serverInstalled) {
+			setServerUpdate(null);
+			return;
+		}
+		const latest = await api.repack.getLatestRelease();
+		const installed = status.server?.version;
+		setServerUpdate(
+			installed === undefined || compareVersions(latest.version, installed) > 0 ? latest.version : null,
+		);
+	} catch {
+		// Kept as it was: the setup page tells why the lookup failed
+	}
+}
+
 export async function initStore() {
 	if (!inLauncher) return;
 	on<ServerStatus[]>("servers.changed", setServers);
@@ -44,4 +73,5 @@ export async function initStore() {
 	setTask(current);
 	// Not awaited: GitHub may take a while to answer
 	void checkLauncherUpdate();
+	void checkServerUpdate();
 }

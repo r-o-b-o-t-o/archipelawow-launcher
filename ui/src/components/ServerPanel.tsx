@@ -4,12 +4,10 @@ import { type SetupStatus, api } from "../lib/api";
 import { confirmDialog } from "../lib/dialog";
 import { formatBytes, formatDate } from "../lib/format";
 import { loaded } from "../lib/resource";
-import { isActive, serverChanged, servers, task } from "../lib/store";
+import { compareVersions, isActive, serverChanged, servers, task } from "../lib/store";
 import { attempt, errorMessage } from "../lib/toast";
 import { Badge, Button, Callout, Field, Select } from "./ui";
 
-// Release versions are numbers joined by dots, e.g. 2026.10.6.12: compared number by number
-const compareVersions = (a: string, b: string) => a.localeCompare(b, "en", { numeric: true });
 // Offered when no build is installed. GitHub lists the archives by name, which puts it after "playerbots".
 const defaultBuild = "standard";
 

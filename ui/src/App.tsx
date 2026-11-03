@@ -3,11 +3,11 @@ import { For, type ParentProps, Show, createEffect, createSignal, on, onMount } 
 
 import Icon, { type IconName } from "./components/Icon";
 import { serverStates } from "./components/ServerCard";
-import { Button, Dot, Modal, Spinner, TextInput } from "./components/ui";
+import { Badge, Button, Dot, Modal, Spinner, TextInput } from "./components/ui";
 import { api } from "./lib/api";
 import { inLauncher } from "./lib/bridge";
 import { type Dialog, answer, dialog } from "./lib/dialog";
-import { appInfo, initStore, launcherUpdate, servers, shuttingDown, task } from "./lib/store";
+import { appInfo, initStore, launcherUpdate, serverUpdate, servers, shuttingDown, task } from "./lib/store";
 import { dismissToast, errorMessage, toast, toasts } from "./lib/toast";
 
 export default function App(props: RouteSectionProps) {
@@ -82,6 +82,16 @@ function Sidebar() {
 				</NavLink>
 				<NavLink href="/setup" icon="wand">
 					Setup
+					<Show when={serverUpdate()}>
+						{(version) => (
+							<span
+								class="ml-auto"
+								data-tooltip={`Server version ${version()} is out: update it from the setup.`}
+							>
+								<Badge tone="amber">Update</Badge>
+							</span>
+						)}
+					</Show>
 				</NavLink>
 				<NavLink href="/apworld" icon="puzzle">
 					APWorld
