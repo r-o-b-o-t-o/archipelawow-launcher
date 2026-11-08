@@ -139,7 +139,11 @@ export interface TrackerData {
 	dungeons: Record<string, { entrances: Position[]; encounters: number[]; minLevel?: number }>;
 	/** By Achievement_Criteria.dbc id: the middle of the subzone, and its achievement's icon. */
 	explorations: Record<string, { position: Position; icon?: string }>;
-	spells: Record<string, { icon: string }>;
+	/**
+	 * By spell id. `trainers`: where the weapon masters and mount trainers selling it stand, each with the zone the
+	 * apworld asks for and the races it teaches as a mask, every race when missing.
+	 */
+	spells: Record<string, { icon?: string; trainers?: { position: Position; zone: number; races?: number }[] }>;
 	/** By SkillLine.dbc id. */
 	skills: Record<string, { name: string; icon?: string }>;
 	achievements: Record<string, { name: string; icon?: string; map?: number }>;

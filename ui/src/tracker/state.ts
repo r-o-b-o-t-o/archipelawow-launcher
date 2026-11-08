@@ -7,8 +7,11 @@ import { type Check, buildChecks } from "./checks";
 import { LEVEL_UP, type Requirement, evaluate, explain, explainLocation, reachableRegions } from "./logic";
 import type { SlotData, TrackerData } from "./types";
 
-/** Checked, in logic, doable out of logic, out of logic, or unknown for a seed without rules. */
-export type CheckState = "checked" | "available" | "sequenceBreak" | "blocked" | "unknown";
+/**
+ * Checked, in logic, doable out of logic, out of logic, or unknown for a seed without rules. And for a spell's
+ * trainer, in logic elsewhere: at another of its trainers but not this one.
+ */
+export type CheckState = "checked" | "available" | "sequenceBreak" | "elsewhere" | "blocked" | "unknown";
 
 const [status, setStatus] = createSignal<TrackerStatus>({ status: "disconnected", error: null });
 const [seed, setSeed] = createSignal<TrackerSeed | null>(null);
@@ -138,6 +141,40 @@ const derived = createRoot(() => {
 		return new Map(checks().map((check) => [check.id, stateOf(check)]));
 	});
 
+	/** The zone items' names, by zone id. */
+	const zoneItems = createMemo(() => {
+		const names = seed()?.itemNames ?? {};
+		return new Map(slotData()?.items.zones.map(([item, zone]) => [zone, names[item]]));
+	});
+
+	/**
+	 * The states of the spell checks at each of their trainers, by location id then zone. A check in logic is in logic
+	 * at a trainer when its rule holds without the other trainers' zones, and in logic elsewhere otherwise.
+	 */
+	const trainerStates = createMemo(() => {
+		const logic = slotData()?.logic;
+		const result = new Map<number, Map<number, CheckState>>();
+		for (const check of checks()) {
+			if (!check.trainers) continue;
+			const state = states().get(check.id) ?? "unknown";
+			const entry = locationLogic().get(check.id);
+			const byZone = new Map<number, CheckState>();
+			for (const { zone } of check.trainers) {
+				if (byZone.has(zone)) continue;
+				if (state !== "available" || !logic || !entry) {
+					byZone.set(zone, state);
+					continue;
+				}
+				const without = new Map(counts());
+				for (const other of check.trainers)
+					if (other.zone !== zone) without.delete(zoneItems().get(other.zone)!);
+				byZone.set(zone, evaluate(logic.rules[entry.rule], without) ? "available" : "elsewhere");
+			}
+			result.set(check.id, byZone);
+		}
+		return result;
+	});
+
 	/** The hints not found yet for the slot's items, by name. */
 	const itemHints = createMemo(() => {
 		const result = new Map<string, TrackerHint[]>();
@@ -179,7 +216,7 @@ const derived = createRoot(() => {
 		return result;
 	});
 
-	return { slotData, counts, level, reachable, locationLogic, checks, states, itemHints, checkHints };
+	return { slotData, counts, level, reachable, locationLogic, checks, states, trainerStates, itemHints, checkHints };
 });
 
 export interface CheckHints {
@@ -201,6 +238,11 @@ export const { slotData, counts, level, checks, itemHints } = derived;
 export const checkHints = (id: number) => derived.checkHints().get(id);
 
 export const checkState = (id: number): CheckState => derived.states().get(id) ?? "unknown";
+
+/** A check's state, at its trainer for a copy of a spell check on the maps. */
+export const checkStateAt = (check: Check): CheckState =>
+	(check.trainerZone != null && derived.trainerStates().get(check.id)?.get(check.trainerZone)) ||
+	checkState(check.id);
 
 /** The region a check sits in, for the side panel's level brackets. */
 export const checkRegion = (id: number) => derived.locationLogic().get(id)?.region;

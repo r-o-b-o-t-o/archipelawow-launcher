@@ -1,8 +1,8 @@
 import { For, Index, Show, createEffect, createMemo, createSignal, on, onCleanup, onMount } from "solid-js";
 
-import { type Check, projectSpot } from "../../tracker/checks";
+import { type Check, mapChecks, projectSpot } from "../../tracker/checks";
 import { asset } from "../../tracker/data";
-import { checkHints, checkState } from "../../tracker/state";
+import { checkHints, checkStateAt } from "../../tracker/state";
 import type { MapInfo, TrackerData } from "../../tracker/types";
 import CheckList from "./CheckList";
 import { HintBadge } from "./Hints";
@@ -36,16 +36,27 @@ interface Target {
 
 /** A marker's colour, split between the states of the checks it holds that are left to do. */
 export function markerBackground(checks: Check[]) {
-	const states = new Set(checks.map((check) => checkState(check.id)));
-	const left = (["available", "sequenceBreak", "blocked", "unknown"] as const).filter((state) => states.has(state));
+	const states = new Set(checks.map(checkStateAt));
+	const left = (["available", "sequenceBreak", "elsewhere", "blocked", "unknown"] as const).filter((state) =>
+		states.has(state),
+	);
 	if (left.length <= 1) return stateColors[left[0] ?? "checked"];
 	const slice = 100 / left.length;
 	return `conic-gradient(${left.map((state, i) => `${stateColors[state]} ${i * slice}% ${(i + 1) * slice}%`).join(", ")})`;
 }
 
+/** Whether two checks are copies of a spell check at trainers of the same zone, which a marker lists once. */
+const sameTrainers = (a: Check, b: Check) => a.trainerZone != null && a.id === b.id && a.trainerZone === b.trainerZone;
+
+/** A marker's checks left to do, each once: it can hold a spell check's copies at several of its trainers. */
+const pendingChecks = (checks: Check[]) =>
+	checks.filter(
+		(check, i) => checkStateAt(check) !== "checked" && checks.findIndex((other) => other.id === check.id) === i,
+	);
+
 /** A lone check's name, and the abilities it takes until it's checked. */
 const markerTooltip = (check: Check) => {
-	const abilities = checkState(check.id) === "checked" ? [] : (check.abilities ?? []);
+	const abilities = checkStateAt(check) === "checked" ? [] : (check.abilities ?? []);
 	return [check.name, ...abilities.map((ability) => `Requires ${ability.name}`)].join("\n");
 };
 
@@ -57,7 +68,7 @@ export default function MapView(props: {
 	data: TrackerData;
 	mapId: number;
 	onNavigate: (id: number) => void;
-	/** The checks to show, the ones placed on a map among them. */
+	/** The checks to show, the ones placed on a map among them (see mapChecks). */
 	checks: Check[];
 }) {
 	let container!: HTMLDivElement;
@@ -217,7 +228,7 @@ export default function MapView(props: {
 	// On the map rather than on screen, as panning moves them all alike
 	const markers = createMemo<Marker[]>(() => {
 		const view = map();
-		const placed = props.checks.filter((check) => check.spot);
+		const placed = mapChecks(props.checks);
 		if (view.kind === "zone" || view.kind === "city") {
 			const own = new Set(props.data.maps.filter((m) => m.parent === view.id).map((m) => m.id)).add(view.id);
 			const radius = CLUSTER_RADIUS / scale();
@@ -230,8 +241,8 @@ export default function MapView(props: {
 				const near = result.find(
 					(marker) => Math.hypot((marker.u - u) * MAP_WIDTH, (marker.v - v) * MAP_HEIGHT) < radius,
 				);
-				if (near) near.checks.push(check);
-				else result.push({ u, v, checks: [check], aggregate: false });
+				if (!near) result.push({ u, v, checks: [check], aggregate: false });
+				else if (!near.checks.some((other) => sameTrainers(other, check))) near.checks.push(check);
 			}
 			return result;
 		}
@@ -374,11 +385,10 @@ export default function MapView(props: {
 
 			<Index each={markers()}>
 				{(marker) => {
-					const pending = () => marker().checks.filter((check) => checkState(check.id) !== "checked").length;
+					const pending = () => pendingChecks(marker().checks).length;
 					const screen = () => toScreen(marker().u, marker().v);
 					const hints = () =>
-						marker()
-							.checks.filter((check) => checkState(check.id) !== "checked")
+						pendingChecks(marker().checks)
 							.map((check) => checkHints(check.id))
 							.filter((h) => h != null);
 					return (

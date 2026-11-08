@@ -29,6 +29,10 @@ export interface Check {
 	doableLevel?: number;
 	/** The SkillLine.dbc id of a skill check. */
 	skill?: number;
+	/** Where the weapon masters or mount trainers that teach a spell to the character stand, with their zones. */
+	trainers?: { spot: Spot; zone: number }[];
+	/** The zone of the trainer a copy of a spell check stands for on the maps (see mapChecks). */
+	trainerZone?: number;
 	note?: string;
 	/** The class abilities a quest takes, as the items that teach them. */
 	abilities?: { name: string; icon: string }[];
@@ -49,7 +53,8 @@ export function buildChecks(
 	names: Record<string, string>,
 	itemNames: Record<string, string>,
 ): Check[] {
-	const side = data.characters.races[slot.options.character_race]?.side;
+	const race = slot.options.character_race;
+	const side = data.characters.races[race]?.side;
 	const name = (id: number) => names[id] ?? `Location ${id}`;
 	const spellItems = new Map(slot.items.spells.map(([item, spell, level]) => [spell, { item, level }]));
 	const ability = (spell: number) => {
@@ -168,14 +173,20 @@ export function buildChecks(
 		});
 	}
 
+	// Only the trainers of the seed's zones: the apworld counts on no other, such as Dalaran's
+	const seedZones = new Set(slot.items.zones.map(([, zone]) => zone));
 	for (const [spell, id] of slot.locations.spells) {
 		const icon = data.spells[spell]?.icon;
+		const trainers = data.spells[spell]?.trainers
+			?.filter((trainer) => (!trainer.races || trainer.races & (1 << (race - 1))) && seedZones.has(trainer.zone))
+			.map((trainer) => ({ spot: spot(trainer.position), zone: trainer.zone }));
 		checks.push({
 			id,
 			name: name(id),
 			icon: icon ? iconUrl(icon) : FALLBACK_ICON,
 			group: "spells",
 			level: spellItems.get(spell)?.level,
+			trainers: trainers?.length ? trainers : undefined,
 		});
 	}
 
@@ -191,6 +202,15 @@ export function buildChecks(
 	}
 
 	return checks;
+}
+
+/** The checks to place on the maps: those with a spot, and a copy of a spell's at each of its trainers. */
+export function mapChecks(checks: Check[]): Check[] {
+	return checks.flatMap((check) =>
+		check.spot
+			? [check]
+			: (check.trainers ?? []).map((trainer) => ({ ...check, spot: trainer.spot, trainerZone: trainer.zone })),
+	);
 }
 
 /**

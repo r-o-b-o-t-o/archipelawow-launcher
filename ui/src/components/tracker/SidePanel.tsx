@@ -208,7 +208,7 @@ interface Tile {
 
 /**
  * The checks with no spot on the maps: class training, level ups and the Stone Shop by bracket, skills by skill,
- * achievements, unplaced quests.
+ * achievements, unplaced quests. Training a weapon skill or riding is also shown at its trainers on the maps.
  */
 function SideChecks(props: { data: TrackerData; checks: Check[]; hideChecked: boolean }) {
 	const [selected, setSelected] = createSignal<string | null>(null);

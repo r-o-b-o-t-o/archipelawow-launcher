@@ -3,19 +3,26 @@ import { For, Show, createSignal } from "solid-js";
 import type { Check } from "../../tracker/checks";
 import { FALLBACK_ICON } from "../../tracker/data";
 import type { Requirement } from "../../tracker/logic";
-import { type CheckState, checkHints, checkState, counts, itemHints, whyBlocked } from "../../tracker/state";
+import { type CheckState, checkHints, checkStateAt, counts, itemHints, whyBlocked } from "../../tracker/state";
 import Icon from "../Icon";
 import { HintBadge, itemHintText } from "./Hints";
 import { stateColors, stateLabels } from "./checkStates";
 
-const stateOrder: Record<CheckState, number> = { available: 0, unknown: 1, sequenceBreak: 2, blocked: 3, checked: 4 };
+const stateOrder: Record<CheckState, number> = {
+	available: 0,
+	unknown: 1,
+	sequenceBreak: 2,
+	elsewhere: 3,
+	blocked: 4,
+	checked: 5,
+};
 
 /** The checks of a marker or a group, the ones in logic first; a check out of logic shows why on click. */
 export default function CheckList(props: { checks: Check[] }) {
 	const sorted = () =>
 		[...props.checks].sort(
 			(a, b) =>
-				stateOrder[checkState(a.id)] - stateOrder[checkState(b.id)] ||
+				stateOrder[checkStateAt(a)] - stateOrder[checkStateAt(b)] ||
 				a.name.localeCompare(b.name, undefined, { numeric: true }),
 		);
 	return (
@@ -27,7 +34,7 @@ export default function CheckList(props: { checks: Check[] }) {
 
 function CheckRow(props: { check: Check }) {
 	const [open, setOpen] = createSignal(false);
-	const state = () => checkState(props.check.id);
+	const state = () => checkStateAt(props.check);
 	const outOfLogic = () => state() === "sequenceBreak" || state() === "blocked";
 	return (
 		<li class="border-b border-white/5 last:border-b-0">
