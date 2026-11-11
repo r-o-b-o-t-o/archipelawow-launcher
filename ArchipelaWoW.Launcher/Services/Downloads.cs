@@ -12,15 +12,26 @@ public static class Downloads
     /// </summary>
     public static async Task DownloadOnceAsync(HttpClient http, string url, string file, long size, TaskRunner task, CancellationToken token)
     {
-        if (File.Exists(file) && new FileInfo(file).Length == size)
+        if (IsComplete(file, size))
+            return;
+        task.Stage($"Downloading {Path.GetFileName(file)}");
+        await DownloadOnceAsync(http, url, file, size, done => task.Progress((double)done / size, $"{done >> 20} / {size >> 20} MB"), token);
+    }
+
+    /// <summary>Downloads like the overload above, reporting how many bytes of the file are there.</summary>
+    public static async Task DownloadOnceAsync(HttpClient http, string url, string file, long size, Action<long> progress,
+        CancellationToken token)
+    {
+        if (IsComplete(file, size))
             return;
         Directory.CreateDirectory(Path.GetDirectoryName(file)!);
-        task.Stage($"Downloading {Path.GetFileName(file)}");
-        await DownloadFileAsync(http, url, file + ".part", size, task, token);
+        await DownloadFileAsync(http, url, file + ".part", size, progress, token);
         File.Move(file + ".part", file, overwrite: true);
     }
 
-    static async Task DownloadFileAsync(HttpClient http, string url, string file, long size, TaskRunner task, CancellationToken token)
+    static bool IsComplete(string file, long size) => File.Exists(file) && new FileInfo(file).Length == size;
+
+    static async Task DownloadFileAsync(HttpClient http, string url, string file, long size, Action<long> progress, CancellationToken token)
     {
         var existing = File.Exists(file) ? new FileInfo(file).Length : 0;
         using var request = new HttpRequestMessage(HttpMethod.Get, url);
@@ -53,7 +64,7 @@ public static class Downloads
                 break;
             await output.WriteAsync(buffer.AsMemory(0, read), token);
             done += read;
-            task.Progress((double)done / size, $"{done >> 20} / {size >> 20} MB");
+            progress(done);
         }
         if (done != size)
             throw new IOException($"The download ended early ({done >> 20} of {size >> 20} MB). Start it again to resume it.");
