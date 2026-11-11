@@ -20,6 +20,7 @@ import {
 	TextInput,
 } from "../components/ui";
 import { type ServerName, type TerminalName, api } from "../lib/api";
+import { realmlistAddress } from "../lib/format";
 import { isActive, server, servers, task } from "../lib/store";
 import { attempt, toast } from "../lib/toast";
 
@@ -331,13 +332,16 @@ function CreateAccount(props: { onCreated: () => void }) {
 }
 
 function ConnectClient() {
+	const [settings] = createResource(api.settings.get);
+	const address = () => realmlistAddress("127.0.0.1", settings()?.authServerPort ?? 3724);
+
 	return (
 		<Card title="Play" icon="sword">
 			<p class="text-[13px] text-zinc-400">
 				Point your World of Warcraft 3.3.5a client at this server: in its <Code>Data\enUS</Code> (or your
 				locale) folder, replace the contents of <Code>realmlist.wtf</Code> with:
 			</p>
-			<CopyLine text="set realmlist 127.0.0.1" class="mt-3" />
+			<CopyLine text={`set realmlist ${address()}`} class="mt-3" />
 		</Card>
 	);
 }

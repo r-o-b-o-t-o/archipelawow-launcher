@@ -24,8 +24,8 @@ public sealed class NetworkService(SettingsStore settings, MySqlService mySql, C
         settings.Current.Network.Access,
         settings.Current.Network.PublicAddress,
         Lan = FindLanAddress(),
-        AuthServerPort = configs.GetInt("authserver.conf", "RealmServerPort") ?? 3724,
-        WorldServerPort = configs.GetInt("worldserver.conf", "WorldServerPort") ?? 8085,
+        configs.AuthServerPort,
+        configs.WorldServerPort,
     };
 
     /// <summary>Saves who can join the realm and writes its addresses, starting MySQL if needed.</summary>
@@ -50,13 +50,18 @@ public sealed class NetworkService(SettingsStore settings, MySqlService mySql, C
     }
 
     /// <summary>
-    /// Writes the realm's addresses, with this computer's current address on the local network. A running authserver
-    /// reads them again within RealmsStateUpdateDelay.
+    /// Writes the realm's port, and its addresses with this computer's current address on the local network. A running
+    /// authserver reads them again within RealmsStateUpdateDelay. Until a server's first start creates the login
+    /// database, there's nothing to write.
     /// </summary>
     public async Task ApplyAsync()
     {
+        if (configs.GetDatabaseName("authserver.conf", "LoginDatabaseInfo") is not { } loginDatabase ||
+            !await mySql.TableExistsAsync(loginDatabase, "realmlist"))
+            return;
+        await mySql.SetRealmPortAsync(loginDatabase, configs.WorldServerPort);
         if (Addresses() is { } addresses)
-            await WriteAsync(addresses);
+            await mySql.SetRealmAddressesAsync(addresses.LoginDatabase, addresses.Address, addresses.LocalAddress, addresses.SubnetMask);
     }
 
     sealed record RealmAddresses(string LoginDatabase, string Address, string LocalAddress, string SubnetMask);

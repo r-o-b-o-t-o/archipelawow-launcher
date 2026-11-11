@@ -54,6 +54,11 @@ public sealed class ConfigService(AppPaths paths, SettingsStore settings)
 
     public int? GetInt(string file, string key) => int.TryParse(GetValue(file, key), out var value) ? value : null;
 
+    // The ports the servers listen on: their configuration's, which may have been edited by hand, or the launcher's
+    // until it's created
+    public int AuthServerPort => GetInt("authserver.conf", "RealmServerPort") ?? settings.Current.AuthServerPort;
+    public int WorldServerPort => GetInt("worldserver.conf", "WorldServerPort") ?? settings.Current.WorldServerPort;
+
     /// <summary>The database of a *DatabaseInfo entry ("host;port;user;password;database").</summary>
     public string? GetDatabaseName(string file, string key) =>
         GetValue(file, key)?.Split(';') is { Length: >= 5 } parts ? parts[4] : null;
@@ -97,6 +102,17 @@ public sealed class ConfigService(AppPaths paths, SettingsStore settings)
             }
             if (values.Count > 0)
                 SetValues(file, values);
+        }
+    }
+
+    /// <summary>Sets the ports the authserver and worldserver listen on.</summary>
+    public void ApplyServerPorts(int authServerPort, int worldServerPort)
+    {
+        foreach (var (file, key, port) in ((string, string, int)[])
+            [("authserver.conf", "RealmServerPort", authServerPort), ("worldserver.conf", "WorldServerPort", worldServerPort)])
+        {
+            if (Exists(file))
+                SetValues(file, new Dictionary<string, string> { [key] = port.ToString() });
         }
     }
 
@@ -159,7 +175,11 @@ public sealed class ConfigService(AppPaths paths, SettingsStore settings)
             AllowTrailingCommas = true,
         });
 
-        var port = settings.Current.MySqlPort.ToString();
+        var current = settings.Current;
+        string Fill(string value) => value
+            .Replace("{mysqlPort}", current.MySqlPort.ToString())
+            .Replace("{authServerPort}", current.AuthServerPort.ToString())
+            .Replace("{worldServerPort}", current.WorldServerPort.ToString());
         var defaults = new Dictionary<string, Dictionary<string, string>>(StringComparer.OrdinalIgnoreCase);
         foreach (var file in document.RootElement.EnumerateObject())
         {
@@ -168,10 +188,10 @@ public sealed class ConfigService(AppPaths paths, SettingsStore settings)
             {
                 values[entry.Name] = entry.Value.ValueKind switch
                 {
-                    JsonValueKind.String => Quote(entry.Value.GetString()!.Replace("{mysqlPort}", port)),
+                    JsonValueKind.String => Quote(Fill(entry.Value.GetString()!)),
                     JsonValueKind.True => "1",
                     JsonValueKind.False => "0",
-                    JsonValueKind.Object => entry.Value.GetProperty("raw").GetString()!,
+                    JsonValueKind.Object => Fill(entry.Value.GetProperty("raw").GetString()!),
                     _ => entry.Value.GetRawText(),
                 };
             }

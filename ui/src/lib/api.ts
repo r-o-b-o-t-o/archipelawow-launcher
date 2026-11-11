@@ -53,6 +53,8 @@ export interface LauncherUpdate {
 
 export interface Settings {
 	mySqlPort: number;
+	authServerPort: number;
+	worldServerPort: number;
 	autoStartServers: boolean;
 	databaseInitialized: boolean;
 	clientDataVersion: string | null;
@@ -214,8 +216,11 @@ export const api = {
 	},
 	settings: {
 		get: () => call<Settings>("settings.get"),
-		update: (patch: Partial<Pick<Settings, "mySqlPort" | "autoStartServers">> & { trackerHideChecked?: boolean }) =>
-			call<Settings>("settings.update", patch),
+		update: (
+			patch: Partial<Pick<Settings, "mySqlPort" | "authServerPort" | "worldServerPort" | "autoStartServers">> & {
+				trackerHideChecked?: boolean;
+			},
+		) => call<Settings>("settings.update", patch),
 	},
 	setup: {
 		getStatus: () => call<SetupStatus>("setup.getStatus"),

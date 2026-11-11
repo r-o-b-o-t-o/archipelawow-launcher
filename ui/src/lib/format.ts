@@ -17,5 +17,9 @@ export function formatDuration(milliseconds: number) {
 	return h > 0 ? `${h}h ${String(m).padStart(2, "0")}m` : `${m}m ${String(s).padStart(2, "0")}s`;
 }
 
+/** The authserver's address as a realmlist.wtf takes it: the port only when it isn't the client's default. */
+export const realmlistAddress = (host: string, authServerPort: number) =>
+	authServerPort === 3724 ? host : `${host}:${authServerPort}`;
+
 export const formatDate = (iso: string) =>
 	new Date(iso).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });

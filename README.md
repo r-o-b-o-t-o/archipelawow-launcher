@@ -41,8 +41,9 @@ To only make player options or track a seed, skip the setup and open **Player op
 The last step of the setup chooses who can join the realm: this computer only, the computers on its local
 network, or friends over the internet. The launcher finds the computer's address on the local network each
 time the authserver starts. Over the internet, forward the authserver's and the worldserver's TCP ports (3724
-and 8085) to that address in your router's control panel; the setup links to a checker that tells whether
-they're open from the outside. The other players point their `realmlist.wtf` at the address the setup shows.
+and 8085, which the settings can change) to that address in your router's control panel; the setup links to a
+checker that tells whether they're open from the outside. The other players point their `realmlist.wtf` at the
+address the setup shows.
 
 ### Installing the apworld
 

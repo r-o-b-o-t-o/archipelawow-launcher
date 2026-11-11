@@ -1,6 +1,7 @@
 import { For, Show, createEffect, createSignal, on } from "solid-js";
 
 import { type NetworkStatus, type RealmAccess, api } from "../lib/api";
+import { realmlistAddress } from "../lib/format";
 import { attempt } from "../lib/toast";
 import Icon, { type IconName } from "./Icon";
 import { Button, Callout, Code, CopyLine, Field, TextInput } from "./ui";
@@ -144,7 +145,7 @@ export default function NetworkPanel(props: { status?: NetworkStatus; onChange: 
 
 function Instructions(props: { status: NetworkStatus }) {
 	const internet = () => props.status.access === "internet";
-	const address = () => (internet() ? props.status.publicAddress : props.status.lan?.address) ?? "";
+	const address = (host: string | null | undefined) => realmlistAddress(host ?? "", props.status.authServerPort);
 
 	return (
 		<div class="flex flex-col gap-3 border-t border-white/5 pt-4 text-[13px] text-zinc-400">
@@ -152,16 +153,20 @@ function Instructions(props: { status: NetworkStatus }) {
 				<p>
 					The other players replace the contents of the <Code>realmlist.wtf</Code> of their client with:
 				</p>
-				<CopyLine text={`set realmlist ${address()}`} class="mt-2" />
+				<CopyLine
+					text={`set realmlist ${address(internet() ? props.status.publicAddress : props.status.lan?.address)}`}
+					class="mt-2"
+				/>
 				<p class="mt-2 text-xs text-zinc-500">
 					<Show when={internet() && props.status.lan}>
 						{(lan) => (
 							<>
-								Players on your local network can use <Code>{lan().address}</Code> instead.{" "}
+								Players on your local network can use <Code>{address(lan().address)}</Code>{" "}
+								instead.{" "}
 							</>
 						)}
 					</Show>
-					On this computer, keep <Code>127.0.0.1</Code>.
+					On this computer, keep <Code>{address("127.0.0.1")}</Code>.
 				</p>
 			</div>
 

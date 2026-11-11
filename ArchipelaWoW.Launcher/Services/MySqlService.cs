@@ -68,6 +68,10 @@ public sealed class MySqlService(AppPaths paths, SettingsStore settings)
     public Task SetRealmAddressesAsync(string loginDatabase, string address, string localAddress, string subnetMask) =>
         QueryAsync($"UPDATE `{loginDatabase}`.realmlist SET address = '{address}', localAddress = '{localAddress}', localSubnetMask = '{subnetMask}'");
 
+    /// <summary>Sets the port of every realm: the worldserver's, which the authserver hands the game clients.</summary>
+    public Task SetRealmPortAsync(string loginDatabase, int port) =>
+        QueryAsync($"UPDATE `{loginDatabase}`.realmlist SET port = {port}");
+
     /// <summary>Creates the data directory, starts the server and creates the AzerothCore user.</summary>
     public async Task InitializeAsync(TaskRunner task, ServerManager servers, CancellationToken token)
     {

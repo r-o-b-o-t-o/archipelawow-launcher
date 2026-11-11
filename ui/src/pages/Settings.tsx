@@ -70,9 +70,8 @@ export default function Settings() {
 
 function General() {
 	const [settings, { mutate }] = createResource(api.settings.get);
-	const [port, setPort] = createSignal("");
-	createEffect(on(settings, (s) => s && setPort(String(s.mySqlPort))));
 	const anyActive = () => servers().some(isActive);
+	const gameServersActive = () => servers().some((s) => s.name !== "mysql" && isActive(s));
 
 	const update = async (patch: Parameters<typeof api.settings.update>[0], message?: string) => {
 		const result = await attempt(() => api.settings.update(patch), message);
@@ -87,37 +86,85 @@ function General() {
 					onChange={(autoStartServers) => update({ autoStartServers })}
 					label="Start the servers when the launcher opens"
 				/>
-				<div class="flex items-end gap-3">
-					<Field
-						label="MySQL port"
-						class="w-48"
-						hint={anyActive() ? "Stop the servers to change it." : undefined}
-					>
-						<TextInput
-							value={port()}
-							onValue={setPort}
-							inputmode="numeric"
-							class="w-full font-mono"
-							disabled={anyActive()}
-						/>
-					</Field>
-					<Button
-						disabled={anyActive() || port() === String(settings()?.mySqlPort)}
-						onClick={() => {
-							const mySqlPort = Number(port());
-							if (!Number.isInteger(mySqlPort)) toast("Enter the port as a number.", "error");
-							else update({ mySqlPort }, "Port changed, the server configuration was updated to match.");
-						}}
-					>
-						Apply
-					</Button>
-				</div>
+				<PortField
+					label="MySQL port"
+					value={settings()?.mySqlPort}
+					locked={anyActive() ? "Stop the servers to change it." : undefined}
+					onApply={(mySqlPort) =>
+						update({ mySqlPort }, "Port changed, the server configuration was updated to match.")
+					}
+				/>
 				<p class="-mt-2 text-xs text-zinc-500">
 					The database only accepts connections from this computer, with the user <Code>acore</Code> and
 					password <Code>acore</Code>, e.g. from HeidiSQL or Keira3.
 				</p>
+				<div class="flex flex-wrap gap-x-8 gap-y-5">
+					<PortField
+						label="Authserver port"
+						value={settings()?.authServerPort}
+						locked={gameServersActive() ? "Stop the authserver and worldserver to change it." : undefined}
+						onApply={(authServerPort) =>
+							update(
+								{ authServerPort },
+								"Port changed, the server configuration was updated to match: update the game clients' realmlist.wtf.",
+							)
+						}
+					/>
+					<PortField
+						label="Worldserver port"
+						value={settings()?.worldServerPort}
+						locked={gameServersActive() ? "Stop the authserver and worldserver to change it." : undefined}
+						onApply={(worldServerPort) =>
+							update({ worldServerPort }, "Port changed, the server configuration was updated to match.")
+						}
+					/>
+				</div>
+				<p class="-mt-2 text-xs text-zinc-500">
+					Game clients reach the authserver on its port, which their <Code>realmlist.wtf</Code> names unless
+					it's 3724, then the worldserver on its own. To play over the internet, forward both in your router.
+				</p>
 			</div>
 		</Card>
+	);
+}
+
+/** A port with its own Apply button, disabled with the reason given in locked. */
+function PortField(props: {
+	label: string;
+	value: number | undefined;
+	locked: string | undefined;
+	onApply: (port: number) => void;
+}) {
+	const [port, setPort] = createSignal("");
+	createEffect(
+		on(
+			() => props.value,
+			(value) => value !== undefined && setPort(String(value)),
+		),
+	);
+
+	return (
+		<div class="flex items-end gap-3">
+			<Field label={props.label} class="w-48" hint={props.locked}>
+				<TextInput
+					value={port()}
+					onValue={setPort}
+					inputmode="numeric"
+					class="w-full font-mono"
+					disabled={props.locked !== undefined}
+				/>
+			</Field>
+			<Button
+				disabled={props.locked !== undefined || port() === String(props.value)}
+				onClick={() => {
+					const value = Number(port());
+					if (!Number.isInteger(value)) toast("Enter the port as a number.", "error");
+					else props.onApply(value);
+				}}
+			>
+				Apply
+			</Button>
+		</div>
 	);
 }
 

@@ -1,6 +1,7 @@
 // Values applied when the launcher creates the .conf files from their .conf.dist, keyed by file
 // (relative to server/configs). Strings are written quoted, numbers and booleans bare
-// (true = 1), and {"raw": "..."} exactly as given. {mysqlPort} is replaced by the launcher's port.
+// (true = 1), and {"raw": "..."} exactly as given. {mysqlPort}, {authServerPort} and {worldServerPort} are
+// replaced by the launcher's ports.
 // Keys missing from a file are appended to it.
 //
 // Paths are relative to server, the servers' working directory, which keeps the installation portable.
@@ -9,7 +10,8 @@
     "LogsDir": "logs",
     "SourceDirectory": "source",
     "MySQLExecutable": "../mysql/bin/mysql.exe",
-    "LoginDatabaseInfo": "127.0.0.1;{mysqlPort};acore;acore;acore_auth"
+    "LoginDatabaseInfo": "127.0.0.1;{mysqlPort};acore;acore;acore_auth",
+    "RealmServerPort": {"raw": "{authServerPort}"}
   },
   "worldserver.conf": {
     "DataDir": "data",
@@ -19,6 +21,7 @@
     "LoginDatabaseInfo": "127.0.0.1;{mysqlPort};acore;acore;acore_auth",
     "WorldDatabaseInfo": "127.0.0.1;{mysqlPort};acore;acore;acore_world",
     "CharacterDatabaseInfo": "127.0.0.1;{mysqlPort};acore;acore;acore_characters",
+    "WorldServerPort": {"raw": "{worldServerPort}"},
     // Recommended by mod-i-found-your-sword: rewards arrive by mail, often several in a row
     "Mail.PushInboxOnDelivery": 1,
     // The authserver flags every realm offline when it starts, and a running worldserver clears it on

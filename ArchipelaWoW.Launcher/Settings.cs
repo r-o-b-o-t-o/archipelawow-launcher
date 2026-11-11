@@ -8,6 +8,8 @@ public sealed class LauncherSettings
 {
     // Not 3306, so the launcher doesn't clash with a MySQL server already installed on the machine
     public int MySqlPort { get; set; } = 3310;
+    public int AuthServerPort { get; set; } = 3724;
+    public int WorldServerPort { get; set; } = 8085;
     public bool AutoStartServers { get; set; }
     public bool DatabaseInitialized { get; set; }
     /// <summary>Release tag of the downloaded client data, or "extracted".</summary>

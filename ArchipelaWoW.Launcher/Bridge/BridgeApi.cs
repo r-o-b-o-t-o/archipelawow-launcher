@@ -11,6 +11,7 @@ namespace ArchipelaWoW.Launcher.Bridge;
 public static partial class BridgeApi
 {
     const string ArchipelagoConfig = "modules/archipelawow.conf";
+    const string SharedPortMessage = "MySQL, the authserver and the worldserver each need their own port.";
     const string YamlFilter = "Archipelago player options (*.yaml;*.yml)|*.yaml;*.yml";
 
     public static void Register(BridgeHost bridge, AppServices services, MainWindow owner)
@@ -88,7 +89,18 @@ public static partial class BridgeApi
         });
 
         // Settings
-        bridge.Handle("settings.get", () => services.Settings.Current);
+        bridge.Handle("settings.get", () =>
+        {
+            // Follows the servers' configuration, which may have been edited by hand, and keeps it for configs created later
+            var (auth, world) = (services.Configs.AuthServerPort, services.Configs.WorldServerPort);
+            if (auth != services.Settings.Current.AuthServerPort || world != services.Settings.Current.WorldServerPort)
+                services.Settings.Update(s =>
+                {
+                    s.AuthServerPort = auth;
+                    s.WorldServerPort = world;
+                });
+            return services.Settings.Current;
+        });
         bridge.Handle<SettingsPatch>("settings.update", p =>
         {
             if (p.MySqlPort is { } port && port != services.Settings.Current.MySqlPort)
@@ -97,8 +109,29 @@ public static partial class BridgeApi
                     throw new InvalidOperationException("Stop the servers before changing the MySQL port.");
                 if (port is < 1024 or > 65535)
                     throw new ArgumentException("The port must be between 1024 and 65535.");
+                if (port == services.Configs.AuthServerPort || port == services.Configs.WorldServerPort)
+                    throw new ArgumentException(SharedPortMessage);
                 services.Settings.Update(s => s.MySqlPort = port);
                 services.Configs.ApplyDatabasePort(port);
+            }
+            if ((p.AuthServerPort is { } authPort && authPort != services.Configs.AuthServerPort) ||
+                (p.WorldServerPort is { } worldPort && worldPort != services.Configs.WorldServerPort))
+            {
+                if (servers.AuthServer.IsActive || servers.WorldServer.IsActive)
+                    throw new InvalidOperationException("Stop the authserver and worldserver before changing their ports.");
+                var (auth, world) = (p.AuthServerPort ?? services.Configs.AuthServerPort,
+                    p.WorldServerPort ?? services.Configs.WorldServerPort);
+                if (auth is < 1024 or > 65535 || world is < 1024 or > 65535)
+                    throw new ArgumentException("The port must be between 1024 and 65535.");
+                if (auth == world || auth == services.Settings.Current.MySqlPort || world == services.Settings.Current.MySqlPort)
+                    throw new ArgumentException(SharedPortMessage);
+                services.Settings.Update(s =>
+                {
+                    s.AuthServerPort = auth;
+                    s.WorldServerPort = world;
+                });
+                // The realm's port in the login database follows when the authserver starts (ServerManager.LaunchAsync)
+                services.Configs.ApplyServerPorts(auth, world);
             }
             if (p.AutoStartServers is { } autoStart)
                 services.Settings.Update(s => s.AutoStartServers = autoStart);
@@ -390,7 +423,8 @@ public static partial class BridgeApi
     sealed record TargetParams(string Target);
     sealed record UrlParams(string Url);
     sealed record UnsavedChangesParams(bool Unsaved);
-    sealed record SettingsPatch(int? MySqlPort, bool? AutoStartServers, bool? TrackerHideChecked);
+    sealed record SettingsPatch(int? MySqlPort, int? AuthServerPort, int? WorldServerPort, bool? AutoStartServers,
+        bool? TrackerHideChecked);
     sealed record BuildParams(string Build);
     sealed record NetworkParams(RealmAccess Access, string? PublicAddress);
     sealed record TagParams(string Tag);

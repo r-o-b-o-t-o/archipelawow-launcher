@@ -55,10 +55,10 @@ public sealed class ServerManager
             RequestStop = mySql.RequestShutdownAsync,
         };
         AuthServer = new ManagedProcess("authserver", "Authserver", new TerminalBuffer("authserver", paths.LauncherLogsDir),
-            () => ServerSpec("authserver"), () => configs.GetInt("authserver.conf", "RealmServerPort") ?? 3724,
+            () => ServerSpec("authserver"), () => configs.AuthServerPort,
             TimeSpan.FromSeconds(15));
         WorldServer = new ManagedProcess("worldserver", "Worldserver", new TerminalBuffer("worldserver", paths.LauncherLogsDir),
-            () => ServerSpec("worldserver"), () => configs.GetInt("worldserver.conf", "WorldServerPort") ?? 8085,
+            () => ServerSpec("worldserver"), () => configs.WorldServerPort,
             TimeSpan.FromSeconds(90))
         {
             RestartExitCode = RestartExitCode,
@@ -144,7 +144,11 @@ public sealed class ServerManager
             await WaitForMySqlAsync(token);
             if (process == AuthServer && !AuthServer.IsActive &&
                 _configs.GetDatabaseName("authserver.conf", "LoginDatabaseInfo") is { } loginDatabase)
+            {
                 await _mySql.ClearRealmVersionMismatchAsync(loginDatabase);
+                // Its port, and this computer's address on the network, may have changed since the last start
+                await ApplyRealmAsync();
+            }
             if (process == WorldServer && !WorldServer.IsActive)
                 await SetUpAuctionHouseBotAsync(token);
             token.ThrowIfCancellationRequested();
@@ -208,17 +212,20 @@ public sealed class ServerManager
     {
         await process.WaitUntilSettledAsync();
         LeaveLaunchGate();
-        // Once running, the authserver has created its database, which it doesn't have before its first start. This
-        // computer's address on the network may have changed since the last.
-        if (process != AuthServer || AuthServer.State != ServerState.Running)
-            return;
+        // Before its first start, the authserver had yet to create its database: the realm couldn't be written ahead of it
+        if (process == AuthServer && AuthServer.State == ServerState.Running)
+            await ApplyRealmAsync();
+    }
+
+    async Task ApplyRealmAsync()
+    {
         try
         {
             await _network.ApplyAsync();
         }
         catch (Exception ex)
         {
-            Log.Error("Could not set the realm's addresses", ex);
+            Log.Error("Could not set the realm's port and addresses", ex);
         }
     }
 
