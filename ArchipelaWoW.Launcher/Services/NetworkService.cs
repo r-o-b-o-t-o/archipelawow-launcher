@@ -10,9 +10,10 @@ public enum RealmAccess { Local, Lan, Internet }
 public sealed record LanAddress(string Address, string SubnetMask);
 
 /// <summary>
-/// The realm's addresses in the login database. The authserver hands a game client the realm's local address when
-/// the client is on its subnet, or on this computer unless one of the addresses is a loopback address, and its
-/// address otherwise (AzerothCore's Realm::GetAddressForClient).
+/// The realm's addresses in the login database. The authserver hands a game client on this computer its own loopback
+/// address if one of the realm's addresses is a loopback address, and the realm's local address otherwise. It hands
+/// other clients the local address when they're on its subnet, and the realm's address otherwise (AzerothCore's
+/// Realm::GetAddressForClient).
 /// </summary>
 public sealed class NetworkService(SettingsStore settings, MySqlService mySql, ConfigService configs, HttpClient http)
 {
@@ -27,7 +28,8 @@ public sealed class NetworkService(SettingsStore settings, MySqlService mySql, C
         WorldServerPort = configs.GetInt("worldserver.conf", "WorldServerPort") ?? 8085,
     };
 
-    public async Task SetAsync(RealmAccess access, string? publicAddress)
+    /// <summary>Saves who can join the realm and writes its addresses, starting MySQL if needed.</summary>
+    public async Task SetAsync(RealmAccess access, string? publicAddress, ServerManager servers)
     {
         publicAddress = publicAddress?.Trim();
         if (access == RealmAccess.Internet && Uri.CheckHostName(publicAddress) is not (UriHostNameType.IPv4 or UriHostNameType.Dns))
@@ -40,7 +42,11 @@ public sealed class NetworkService(SettingsStore settings, MySqlService mySql, C
             if (access == RealmAccess.Internet)
                 s.Network.PublicAddress = publicAddress;
         });
-        await ApplyAsync();
+        // Without a database or a configuration there's no realm yet: ServerManager writes them once the authserver runs
+        if (!mySql.IsInitialized || Addresses() is not { } addresses)
+            return;
+        await servers.StartMySqlAsync();
+        await WriteAsync(addresses);
     }
 
     /// <summary>
@@ -49,23 +55,41 @@ public sealed class NetworkService(SettingsStore settings, MySqlService mySql, C
     /// </summary>
     public async Task ApplyAsync()
     {
+        if (Addresses() is { } addresses)
+            await WriteAsync(addresses);
+    }
+
+    sealed record RealmAddresses(string LoginDatabase, string Address, string LocalAddress, string SubnetMask);
+
+    RealmAddresses? Addresses()
+    {
         var network = settings.Current.Network;
         if (network.Access is not { } access ||
             configs.GetDatabaseName("authserver.conf", "LoginDatabaseInfo") is not { } loginDatabase)
-            return;
+            return null;
         var lan = access == RealmAccess.Local ? null : FindLanAddress();
         if (access != RealmAccess.Local && lan is null)
         {
             Log.Info("Not changing the realm's addresses: this computer isn't connected to a network.");
+            return null;
+        }
+        return access switch
+        {
+            RealmAccess.Lan => new(loginDatabase, lan!.Address, lan.Address, lan.SubnetMask),
+            RealmAccess.Internet => new(loginDatabase, network.PublicAddress!, lan!.Address, lan.SubnetMask),
+            _ => new(loginDatabase, Loopback, Loopback, "255.255.255.0"),
+        };
+    }
+
+    async Task WriteAsync(RealmAddresses addresses)
+    {
+        // Until a server's first start creates the login database: ServerManager writes them once the authserver runs
+        if (!await mySql.TableExistsAsync(addresses.LoginDatabase, "realmlist"))
+        {
+            Log.Info("Not changing the realm's addresses yet: the login database doesn't exist.");
             return;
         }
-        var (address, localAddress, subnetMask) = access switch
-        {
-            RealmAccess.Lan => (lan!.Address, lan.Address, lan.SubnetMask),
-            RealmAccess.Internet => (network.PublicAddress!, lan!.Address, lan.SubnetMask),
-            _ => (Loopback, Loopback, "255.255.255.0"),
-        };
-        await mySql.SetRealmAddressesAsync(loginDatabase, address, localAddress, subnetMask);
+        await mySql.SetRealmAddressesAsync(addresses.LoginDatabase, addresses.Address, addresses.LocalAddress, addresses.SubnetMask);
     }
 
     public async Task<string> FindPublicAddressAsync()

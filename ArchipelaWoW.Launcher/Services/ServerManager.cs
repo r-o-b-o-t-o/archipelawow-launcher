@@ -141,15 +141,7 @@ public sealed class ServerManager
             if (!_configs.ConfigsExist)
                 throw new InvalidOperationException("The server configuration files are missing, run the setup first.");
             MySql.Start();
-            try
-            {
-                await MySql.WaitUntilRunningAsync(token);
-            }
-            catch (InvalidOperationException) when (_mySqlRestart is { } mySqlRestart)
-            {
-                await mySqlRestart.WaitAsync(token);
-                await MySql.WaitUntilRunningAsync(token);
-            }
+            await WaitForMySqlAsync(token);
             if (process == AuthServer && !AuthServer.IsActive &&
                 _configs.GetDatabaseName("authserver.conf", "LoginDatabaseInfo") is { } loginDatabase)
                 await _mySql.ClearRealmVersionMismatchAsync(loginDatabase);
@@ -164,6 +156,37 @@ public sealed class ServerManager
             throw;
         }
         _ = LeaveLaunchGateOnceSettledAsync(process);
+    }
+
+    async Task WaitForMySqlAsync(CancellationToken token)
+    {
+        try
+        {
+            await MySql.WaitUntilRunningAsync(token);
+        }
+        catch (InvalidOperationException) when (_mySqlRestart is { } mySqlRestart)
+        {
+            await mySqlRestart.WaitAsync(token);
+            await MySql.WaitUntilRunningAsync(token);
+        }
+    }
+
+    /// <summary>Starts MySQL unless it runs, and waits until it's ready.</summary>
+    public async Task StartMySqlAsync()
+    {
+        using var cancellation = StartCancellation(MySql);
+        try
+        {
+            // A task blocking the starts may be using a running MySQL
+            if (!MySql.IsActive)
+                await StartAsync(MySql, cancellation.Token);
+            await WaitForMySqlAsync(cancellation.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            // Not ignored, as StartAsync(string) does: the caller needs it running
+            throw new InvalidOperationException("MySQL was stopped before it was ready.");
+        }
     }
 
     // Within the launch gate, as it may create the login database. Playing doesn't need the bot: the worldserver

@@ -65,14 +65,8 @@ public sealed class MySqlService(AppPaths paths, SettingsStore settings)
     }
 
     /// <summary>Sets the addresses of every realm, which must be safe to put in a query.</summary>
-    public async Task SetRealmAddressesAsync(string loginDatabase, string address, string localAddress, string subnetMask)
-    {
-        var (exitCode, _, errors) = await RunClientAsync("mysql",
-            $"--execute=UPDATE `{loginDatabase}`.realmlist SET address = '{address}', localAddress = '{localAddress}', localSubnetMask = '{subnetMask}'");
-        // MySQL may be stopped, or the authserver yet to create its database: it's set again once the authserver runs
-        if (exitCode != 0)
-            Log.Info($"Could not set the realms' addresses: {errors.Trim()}");
-    }
+    public Task SetRealmAddressesAsync(string loginDatabase, string address, string localAddress, string subnetMask) =>
+        QueryAsync($"UPDATE `{loginDatabase}`.realmlist SET address = '{address}', localAddress = '{localAddress}', localSubnetMask = '{subnetMask}'");
 
     /// <summary>Creates the data directory, starts the server and creates the AzerothCore user.</summary>
     public async Task InitializeAsync(TaskRunner task, ServerManager servers, CancellationToken token)

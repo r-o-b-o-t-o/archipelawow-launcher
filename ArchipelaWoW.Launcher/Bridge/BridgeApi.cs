@@ -132,7 +132,7 @@ public static partial class BridgeApi
         bridge.Handle("network.getStatus", services.Network.GetStatus);
         bridge.HandleAsync<NetworkParams>("network.set", async p =>
         {
-            await services.Network.SetAsync(p.Access, p.PublicAddress);
+            await services.Network.SetAsync(p.Access, p.PublicAddress, servers);
             return services.Network.GetStatus();
         });
         bridge.HandleAsync("network.findPublicAddress", async () => await services.Network.FindPublicAddressAsync());
