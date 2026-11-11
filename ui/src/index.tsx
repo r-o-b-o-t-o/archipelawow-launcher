@@ -7,6 +7,7 @@ import "./index.css";
 import { initTooltips } from "./lib/tooltips";
 import ApWorld from "./pages/ApWorld";
 import Dashboard from "./pages/Dashboard";
+import Game from "./pages/Game";
 import PlayerOptions from "./pages/PlayerOptions";
 import Settings from "./pages/Settings";
 import Setup from "./pages/Setup";
@@ -20,6 +21,7 @@ render(
 		<HashRouter root={App}>
 			<Route path="/" component={Dashboard} />
 			<Route path="/setup" component={Setup} />
+			<Route path="/game" component={Game} />
 			<Route path="/player-options" component={PlayerOptions} />
 			<Route path="/apworld" component={ApWorld} />
 			<Route path="/tracker" component={Tracker} />

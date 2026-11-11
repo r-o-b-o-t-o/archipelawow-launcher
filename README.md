@@ -31,8 +31,10 @@ The player options editor and the tracker work without the server.
      launcher warns about it.
 2. Follow the launcher's setup: the server, the database, the configuration, then the client data, which
    you can download or extract from your own World of Warcraft 3.3.5a client.
-3. Start the servers from the dashboard, create a game account there, and set `set realmlist 127.0.0.1`
-   in your client's `Data\<locale>\realmlist.wtf`.
+3. Start the servers from the dashboard and create a game account there.
+4. Download the World of Warcraft 3.3.5a client from the **Game** page, in the language of your choice, and
+   play from there: it points the client at your realm, or at the realmlist you enter. To use your own
+   client instead, set `set realmlist 127.0.0.1` in its `Data\<locale>\realmlist.wtf`.
 
 To only make player options or track a seed, skip the setup and open **Player options** or **Tracker**.
 
@@ -43,7 +45,7 @@ network, or friends over the internet. The launcher finds the computer's address
 time the authserver starts. Over the internet, forward the authserver's and the worldserver's TCP ports (3724
 and 8085, which the settings can change) to that address in your router's control panel; the setup links to a
 checker that tells whether they're open from the outside. The other players point their `realmlist.wtf` at the
-address the setup shows.
+address the setup shows, or enter it as the realmlist on their launcher's Game page.
 
 ### Installing the apworld
 
@@ -101,8 +103,8 @@ of the folder is no longer used.
 ### Uninstalling
 
 The launcher installed by the setup is uninstalled from Windows' installed apps, which leaves
-`%LocalAppData%\ArchipelaWoW`: delete the server from the Setup page first, or delete that folder
-after. The portable launcher is only its folder.
+`%LocalAppData%\ArchipelaWoW`: delete the server from the Setup page and the game client from the
+Game page first, or delete that folder after. The portable launcher is only its folder.
 
 ### What's in the folder
 
@@ -113,6 +115,7 @@ after. The portable launcher is only its folder.
 | `Update.exe`, `packages` | The launcher's updater ([Velopack](https://velopack.io)) and the updates it downloaded |
 | `launcher` | The launcher's settings, logs (including the MySQL and tasks consoles) and downloads |
 | `players` | Archipelago player options (YAML) |
+| `client` | The World of Warcraft 3.3.5a client downloaded from the Game page |
 | `server\bin` | authserver, worldserver, dbimport and the client data extractors |
 | `server\configs` | The servers' configuration, created by the launcher from the `.conf.dist` files |
 | `server\source` | The SQL files the server builds and updates its databases from |

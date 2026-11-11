@@ -12,6 +12,7 @@ public sealed class AppServices : IDisposable
     public TaskRunner Tasks { get; }
     public RepackService Repack { get; }
     public ClientDataService ClientData { get; }
+    public GameClientService GameClient { get; }
     public PlayerFilesService Players { get; }
     public NetworkService Network { get; }
     public ApWorldService ApWorld { get; }
@@ -47,6 +48,7 @@ public sealed class AppServices : IDisposable
             Log.Error("Could not move the server configuration out of server\\bin", ex);
         }
         ClientData = new ClientDataService(paths, Settings, Http);
+        GameClient = new GameClientService(paths, Settings, Configs, Http);
         Players = new PlayerFilesService(paths);
         ApWorld = new ApWorldService(Http);
     }

@@ -4,7 +4,7 @@ import { call } from "./bridge";
 export type ServerName = "mysql" | "authserver" | "worldserver";
 export type TerminalName = ServerName | "tasks";
 export type ServerState = "stopped" | "starting" | "running" | "stopping" | "crashed";
-export type FolderTarget = "root" | "configs" | "data" | "logs" | "launcherLogs" | "players" | "mysql";
+export type FolderTarget = "root" | "configs" | "data" | "logs" | "launcherLogs" | "players" | "mysql" | "gameClient";
 
 export interface ServerStatus {
 	name: ServerName;
@@ -102,6 +102,19 @@ export interface ClientDataStatus {
 	version: string | null;
 	folders: Record<string, boolean>;
 	ready: boolean;
+}
+
+export interface GameClientStatus {
+	installed: boolean;
+	path: string;
+	/** The locale folder in Data, once installed. */
+	locale: string | null;
+	/** The locale of a download that stopped halfway, which downloading again resumes. */
+	partialDownload: string | null;
+	/** The realmlist chosen to play on, null for the local realm. */
+	realmlist: string | null;
+	/** The local realm's address, as realmlist.wtf takes it. */
+	localRealmlist: string;
 }
 
 export interface SetupStatus {
@@ -244,6 +257,15 @@ export const api = {
 		download: () => call<ClientDataStatus>("clientData.download"),
 		extract: (clientPath: string, generateMmaps: boolean) =>
 			call<ClientDataStatus>("clientData.extract", { clientPath, generateMmaps }),
+	},
+	gameClient: {
+		getStatus: () => call<GameClientStatus>("gameClient.getStatus"),
+		/** The locales the download offers. */
+		getLocales: () => call<string[]>("gameClient.getLocales"),
+		download: (locale: string) => call<GameClientStatus>("gameClient.download", { locale }),
+		delete: () => call<GameClientStatus>("gameClient.delete"),
+		/** Saves the realmlist, null for the local realm, writes it to the client's realmlist.wtf and starts the game. */
+		play: (realmlist: string | null) => call<GameClientStatus>("gameClient.play", { realmlist }),
 	},
 	task: {
 		getCurrent: () => call<TaskInfo | null>("task.getCurrent"),

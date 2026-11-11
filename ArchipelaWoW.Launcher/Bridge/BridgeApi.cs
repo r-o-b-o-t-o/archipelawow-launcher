@@ -59,6 +59,7 @@ public static partial class BridgeApi
                 "launcherLogs" => paths.LauncherLogsDir,
                 "players" => paths.PlayersDir,
                 "mysql" => paths.MySqlDir,
+                "gameClient" => paths.GameClientDir,
                 _ => throw new ArgumentException($"Unknown folder {p.Target}."),
             };
             Directory.CreateDirectory(path);
@@ -183,6 +184,25 @@ public static partial class BridgeApi
             await tasks.RunAsync("Extracting the client data", (task, token) =>
                 services.ClientData.ExtractFromClientAsync(task, servers, p.ClientPath, p.GenerateMmaps, token));
             return services.ClientData.GetStatus();
+        });
+
+        // Game client
+        bridge.Handle("gameClient.getStatus", services.GameClient.GetStatus);
+        bridge.HandleAsync("gameClient.getLocales", async () => await services.GameClient.GetLocalesAsync(CancellationToken.None));
+        bridge.HandleAsync<LocaleParams>("gameClient.download", async p =>
+        {
+            await tasks.RunAsync("Downloading the game client", (task, token) => services.GameClient.DownloadAsync(task, p.Locale, token));
+            return services.GameClient.GetStatus();
+        });
+        bridge.HandleAsync("gameClient.delete", async () =>
+        {
+            await tasks.RunAsync("Deleting the game client", (task, _) => services.GameClient.DeleteAsync(task));
+            return services.GameClient.GetStatus();
+        });
+        bridge.Handle<PlayParams>("gameClient.play", p =>
+        {
+            services.GameClient.Play(p.Realmlist);
+            return services.GameClient.GetStatus();
         });
 
         // Tasks
@@ -429,6 +449,8 @@ public static partial class BridgeApi
     sealed record NetworkParams(RealmAccess Access, string? PublicAddress);
     sealed record TagParams(string Tag);
     sealed record CreateConfigsParams(bool Overwrite);
+    sealed record LocaleParams(string Locale);
+    sealed record PlayParams(string? Realmlist);
     sealed record ExtractParams(string ClientPath, bool GenerateMmaps);
     sealed record PickFolderParams(string? Title, string? InitialDirectory);
     sealed record TerminalInputParams(string Name, string Data);

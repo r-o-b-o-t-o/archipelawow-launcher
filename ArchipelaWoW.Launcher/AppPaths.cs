@@ -31,6 +31,10 @@ public sealed class AppPaths(string root)
 
     public string PlayersDir => Path.Combine(Root, "players");
 
+    public string GameClientDir => Path.Combine(Root, "client");
+    /// <summary>Where the game client downloads, one folder per locale, until it's complete.</summary>
+    public string GameClientDownloadDir => Path.Combine(LauncherDir, "client-download");
+
     public string ServerExe(string name) => Path.Combine(ServerBin, name + ".exe");
     public string MySqlExe(string name) => Path.Combine(MySqlBin, name + ".exe");
 }

@@ -93,6 +93,9 @@ function Sidebar() {
 						)}
 					</Show>
 				</NavLink>
+				<NavLink href="/game" icon="gamepad">
+					Game
+				</NavLink>
 				<NavLink href="/apworld" icon="puzzle">
 					APWorld
 				</NavLink>

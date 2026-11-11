@@ -177,7 +177,15 @@ export function Select<T extends string | number>(props: {
 				e.currentTarget.value = String(props.value);
 			}}
 		>
-			<For each={props.options}>{(option) => <option value={String(option.value)}>{option.label}</option>}</For>
+			{/* Selected by each option too: options replaced after the value was set, as when they load, would
+			    otherwise leave the first one selected */}
+			<For each={props.options}>
+				{(option) => (
+					<option value={String(option.value)} selected={String(option.value) === String(props.value)}>
+						{option.label}
+					</option>
+				)}
+			</For>
 		</select>
 	);
 }

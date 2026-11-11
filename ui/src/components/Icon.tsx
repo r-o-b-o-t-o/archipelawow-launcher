@@ -15,6 +15,7 @@ import Eraser from "lucide-solid/icons/eraser";
 import Eye from "lucide-solid/icons/eye";
 import FileText from "lucide-solid/icons/file-text";
 import Folder from "lucide-solid/icons/folder";
+import Gamepad2 from "lucide-solid/icons/gamepad-2";
 import Globe from "lucide-solid/icons/globe";
 import GlobeLock from "lucide-solid/icons/globe-lock";
 import Info from "lucide-solid/icons/info";
@@ -69,6 +70,7 @@ const icons = {
 	dashboard: LayoutDashboard,
 	wand: WandSparkles,
 	sword: Sword,
+	gamepad: Gamepad2,
 	check: Check,
 	alert: TriangleAlert,
 	refresh: RefreshCw,

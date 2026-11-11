@@ -137,6 +137,15 @@ public partial class MainWindow : Window
 
         var updater = _services.LauncherUpdater;
         var quit = updater.RestartOnExit ? "restart to update" : "quit";
+        // Velopack stops what runs from a portable launcher's folder before updating it, the game client included
+        if (updater.RestartOnExit && updater.Installation == LauncherInstallation.Portable && _services.GameClient.IsRunning()
+            && !Confirm("The game is running from the launcher's folder: updating closes it. Restart to update anyway?"))
+        {
+            e.Cancel = true;
+            updater.RestartOnExit = false;
+            return;
+        }
+
         var task = _services.Tasks.Current;
         if (!_services.Servers.AnyActive && task == null)
         {
