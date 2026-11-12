@@ -38,6 +38,7 @@ public sealed class TrackerSettings
     public string? Slot { get; set; }
     public string? Password { get; set; }
     public bool HideChecked { get; set; } = true;
+    public bool HidePrerequisites { get; set; }
 }
 
 public sealed class SettingsStore(string file)

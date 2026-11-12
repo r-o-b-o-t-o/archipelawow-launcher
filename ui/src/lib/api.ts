@@ -68,6 +68,7 @@ export interface TrackerSettings {
 	slot: string | null;
 	password: string | null;
 	hideChecked: boolean;
+	hidePrerequisites: boolean;
 }
 
 export type RealmAccess = "local" | "lan" | "internet";
@@ -232,6 +233,7 @@ export const api = {
 		update: (
 			patch: Partial<Pick<Settings, "mySqlPort" | "authServerPort" | "worldServerPort" | "autoStartServers">> & {
 				trackerHideChecked?: boolean;
+				trackerHidePrerequisites?: boolean;
 			},
 		) => call<Settings>("settings.update", patch),
 	},

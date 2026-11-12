@@ -54,8 +54,15 @@ const pendingChecks = (checks: Check[]) =>
 		(check, i) => checkStateAt(check) !== "checked" && checks.findIndex((other) => other.id === check.id) === i,
 	);
 
-/** A lone check's name, and the abilities it takes until it's checked. */
+/** What a marker shows: its checks, or the prerequisites it holds when it has none. */
+const shownChecks = (checks: Check[]) => {
+	const own = checks.filter((check) => !check.prerequisiteOf);
+	return own.length > 0 ? own : checks;
+};
+
+/** A lone check's name, and the abilities it takes until it's checked, or what a prerequisite comes before. */
 const markerTooltip = (check: Check) => {
+	if (check.prerequisiteOf) return [check.name, check.note].join("\n");
 	const abilities = checkStateAt(check) === "checked" ? [] : (check.abilities ?? []);
 	return [check.name, ...abilities.map((ability) => `Requires ${ability.name}`)].join("\n");
 };
@@ -68,7 +75,7 @@ export default function MapView(props: {
 	data: TrackerData;
 	mapId: number;
 	onNavigate: (id: number) => void;
-	/** The checks to show, the ones placed on a map among them (see mapChecks). */
+	/** The checks to show, the ones placed on a map among them (see mapChecks), and the prerequisites to show. */
 	checks: Check[];
 }) {
 	let container!: HTMLDivElement;
@@ -385,10 +392,13 @@ export default function MapView(props: {
 
 			<Index each={markers()}>
 				{(marker) => {
-					const pending = () => pendingChecks(marker().checks).length;
+					const shown = () => shownChecks(marker().checks);
+					const pending = () => pendingChecks(shown()).length;
+					// Faded, to tell them from checks
+					const prerequisites = () => shown().every((check) => check.prerequisiteOf);
 					const screen = () => toScreen(marker().u, marker().v);
 					const hints = () =>
-						pendingChecks(marker().checks)
+						pendingChecks(shown())
 							.map((check) => checkHints(check.id))
 							.filter((h) => h != null);
 					return (
@@ -398,11 +408,12 @@ export default function MapView(props: {
 							classList={{
 								"pointer-events-none size-6": marker().aggregate,
 								"size-[18px] hover:scale-125": !marker().aggregate,
+								"opacity-50 hover:opacity-80": prerequisites(),
 							}}
 							style={{
 								left: `${screen()[0]}px`,
 								top: `${screen()[1]}px`,
-								background: markerBackground(marker().checks),
+								background: markerBackground(shown()),
 							}}
 							data-tooltip={marker().checks.length === 1 ? markerTooltip(marker().checks[0]) : undefined}
 							onPointerDown={(event) => !marker().aggregate && event.stopPropagation()}

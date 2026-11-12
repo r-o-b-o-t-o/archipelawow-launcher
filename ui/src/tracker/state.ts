@@ -3,13 +3,14 @@ import { createMemo, createRoot, createSignal } from "solid-js";
 
 import { type TrackerHint, type TrackerItem, type TrackerSeed, type TrackerStatus, api } from "../lib/api";
 import { inLauncher, on } from "../lib/bridge";
-import { type Check, buildChecks } from "./checks";
+import { type Check, buildChecks, buildPrerequisites } from "./checks";
 import { LEVEL_UP, type Requirement, evaluate, explain, explainLocation, reachableRegions } from "./logic";
 import type { SlotData, TrackerData } from "./types";
 
 /**
  * Checked, in logic, doable out of logic, out of logic, or unknown for a seed without rules. And for a spell's
- * trainer, in logic elsewhere: at another of its trainers but not this one.
+ * trainer, in logic elsewhere: at another of its trainers but not this one. A prerequisite is in logic when the
+ * character can do it now, out of logic otherwise.
  */
 export type CheckState = "checked" | "available" | "sequenceBreak" | "elsewhere" | "blocked" | "unknown";
 
@@ -118,6 +119,12 @@ const derived = createRoot(() => {
 		return current && tracker ? buildChecks(tracker, current, seed()!.locations, seed()!.itemNames) : [];
 	});
 
+	const prerequisites = createMemo<Check[]>(() => {
+		const current = slotData();
+		const tracker = data();
+		return current && tracker ? buildPrerequisites(tracker, current, seed()!.itemNames, checks(), checked()) : [];
+	});
+
 	const states = createMemo(() => {
 		const done = checked();
 		const regions = reachable();
@@ -216,7 +223,19 @@ const derived = createRoot(() => {
 		return result;
 	});
 
-	return { slotData, counts, level, reachable, locationLogic, checks, states, trainerStates, itemHints, checkHints };
+	return {
+		slotData,
+		counts,
+		level,
+		reachable,
+		locationLogic,
+		checks,
+		prerequisites,
+		states,
+		trainerStates,
+		itemHints,
+		checkHints,
+	};
 });
 
 export interface CheckHints {
@@ -233,16 +252,37 @@ function unmetItems(requirements: Requirement[]): string[] {
 	);
 }
 
-export const { slotData, counts, level, checks, itemHints } = derived;
+export const { slotData, counts, level, checks, prerequisites, itemHints } = derived;
 
 export const checkHints = (id: number) => derived.checkHints().get(id);
 
 export const checkState = (id: number): CheckState => derived.states().get(id) ?? "unknown";
 
+/**
+ * What a prerequisite takes, met or not: its zones, the level it can be done from, and its abilities. The seed's rules
+ * know nothing of it, and those of the checks it opens can wait on zones it doesn't.
+ */
+export function prerequisiteRequirements(check: Check): Requirement[] {
+	const held = derived.counts();
+	const item = (name: string, met = held.has(name)): Requirement => ({ kind: "item", text: name, item: name, met });
+	return [
+		...(check.zoneItems ?? []).map((zone) => item(zone)),
+		...(check.doableLevel != null && check.doableLevel > 1
+			? [{ ...item(LEVEL_UP, derived.level() >= check.doableLevel), text: `Level ${check.doableLevel}` }]
+			: []),
+		...(check.abilities ?? []).map((ability) => item(ability.name)),
+	];
+}
+
 /** A check's state, at its trainer for a copy of a spell check on the maps. */
-export const checkStateAt = (check: Check): CheckState =>
-	(check.trainerZone != null && derived.trainerStates().get(check.id)?.get(check.trainerZone)) ||
-	checkState(check.id);
+export function checkStateAt(check: Check): CheckState {
+	if (check.prerequisiteOf)
+		return prerequisiteRequirements(check).every((requirement) => requirement.met) ? "available" : "blocked";
+	return (
+		(check.trainerZone != null && derived.trainerStates().get(check.id)?.get(check.trainerZone)) ||
+		checkState(check.id)
+	);
+}
 
 /** The region a check sits in, for the side panel's level brackets. */
 export const checkRegion = (id: number) => derived.locationLogic().get(id)?.region;

@@ -13,7 +13,7 @@ interface Spot {
 }
 
 export interface Check {
-	/** The location id. */
+	/** The location id, or a prerequisite's quest id negated, which no location has. */
 	id: number;
 	name: string;
 	icon: string;
@@ -36,6 +36,10 @@ export interface Check {
 	note?: string;
 	/** The class abilities a quest takes, as the items that teach them. */
 	abilities?: { name: string; icon: string }[];
+	/** For a quest the seed doesn't check that comes before quest checks (see buildPrerequisites): their location ids. */
+	prerequisiteOf?: number[];
+	/** The zone items a prerequisite's zones take. */
+	zoneItems?: string[];
 }
 
 const QUEST_ICON = asset("ui/quest.webp");
@@ -47,15 +51,33 @@ const EXPLORATION_ICON = iconUrl("inv_misc_map02");
 /** The icon of the level achievement at or above a level: Level 10 for levels 2 to 10. */
 export const levelIcon = (level: number) => iconUrl(`achievement_level_${Math.min(80, Math.ceil(level / 10) * 10)}`);
 
-export function buildChecks(
-	data: TrackerData,
-	slot: SlotData,
-	names: Record<string, string>,
-	itemNames: Record<string, string>,
-): Check[] {
-	const race = slot.options.character_race;
-	const side = data.characters.races[race]?.side;
-	const name = (id: number) => names[id] ?? `Location ${id}`;
+const spot = (position: Position): Spot => ({ map: position[0], x: position[1], y: position[2] });
+
+/**
+ * Where the character's side picks a quest up: at a giver it can talk to, else any giver, where it's turned in for a
+ * quest started by an item, or somewhere in its zone.
+ */
+function questPlacer(data: TrackerData, side: number | undefined) {
+	const mapsById = new Map(data.maps.map((map) => [map.id, map]));
+	return (questId: number): { spot?: Spot; note?: string } => {
+		const quest = data.quests[questId];
+		// A quest given on both sides is shown where the character's side picks it up
+		const givers = quest?.givers ?? [];
+		const giver = givers.find((g) => g[3] == null || g[3] === side) ?? givers[0];
+		if (giver)
+			return { spot: spot(giver), note: quest?.atEnder ? "Started by an item, turned in here" : undefined };
+		const map = quest?.map != null ? mapsById.get(quest.map) : undefined;
+		return map
+			? {
+					spot: { map: map.id, x: map.center?.[0] ?? 0.5, y: map.center?.[1] ?? 0.5 },
+					note: "Somewhere in this zone",
+				}
+			: {};
+	};
+}
+
+/** The seed's spell items by spell id, with the level each is trained at, and a class ability as the item teaching it. */
+function abilities(data: TrackerData, slot: SlotData, itemNames: Record<string, string>) {
 	const spellItems = new Map(slot.items.spells.map(([item, spell, level]) => [spell, { item, level }]));
 	const ability = (spell: number) => {
 		const item = spellItems.get(spell)?.item;
@@ -65,12 +87,20 @@ export function buildChecks(
 			icon: icon ? iconUrl(icon) : FALLBACK_ICON,
 		};
 	};
-	const spot = (position: Position): Spot => ({ map: position[0], x: position[1], y: position[2] });
-	const mapsById = new Map(data.maps.map((map) => [map.id, map]));
-	const center = (mapId: number): Spot | undefined => {
-		const map = mapsById.get(mapId);
-		return map ? { map: mapId, x: map.center?.[0] ?? 0.5, y: map.center?.[1] ?? 0.5 } : undefined;
-	};
+	return { spellItems, ability };
+}
+
+export function buildChecks(
+	data: TrackerData,
+	slot: SlotData,
+	names: Record<string, string>,
+	itemNames: Record<string, string>,
+): Check[] {
+	const race = slot.options.character_race;
+	const side = data.characters.races[race]?.side;
+	const name = (id: number) => names[id] ?? `Location ${id}`;
+	const { spellItems, ability } = abilities(data, slot, itemNames);
+	const placeQuest = questPlacer(data, side);
 
 	// A dungeon's first achievement by id is its normal one, ahead of the heroic ones
 	const dungeonIcons = new Map<number, string>();
@@ -90,10 +120,7 @@ export function buildChecks(
 
 	for (const [questId, id] of slot.locations.quests) {
 		const quest = data.quests[questId];
-		// A quest given on both sides is shown where the character's side picks it up
-		const givers = quest?.givers ?? [];
-		const giver = givers.find((g) => g[3] == null || g[3] === side) ?? givers[0];
-		const where = giver ? spot(giver) : quest?.map != null ? center(quest.map) : undefined;
+		const { spot: where, note } = placeQuest(questId);
 		checks.push({
 			id,
 			name: name(id),
@@ -102,12 +129,7 @@ export function buildChecks(
 			group: where ? undefined : "quests",
 			doableLevel: quest?.doableLevel,
 			abilities: quest?.requiredSpells?.map(ability),
-			note:
-				giver && quest?.atEnder
-					? "Started by an item, turned in here"
-					: !giver && where
-						? "Somewhere in this zone"
-						: undefined,
+			note,
 		});
 	}
 
@@ -202,6 +224,98 @@ export function buildChecks(
 	}
 
 	return checks;
+}
+
+/**
+ * The quests the seed doesn't check that come before its quest checks left to do, placed like those, each with the
+ * checks it comes before. Of the quests of which one is enough, the ones the character can take; and none that a
+ * checked quest needed, as it's done. A quest check isn't one: it shows as the check it is, and the quests before it
+ * as its own.
+ */
+export function buildPrerequisites(
+	data: TrackerData,
+	slot: SlotData,
+	itemNames: Record<string, string>,
+	checks: Check[],
+	checked: ReadonlySet<number>,
+) {
+	const race = slot.options.character_race;
+	const characterClass = slot.options.character_class;
+	const takes = (questId: number) => {
+		const quest = data.quests[questId];
+		return (
+			quest != null &&
+			(quest.races == null || (quest.races & (1 << (race - 1))) !== 0) &&
+			(quest.classes == null || (quest.classes & (1 << (characterClass - 1))) !== 0)
+		);
+	};
+	const before = (questId: number) => {
+		const quest = data.quests[questId];
+		return { all: quest?.requiresAll ?? [], any: (quest?.requiresAny ?? []).filter(takes) };
+	};
+	const questChecks = new Set(slot.locations.quests.map(([questId]) => questId));
+
+	// The quests surely done before a quest: those that are all needed and, of those of which one is enough, what every
+	// alternative the character can take needs
+	const needed = new Map<number, Set<number>>();
+	const needs = (questId: number, chain = new Set<number>()): Set<number> => {
+		const cached = needed.get(questId);
+		if (cached) return cached;
+		const result = new Set<number>();
+		if (chain.has(questId)) return result;
+		chain.add(questId);
+		const { all, any } = before(questId);
+		for (const previous of all) for (const quest of [previous, ...needs(previous, chain)]) result.add(quest);
+		const alternatives = any.map((previous) => new Set([previous, ...needs(previous, chain)]));
+		for (const quest of alternatives[0] ?? []) if (alternatives.every((set) => set.has(quest))) result.add(quest);
+		chain.delete(questId);
+		needed.set(questId, result);
+		return result;
+	};
+	const done = new Set(
+		slot.locations.quests.flatMap(([questId, id]) => (checked.has(id) ? [...needs(questId)] : [])),
+	);
+
+	const leadsTo = new Map<number, number[]>();
+	const walk = (questId: number, id: number, seen: Set<number>) => {
+		const { all, any } = before(questId);
+		for (const previous of [...all, ...any]) {
+			if (done.has(previous) || questChecks.has(previous) || seen.has(previous)) continue;
+			seen.add(previous);
+			const ids = leadsTo.get(previous);
+			if (ids) ids.push(id);
+			else leadsTo.set(previous, [id]);
+			walk(previous, id, seen);
+		}
+	};
+	for (const [questId, id] of slot.locations.quests) if (!checked.has(id)) walk(questId, id, new Set());
+
+	const names = new Map(checks.map((check) => [check.id, check.name]));
+	const zoneItems = new Map(slot.items.zones.map(([item, zone]) => [zone, itemNames[item] ?? `Item ${item}`]));
+	const { spellItems, ability } = abilities(data, slot, itemNames);
+	const placeQuest = questPlacer(data, data.characters.races[race]?.side);
+	return [...leadsTo].flatMap(([questId, ids]): Check[] => {
+		const { spot: where, note } = placeQuest(questId);
+		if (!where) return [];
+		const targets = ids.map((id) => names.get(id) ?? `Location ${id}`);
+		const leads = `Opens ${targets.slice(0, 2).join(", ")}${targets.length > 2 ? ` and ${targets.length - 2} more` : ""}`;
+		const quest = data.quests[questId];
+		return [
+			{
+				id: -questId,
+				name: quest?.name ?? `Quest ${questId}`,
+				icon: QUEST_ICON,
+				spot: where,
+				note: note ? `${leads} · ${note}` : leads,
+				prerequisiteOf: ids,
+				doableLevel: quest?.doableLevel,
+				// Only the abilities the seed sends as items: the character holds the others
+				abilities: quest?.requiredSpells?.filter((spell) => spellItems.has(spell)).map(ability),
+				// The module only locks the zones the seed has items for
+				zoneItems: quest?.zones?.flatMap((zone) => zoneItems.get(zone) ?? []),
+			},
+		];
+	});
 }
 
 /** The checks to place on the maps: those with a spot, and a copy of a spell's at each of its trainers. */

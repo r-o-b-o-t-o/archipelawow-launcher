@@ -8,7 +8,7 @@ import { api } from "../lib/api";
 import { inLauncher } from "../lib/bridge";
 import { errorMessage, toast } from "../lib/toast";
 import { loadTrackerData } from "../tracker/data";
-import { checkState, checks, initTracker, seed, setData, slotData, status } from "../tracker/state";
+import { checkState, checks, initTracker, prerequisites, seed, setData, slotData, status } from "../tracker/state";
 import type { MapInfo } from "../tracker/types";
 
 const DEFAULT_PORT = 38281;
@@ -24,15 +24,17 @@ export default function Tracker() {
 	});
 	const [settings, { mutate: setSettings }] = createResource(() => (inLauncher ? api.settings.get() : undefined));
 	const hideChecked = () => settings()?.tracker.hideChecked ?? true;
+	const hidePrerequisites = () => settings()?.tracker.hidePrerequisites ?? false;
 
 	onMount(() => initTracker().catch((error) => toast(errorMessage(error), "error")));
 
 	const visibleChecks = () =>
 		hideChecked() ? checks().filter((check) => checkState(check.id) !== "checked") : checks();
+	const onMap = () => (hidePrerequisites() ? visibleChecks() : [...visibleChecks(), ...prerequisites()]);
 
-	const setHideChecked = async (value: boolean) => {
+	const updateSettings = async (patch: Parameters<typeof api.settings.update>[0]) => {
 		try {
-			setSettings(await api.settings.update({ trackerHideChecked: value }));
+			setSettings(await api.settings.update(patch));
 		} catch (error) {
 			toast(errorMessage(error), "error");
 		}
@@ -89,17 +91,21 @@ export default function Tracker() {
 										</>
 									)}
 								</For>
-								<div class="ml-auto">
-									<Switch checked={hideChecked()} onChange={setHideChecked} label="Hide checked" />
+								<div class="ml-auto flex items-center gap-5">
+									<Switch
+										checked={hidePrerequisites()}
+										onChange={(value) => updateSettings({ trackerHidePrerequisites: value })}
+										label="Hide prerequisites"
+									/>
+									<Switch
+										checked={hideChecked()}
+										onChange={(value) => updateSettings({ trackerHideChecked: value })}
+										label="Hide checked"
+									/>
 								</div>
 							</div>
 							<div class="min-h-0 flex-1">
-								<MapView
-									data={loaded()}
-									mapId={mapId()}
-									onNavigate={setMapId}
-									checks={visibleChecks()}
-								/>
+								<MapView data={loaded()} mapId={mapId()} onNavigate={setMapId} checks={onMap()} />
 							</div>
 						</div>
 						<SidePanel data={loaded()} checks={checks()} hideChecked={hideChecked()} />

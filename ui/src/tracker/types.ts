@@ -123,11 +123,26 @@ export interface TrackerData {
 	maps: MapInfo[];
 	/**
 	 * `doableLevel`: the level the quest and the quests before it can be done from in-game. `requiredSpells`: the class
-	 * abilities the quest and the quests before it take, by spell id, as keyed in `spells`.
+	 * abilities the quest and the quests before it take, by spell id, as keyed in `spells`. `requiresAll` and
+	 * `requiresAny`: the quests before it that are all needed, and those of which one is enough, breadcrumbs left out.
+	 * A quest those list has its title as `name`, the races and classes that can take it as masks (bit id - 1), every
+	 * one when missing, and the zones archipelawow asks for it, by AreaTable.dbc id, as `zones`.
 	 */
 	quests: Record<
 		string,
-		{ givers?: Position[]; atEnder?: boolean; map?: number; doableLevel: number; requiredSpells?: number[] }
+		{
+			givers?: Position[];
+			atEnder?: boolean;
+			map?: number;
+			doableLevel: number;
+			requiredSpells?: number[];
+			requiresAll?: number[];
+			requiresAny?: number[];
+			name?: string;
+			races?: number;
+			classes?: number;
+			zones?: number[];
+		}
 	>;
 	flightpaths: Record<string, { position: Position }>;
 	/** By creature entry: where the faction leader stands, and the icon of the achievement for killing them. */

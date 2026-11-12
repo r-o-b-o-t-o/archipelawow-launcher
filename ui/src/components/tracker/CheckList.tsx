@@ -3,7 +3,15 @@ import { For, Show, createSignal } from "solid-js";
 import type { Check } from "../../tracker/checks";
 import { FALLBACK_ICON } from "../../tracker/data";
 import type { Requirement } from "../../tracker/logic";
-import { type CheckState, checkHints, checkStateAt, counts, itemHints, whyBlocked } from "../../tracker/state";
+import {
+	type CheckState,
+	checkHints,
+	checkStateAt,
+	counts,
+	itemHints,
+	prerequisiteRequirements,
+	whyBlocked,
+} from "../../tracker/state";
 import Icon from "../Icon";
 import { HintBadge, itemHintText } from "./Hints";
 import { stateColors, stateLabels } from "./checkStates";
@@ -17,11 +25,15 @@ const stateOrder: Record<CheckState, number> = {
 	checked: 5,
 };
 
-/** The checks of a marker or a group, the ones in logic first; a check out of logic shows why on click. */
+/**
+ * The checks of a marker or a group, the ones in logic first and the prerequisites last; a check out of logic shows
+ * why on click.
+ */
 export default function CheckList(props: { checks: Check[] }) {
 	const sorted = () =>
 		[...props.checks].sort(
 			(a, b) =>
+				Number(a.prerequisiteOf != null) - Number(b.prerequisiteOf != null) ||
 				stateOrder[checkStateAt(a)] - stateOrder[checkStateAt(b)] ||
 				a.name.localeCompare(b.name, undefined, { numeric: true }),
 		);
@@ -49,11 +61,12 @@ function CheckRow(props: { check: Check }) {
 					src={props.check.icon}
 					alt=""
 					class="size-6 shrink-0 rounded border border-black/60"
+					classList={{ "opacity-50": props.check.prerequisiteOf != null }}
 					onError={(e) => (e.currentTarget.src = FALLBACK_ICON)}
 				/>
 				<span class="min-w-0 flex-1">
 					<span
-						class={`block truncate text-[13px] ${state() === "checked" ? "text-zinc-500" : "text-zinc-100"}`}
+						class={`block truncate text-[13px] ${state() === "checked" ? "text-zinc-500" : props.check.prerequisiteOf ? "text-zinc-400" : "text-zinc-100"}`}
 					>
 						{props.check.name}
 					</span>
@@ -88,7 +101,13 @@ function CheckRow(props: { check: Check }) {
 			</button>
 			<Show when={open() && outOfLogic()}>
 				<div class="px-3 pb-2 pl-11">
-					<Requirements requirements={whyBlocked(props.check.id)} />
+					<Requirements
+						requirements={
+							props.check.prerequisiteOf
+								? prerequisiteRequirements(props.check)
+								: whyBlocked(props.check.id)
+						}
+					/>
 				</div>
 			</Show>
 		</li>

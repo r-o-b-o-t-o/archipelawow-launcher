@@ -138,6 +138,8 @@ public static partial class BridgeApi
                 services.Settings.Update(s => s.AutoStartServers = autoStart);
             if (p.TrackerHideChecked is { } hideChecked)
                 services.Settings.Update(s => s.Tracker.HideChecked = hideChecked);
+            if (p.TrackerHidePrerequisites is { } hidePrerequisites)
+                services.Settings.Update(s => s.Tracker.HidePrerequisites = hidePrerequisites);
             return services.Settings.Current;
         });
 
@@ -444,7 +446,7 @@ public static partial class BridgeApi
     sealed record UrlParams(string Url);
     sealed record UnsavedChangesParams(bool Unsaved);
     sealed record SettingsPatch(int? MySqlPort, int? AuthServerPort, int? WorldServerPort, bool? AutoStartServers,
-        bool? TrackerHideChecked);
+        bool? TrackerHideChecked, bool? TrackerHidePrerequisites);
     sealed record BuildParams(string Build);
     sealed record NetworkParams(RealmAccess Access, string? PublicAddress);
     sealed record TagParams(string Tag);
