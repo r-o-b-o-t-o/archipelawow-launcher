@@ -78,8 +78,8 @@ connects to.
   until you hold them.
 - Faded markers are the quests that come before a quest check but aren't checks themselves, breadcrumbs
   aside: green when you hold their zones, their level and the class abilities they take, red otherwise. Click
-  a red one for what it's waiting for. They go once a quest after them is checked, and **Hide
-  prerequisites** hides them all.
+  a red one for what it's waiting for. They go once you turn them in, or a quest after them is checked, and
+  **Hide prerequisites** hides them all.
 - The side panel shows your character, the goal and the progressive items, the checks that have no place
   on a map, such as class training and levels by bracket, and the items you received.
 

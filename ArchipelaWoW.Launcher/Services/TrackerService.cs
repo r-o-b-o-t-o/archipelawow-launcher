@@ -42,7 +42,10 @@ public sealed record TrackerSeed(
     List<TrackerItem> Items,
     List<TrackerHint> Hints,
     // The character's, 0 male or 1 female, which the game writes to the slot's data storage when it connects
-    int? Gender);
+    int? Gender,
+    // The quests the character has turned in, which the game writes there when it connects and on each one.
+    // Replaced whole, never changed, so a snapshot can share it.
+    List<int> CompletedQuests);
 
 /// <summary>
 /// The tracker's connection to an Archipelago room. It joins a slot as a tracker, alongside the game, and
@@ -67,6 +70,7 @@ public sealed class TrackerService : IDisposable
     public event Action<List<long>>? LocationsChecked;
     public event Action<List<TrackerHint>>? HintsChanged;
     public event Action<int?>? GenderChanged;
+    public event Action<List<int>>? CompletedQuestsChanged;
 
     public TrackerSeed? Seed
     {
@@ -186,6 +190,23 @@ public sealed class TrackerService : IDisposable
         var genderKey = session.DataStorage[Scope.Slot, "gender"];
         genderKey.OnValueChanged += (_, value, _) => SetGender(value.ToObject<int?>());
         _ = genderKey.GetAsync().ContinueWith(task => SetGender(task.Result.ToObject<int?>()), TaskContinuationOptions.OnlyOnRanToCompletion);
+        List<int> completedQuests = [];
+        void SetCompletedQuests(List<int>? value)
+        {
+            lock (_lock)
+            {
+                if (_session != session || value == null)
+                    return;
+                completedQuests = value;
+                if (_seed == null)
+                    return;
+                _seed = _seed with { CompletedQuests = value };
+                CompletedQuestsChanged?.Invoke(value);
+            }
+        }
+        var questsKey = session.DataStorage[Scope.Slot, "quests"];
+        questsKey.OnValueChanged += (_, value, _) => SetCompletedQuests(value.ToObject<List<int>?>());
+        _ = questsKey.GetAsync().ContinueWith(task => SetCompletedQuests(task.Result.ToObject<List<int>?>()), TaskContinuationOptions.OnlyOnRanToCompletion);
         session.Socket.SocketClosed += reason => Fail(session, "The connection to the room was lost.");
         // A room that goes away without closing the connection shows up as an error
         session.Socket.ErrorReceived += (exception, message) =>
@@ -209,7 +230,8 @@ public sealed class TrackerService : IDisposable
                 [.. session.Locations.AllLocationsChecked],
                 [.. session.Items.AllItemsReceived.Select(ToTrackerItem)],
                 [.. hints.Select(hint => ToTrackerHint(session, hint))],
-                gender);
+                gender,
+                completedQuests);
             Status = TrackerStatus.Connected;
             Error = null;
             StatusChanged?.Invoke();

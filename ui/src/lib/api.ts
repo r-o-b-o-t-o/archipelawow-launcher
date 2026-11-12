@@ -214,6 +214,8 @@ export interface TrackerSeed {
 	hints: TrackerHint[];
 	/** The character's, 0 male or 1 female, once the game has connected to the slot. */
 	gender: number | null;
+	/** The quests the character has turned in, once the game has connected to the slot. */
+	completedQuests: number[];
 }
 
 export const api = {

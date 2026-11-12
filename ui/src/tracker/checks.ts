@@ -228,9 +228,9 @@ export function buildChecks(
 
 /**
  * The quests the seed doesn't check that come before its quest checks left to do, placed like those, each with the
- * checks it comes before. Of the quests of which one is enough, the ones the character can take; and none that a
- * checked quest needed, as it's done. A quest check isn't one: it shows as the check it is, and the quests before it
- * as its own.
+ * checks it comes before. Of the quests of which one is enough, the ones the character can take, until one is done;
+ * and none that's done: turned in, as the game writes to the slot's data storage, checked, or needed by one of those.
+ * A quest check isn't one: it shows as the check it is, and the quests before it as its own.
  */
 export function buildPrerequisites(
 	data: TrackerData,
@@ -238,6 +238,7 @@ export function buildPrerequisites(
 	itemNames: Record<string, string>,
 	checks: Check[],
 	checked: ReadonlySet<number>,
+	completed: ReadonlySet<number>,
 ) {
 	const race = slot.options.character_race;
 	const characterClass = slot.options.character_class;
@@ -272,14 +273,15 @@ export function buildPrerequisites(
 		needed.set(questId, result);
 		return result;
 	};
-	const done = new Set(
-		slot.locations.quests.flatMap(([questId, id]) => (checked.has(id) ? [...needs(questId)] : [])),
-	);
+	const done = new Set(completed);
+	for (const [questId, id] of slot.locations.quests) if (checked.has(id)) done.add(questId);
+	for (const questId of [...done]) for (const quest of needs(questId)) done.add(quest);
 
 	const leadsTo = new Map<number, number[]>();
 	const walk = (questId: number, id: number, seen: Set<number>) => {
 		const { all, any } = before(questId);
-		for (const previous of [...all, ...any]) {
+		const open = any.some((previous) => done.has(previous));
+		for (const previous of open ? all : [...all, ...any]) {
 			if (done.has(previous) || questChecks.has(previous) || seen.has(previous)) continue;
 			seen.add(previous);
 			const ids = leadsTo.get(previous);

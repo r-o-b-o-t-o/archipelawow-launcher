@@ -20,6 +20,7 @@ const [items, setItems] = createSignal<TrackerItem[]>([]);
 const [checked, setChecked] = createSignal<ReadonlySet<number>>(new Set());
 const [hints, setHints] = createSignal<TrackerHint[]>([]);
 const [gender, setGender] = createSignal<number | null>(null);
+const [completedQuests, setCompletedQuests] = createSignal<ReadonlySet<number>>(new Set());
 const [data, setData] = createSignal<TrackerData | null>(null);
 
 export { gender, hints, items, seed, setData, status };
@@ -46,6 +47,7 @@ export function initTracker() {
 		on<number[]>("tracker.checked", (ids) => setChecked((current) => new Set([...current, ...ids])));
 		on<TrackerHint[]>("tracker.hints", (next) => setHints((current) => keepUnchanged(current, next)));
 		on<number | null>("tracker.gender", setGender);
+		on<number[]>("tracker.completedQuests", (ids) => setCompletedQuests(new Set(ids)));
 		const [currentStatus, currentSeed] = await Promise.all([api.tracker.getStatus(), api.tracker.getSeed()]);
 		setStatus(currentStatus);
 		applySeed(currentSeed);
@@ -73,6 +75,7 @@ function applySeed(value: TrackerSeed | null) {
 	setChecked(new Set(value?.checked ?? []));
 	setHints(value?.hints ?? []);
 	setGender(value?.gender ?? null);
+	setCompletedQuests(new Set(value?.completedQuests ?? []));
 }
 
 const derived = createRoot(() => {
@@ -122,7 +125,9 @@ const derived = createRoot(() => {
 	const prerequisites = createMemo<Check[]>(() => {
 		const current = slotData();
 		const tracker = data();
-		return current && tracker ? buildPrerequisites(tracker, current, seed()!.itemNames, checks(), checked()) : [];
+		return current && tracker
+			? buildPrerequisites(tracker, current, seed()!.itemNames, checks(), checked(), completedQuests())
+			: [];
 	});
 
 	const states = createMemo(() => {

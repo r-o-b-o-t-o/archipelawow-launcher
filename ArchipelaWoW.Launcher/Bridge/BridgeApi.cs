@@ -39,6 +39,7 @@ public static partial class BridgeApi
         tracker.LocationsChecked += ids => bridge.Emit("tracker.checked", ids);
         tracker.HintsChanged += hints => bridge.Emit("tracker.hints", hints);
         tracker.GenderChanged += gender => bridge.Emit("tracker.gender", gender);
+        tracker.CompletedQuestsChanged += quests => bridge.Emit("tracker.completedQuests", quests);
 
         // App
         bridge.Handle("app.getInfo", () => new
