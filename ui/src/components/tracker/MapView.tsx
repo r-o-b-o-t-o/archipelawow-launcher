@@ -2,7 +2,7 @@ import { For, Index, Show, createEffect, createMemo, createSignal, on, onCleanup
 
 import { type Check, mapChecks, projectSpot } from "../../tracker/checks";
 import { asset } from "../../tracker/data";
-import { checkHints, checkStateAt } from "../../tracker/state";
+import { checkHints, checkStateAt, openedBy } from "../../tracker/state";
 import type { MapInfo, TrackerData } from "../../tracker/types";
 import CheckList from "./CheckList";
 import { HintBadge } from "./Hints";
@@ -60,11 +60,20 @@ const shownChecks = (checks: Check[]) => {
 	return own.length > 0 ? own : checks;
 };
 
-/** A lone check's name, and the abilities it takes until it's checked, or what a prerequisite comes before. */
+/**
+ * A lone check's name, and the abilities it takes until it's checked, or what a prerequisite comes before; and what
+ * opens it.
+ */
 const markerTooltip = (check: Check) => {
-	if (check.prerequisiteOf) return [check.name, check.note].join("\n");
-	const abilities = checkStateAt(check) === "checked" ? [] : (check.abilities ?? []);
-	return [check.name, ...abilities.map((ability) => `Requires ${ability.name}`)].join("\n");
+	const abilities = check.prerequisiteOf || checkStateAt(check) === "checked" ? [] : (check.abilities ?? []);
+	return [
+		check.name,
+		check.prerequisiteOf && check.note,
+		...abilities.map((ability) => `Requires ${ability.name}`),
+		openedBy(check),
+	]
+		.filter(Boolean)
+		.join("\n");
 };
 
 /**

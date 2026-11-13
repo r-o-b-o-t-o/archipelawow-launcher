@@ -9,6 +9,7 @@ import {
 	checkStateAt,
 	counts,
 	itemHints,
+	openedBy,
 	prerequisiteRequirements,
 	whyBlocked,
 } from "../../tracker/state";
@@ -72,6 +73,9 @@ function CheckRow(props: { check: Check }) {
 					</span>
 					<Show when={props.check.note}>
 						<span class="block truncate text-[11px] text-zinc-500">{props.check.note}</span>
+					</Show>
+					<Show when={openedBy(props.check)}>
+						{(text) => <span class="block truncate text-[11px] text-zinc-500">{text()}</span>}
 					</Show>
 				</span>
 				<For each={state() === "checked" ? [] : props.check.abilities}>

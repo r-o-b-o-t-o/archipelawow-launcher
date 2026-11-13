@@ -230,7 +230,8 @@ export function buildChecks(
  * The quests the seed doesn't check that come before its quest checks left to do, placed like those, each with the
  * checks it comes before. Of the quests of which one is enough, the ones the character can take, until one is done;
  * and none that's done: turned in, as the game writes to the slot's data storage, checked, or needed by one of those.
- * A quest check isn't one: it shows as the check it is, and the quests before it as its own.
+ * A quest check isn't one: it shows as the check it is, and the quests before it as its own. Along with them, by check
+ * id, what opens each quest check left and each of them: the quest left before it, or that there are several.
  */
 export function buildPrerequisites(
 	data: TrackerData,
@@ -277,12 +278,18 @@ export function buildPrerequisites(
 	for (const [questId, id] of slot.locations.quests) if (checked.has(id)) done.add(questId);
 	for (const questId of [...done]) for (const quest of needs(questId)) done.add(quest);
 
+	// The quests left before a quest: none of those of which one is enough once one is done
+	const left = (questId: number) => {
+		const { all, any } = before(questId);
+		const notDone = (quests: number[]) => quests.filter((previous) => !done.has(previous));
+		return { all: notDone(all), any: any.some((previous) => done.has(previous)) ? [] : notDone(any) };
+	};
+
 	const leadsTo = new Map<number, number[]>();
 	const walk = (questId: number, id: number, seen: Set<number>) => {
-		const { all, any } = before(questId);
-		const open = any.some((previous) => done.has(previous));
-		for (const previous of open ? all : [...all, ...any]) {
-			if (done.has(previous) || questChecks.has(previous) || seen.has(previous)) continue;
+		const { all, any } = left(questId);
+		for (const previous of [...all, ...any]) {
+			if (questChecks.has(previous) || seen.has(previous)) continue;
 			seen.add(previous);
 			const ids = leadsTo.get(previous);
 			if (ids) ids.push(id);
@@ -296,7 +303,24 @@ export function buildPrerequisites(
 	const zoneItems = new Map(slot.items.zones.map(([item, zone]) => [zone, itemNames[item] ?? `Item ${item}`]));
 	const { spellItems, ability } = abilities(data, slot, itemNames);
 	const placeQuest = questPlacer(data, data.characters.races[race]?.side);
-	return [...leadsTo].flatMap(([questId, ids]): Check[] => {
+
+	const checkIds = new Map(slot.locations.quests);
+	const questName = (questId: number) => {
+		const id = checkIds.get(questId);
+		return id != null ? (names.get(id) ?? `Location ${id}`) : (data.quests[questId]?.name ?? `Quest ${questId}`);
+	};
+	const openedBy = new Map<number, string>();
+	const addOpenedBy = (questId: number, id: number) => {
+		const { all, any } = left(questId);
+		const quests = [...all, ...any];
+		if (quests.length === 1) openedBy.set(id, `Opened by ${questName(quests[0])}`);
+		else if (quests.length > 1)
+			openedBy.set(id, all.length === 0 ? "Opened by one of several quests" : "Opened by several quests");
+	};
+	for (const [questId, id] of slot.locations.quests) if (!checked.has(id)) addOpenedBy(questId, id);
+	for (const questId of leadsTo.keys()) addOpenedBy(questId, -questId);
+
+	const prerequisites = [...leadsTo].flatMap(([questId, ids]): Check[] => {
 		const { spot: where, note } = placeQuest(questId);
 		if (!where) return [];
 		const targets = ids.map((id) => names.get(id) ?? `Location ${id}`);
@@ -318,6 +342,7 @@ export function buildPrerequisites(
 			},
 		];
 	});
+	return { prerequisites, openedBy };
 }
 
 /** The checks to place on the maps: those with a spot, and a copy of a spell's at each of its trainers. */

@@ -122,13 +122,15 @@ const derived = createRoot(() => {
 		return current && tracker ? buildChecks(tracker, current, seed()!.locations, seed()!.itemNames) : [];
 	});
 
-	const prerequisites = createMemo<Check[]>(() => {
+	const prerequisiteQuests = createMemo(() => {
 		const current = slotData();
 		const tracker = data();
 		return current && tracker
 			? buildPrerequisites(tracker, current, seed()!.itemNames, checks(), checked(), completedQuests())
-			: [];
+			: { prerequisites: [], openedBy: new Map<number, string>() };
 	});
+	const prerequisites = createMemo<Check[]>(() => prerequisiteQuests().prerequisites);
+	const openedBy = createMemo(() => prerequisiteQuests().openedBy);
 
 	const states = createMemo(() => {
 		const done = checked();
@@ -236,6 +238,7 @@ const derived = createRoot(() => {
 		locationLogic,
 		checks,
 		prerequisites,
+		openedBy,
 		states,
 		trainerStates,
 		itemHints,
@@ -260,6 +263,9 @@ function unmetItems(requirements: Requirement[]): string[] {
 export const { slotData, counts, level, checks, prerequisites, itemHints } = derived;
 
 export const checkHints = (id: number) => derived.checkHints().get(id);
+
+/** What opens a quest check left or a prerequisite: the quest left before it, or that there are several. */
+export const openedBy = (check: Check) => derived.openedBy().get(check.id);
 
 export const checkState = (id: number): CheckState => derived.states().get(id) ?? "unknown";
 
