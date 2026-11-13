@@ -13,7 +13,7 @@ import { markerBackground } from "./MapView";
 // The tracks of the progressive items, ProgressiveType in the apworld's items/progressive.py
 const PROGRESSIVE_ICONS: Record<number, string> = {
 	1: "ability_rogue_sprint",
-	2: "spell_holy_borrowedtime",
+	2: "spell_holy_powerinfusion",
 	3: "inv_misc_food_15",
 	4: "inv_drink_07",
 	5: "ability_mount_ridinghorse",
