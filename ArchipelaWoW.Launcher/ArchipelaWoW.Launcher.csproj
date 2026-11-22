@@ -28,7 +28,7 @@
 
   <ItemGroup>
     <PackageReference Include="Archipelago.MultiClient.Net" Version="6.7.1" />
-    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4258.31" GeneratePathProperty="true" />
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4370.26" GeneratePathProperty="true" />
     <!-- The release workflow packs the launcher with the vpk of the same version -->
     <PackageReference Include="Velopack" Version="1.2.161" />
   </ItemGroup>
@@ -40,8 +40,7 @@
 
   <!-- Release builds bundle the UI; skip with -p:SkipUiBuild=true when dist/ is already built. -->
   <Target Name="BuildUi" BeforeTargets="BeforeBuild" Condition="'$(Configuration)' == 'Release' And '$(SkipUiBuild)' != 'true'">
-    <Error Condition="!Exists('$(UiDir)\src\data\options-schema.json')"
-           Text="The player options schema is missing: generate ui\src\data\options-schema.json from the apworld first, see the README." />
+    <Error Condition="!Exists('$(UiDir)\src\data\options-schema.json')" Text="The player options schema is missing: generate ui\src\data\options-schema.json from the apworld first, see the README." />
     <Exec Command="npm ci" WorkingDirectory="$(UiDir)" />
     <Exec Command="npm run build" WorkingDirectory="$(UiDir)" />
   </Target>
