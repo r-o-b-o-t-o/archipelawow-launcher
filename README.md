@@ -76,9 +76,9 @@ connects to.
 - Checks close to one another share a marker, like the quests of a quest hub. Click a marker for its
   checks, and a red check for what it's waiting for. A quest that takes class abilities shows them, greyed
   until you hold them.
-- Faded markers are the quests that come before a quest check but aren't checks themselves, breadcrumbs
-  aside: green when you hold their zones, their level and the class abilities they take, red otherwise. Click
-  a red one for what it's waiting for. They go once you turn them in, or a quest after them is checked, and
+- Faded markers are the quests that come before a quest check but aren't checks themselves: green
+  when you hold their zones, their level and the class abilities they take, red otherwise. Click a red one
+  for what it's waiting for. They go once you turn them in, or a quest after them is checked, and
   **Hide prerequisites** hides them all. A quest that waits on others names the one that opens it,
   or says there are several.
 - The side panel shows your character, the goal and the progressive items, the checks that have no place
